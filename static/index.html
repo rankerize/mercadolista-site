@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Comparador de precios</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css?v=15">
+</head>
+<body>
+  <header class="top">
+    <p class="eyebrow">Rech · Datos</p>
+    <h1>¿Dónde conviene comprarlo?</h1>
+    <p class="lead" id="lead">Compara el precio publicado en tiendas de Colombia y te dice en cuál está el más bajo.</p>
+  </header>
+
+  <main>
+    <div class="tabs" role="tablist">
+      <button type="button" id="tab-local" class="tab is-active" data-mode="local" role="tab" aria-selected="true">Colombia</button>
+      <button type="button" id="tab-unit" class="tab" data-mode="unit" role="tab" aria-selected="false">Unidad</button>
+      <button type="button" id="tab-list" class="tab" data-mode="list" role="tab" aria-selected="false">Lista</button>
+      <button type="button" id="tab-intl" class="tab" data-mode="intl" role="tab" aria-selected="false">Internacional</button>
+    </div>
+    <form id="search-form" class="search">
+      <div class="city-row" id="city-row">
+        <label for="city">Ciudad</label>
+        <select id="city" name="ciudad">
+          <option value="bogota" selected>Bogotá</option>
+        </select>
+      </div>
+      <div id="single-search">
+        <label for="query">Producto</label>
+        <div class="search-row">
+          <input id="query" name="q" type="search" placeholder="Ej. leche entera colanta, arroz roa, televisor 55" autocomplete="off" required minlength="2" maxlength="80">
+          <button type="submit" id="submit">Comparar</button>
+        </div>
+      </div>
+      <div id="list-editor" class="list-editor" hidden>
+        <div id="account" class="account">
+          <div id="account-out">
+            <p class="account-title">Guarda tus listas con tu correo o teléfono.</p>
+            <div class="account-switch">
+              <button type="button" class="chip is-active" data-account="register">Inscribirme</button>
+              <button type="button" class="chip" data-account="login">Entrar</button>
+            </div>
+            <div class="account-fields">
+              <label class="list-field" id="account-name-field">
+                <span>Nombre</span>
+                <input id="account-name" type="text" maxlength="60" autocomplete="name" placeholder="Tu nombre">
+              </label>
+              <label class="list-field">
+                <span>Correo o teléfono</span>
+                <input id="account-contact" type="text" maxlength="120" autocomplete="email" placeholder="ana@correo.com o 300 123 4567">
+              </label>
+              <button type="button" id="account-submit">Inscribirme</button>
+            </div>
+          </div>
+          <div id="account-in" hidden>
+            <div class="account-head">
+              <p class="account-title" id="account-hello"></p>
+              <button type="button" id="account-logout" class="ghost">Salir</button>
+            </div>
+            <div class="account-fields saved-lists">
+              <label class="list-field">
+                <span>Mis listas</span>
+                <select id="saved-select"></select>
+              </label>
+              <label class="list-field">
+                <span>Nombre de la lista</span>
+                <input id="saved-name" type="text" maxlength="60" placeholder="Mercado de la semana">
+              </label>
+              <button type="button" id="saved-save">Guardar</button>
+              <button type="button" id="saved-delete" class="ghost" hidden>Borrar</button>
+            </div>
+          </div>
+          <p id="account-status" class="account-status" role="status"></p>
+        </div>
+        <div id="list-rows" class="list-rows"></div>
+        <div class="list-actions">
+          <button type="button" id="add-row" class="ghost">Agregar producto</button>
+          <button type="submit" id="list-submit">Comparar lista</button>
+        </div>
+      </div>
+      <div class="examples" id="examples">
+        <button type="button" data-query="leche entera colanta">Leche Colanta</button>
+        <button type="button" data-query="arroz roa">Arroz Roa</button>
+        <button type="button" data-query="aceite premier">Aceite Premier</button>
+        <button type="button" data-query="televisor 55">Televisor 55"</button>
+      </div>
+    </form>
+
+    <p id="status" class="status" role="status"></p>
+    <section id="results" class="results" hidden></section>
+  </main>
+
+  <footer>
+    <p id="footnote">Precios de Bogotá cuando la tienda los publica para esa zona. Pueden cambiar según la sede y las promociones. Confirma el valor antes de pagar.</p>
+  </footer>
+  <script src="/static/app.js?v=15"></script>
+</body>
+</html>

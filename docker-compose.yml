@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: comparador-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: comparador
+      POSTGRES_USER: comparador
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - comparador-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U comparador -d comparador"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  comparador-db:
