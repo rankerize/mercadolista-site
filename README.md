@@ -30,5 +30,11 @@ npm start
 npm test
 ```
 
-Abre [http://127.0.0.1:8765](http://127.0.0.1:8765).
+Abre [http://localhost:3001](http://localhost:3001).
+
+---
+
+## 🤖 Información para Agentes de IA
+
+Consulta [`AGENTS.md`](./AGENTS.md) para conocer las decisiones de arquitectura, la integración con Firebase (`mercadologo`) y la estructura del proyecto.
 

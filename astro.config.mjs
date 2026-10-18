@@ -6,4 +6,8 @@ export default defineConfig({
   adapter: node({
     mode: 'standalone',
   }),
+  server: {
+    port: 8765,
+    host: '127.0.0.1',
+  },
 });

@@ -1,6 +1,6 @@
 import { renderers } from './renderers.mjs';
 import { c as createExports, s as serverEntrypointModule } from './chunks/_@astrojs-ssr-adapter_BuO5mQA8.mjs';
-import { manifest } from './manifest_D9jV0TCM.mjs';
+import { manifest } from './manifest_BwAb2bGk.mjs';
 
 const serverIslandMap = new Map();;
 
@@ -16,7 +16,8 @@ const _page8 = () => import('./pages/api/tiendas.astro.mjs');
 const _page9 = () => import('./pages/api/unidad.astro.mjs');
 const _page10 = () => import('./pages/api/usuarios.astro.mjs');
 const _page11 = () => import('./pages/api/yo.astro.mjs');
-const _page12 = () => import('./pages/index.astro.mjs');
+const _page12 = () => import('./pages/perfil.astro.mjs');
+const _page13 = () => import('./pages/index.astro.mjs');
 const pageMap = new Map([
     ["node_modules/astro/dist/assets/endpoint/node.js", _page0],
     ["src/pages/api/buscar.ts", _page1],
@@ -30,7 +31,8 @@ const pageMap = new Map([
     ["src/pages/api/unidad.ts", _page9],
     ["src/pages/api/usuarios.ts", _page10],
     ["src/pages/api/yo.ts", _page11],
-    ["src/pages/index.astro", _page12]
+    ["src/pages/perfil.astro", _page12],
+    ["src/pages/index.astro", _page13]
 ]);
 
 const _manifest = Object.assign(manifest, {
@@ -44,8 +46,8 @@ const _args = {
     "mode": "standalone",
     "client": "file:///Users/cesarandresjimenezarci/Documents/Clientes/Comparador%20de%20precios/dist/client/",
     "server": "file:///Users/cesarandresjimenezarci/Documents/Clientes/Comparador%20de%20precios/dist/server/",
-    "host": false,
-    "port": 4321,
+    "host": "127.0.0.1",
+    "port": 8765,
     "assets": "_astro",
     "experimentalStaticHeaders": false
 };

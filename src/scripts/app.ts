@@ -37,8 +37,7 @@ const savedDelete = document.querySelector<HTMLButtonElement>('#saved-delete')!;
 
 const headerLoginBtn = document.querySelector<HTMLButtonElement>('#header-login-btn')!;
 const headerUserInfo = document.querySelector<HTMLElement>('#header-user-info')!;
-const headerUserAvatar = document.querySelector<HTMLImageElement>('#header-user-avatar')!;
-const headerUserName = document.querySelector<HTMLElement>('#header-user-name')!;
+const headerUserName = document.querySelector<HTMLAnchorElement>('#header-user-name')!;
 const headerLogoutBtn = document.querySelector<HTMLButtonElement>('#header-logout-btn')!;
 
 const CITY_KEY = 'comparador-ciudad';
@@ -751,6 +750,12 @@ async function refreshSavedLists(selectedId = '') {
 function handleAuthState(user: any) {
   if (user) {
     currentUserId = user.uid;
+    // Header
+    headerLoginBtn.hidden = true;
+    headerUserInfo.hidden = false;
+    headerUserName.textContent = `👤 ${user.displayName || user.email || 'Mi Perfil'}`;
+
+    // List tab account panel
     accountOut.hidden = true;
     accountIn.hidden = false;
     accountHello.textContent = `Hola, ${user.displayName || user.email || 'Usuario'}`;
@@ -759,6 +764,11 @@ function handleAuthState(user: any) {
   } else {
     currentUserId = null;
     savedLists = [];
+    // Header
+    headerLoginBtn.hidden = false;
+    headerUserInfo.hidden = true;
+
+    // List tab account panel
     accountIn.hidden = true;
     accountOut.hidden = false;
     accountStatus.textContent = '';
@@ -828,6 +838,20 @@ addRow.addEventListener('click', () => {
   row.querySelector<HTMLInputElement>('[name="nombre"]')!.focus();
   saveListLocal();
   updateAddRow();
+});
+
+headerLoginBtn.addEventListener('click', async () => {
+  accountStatus.textContent = 'Iniciando sesión con Google…';
+  try {
+    await loginWithGoogle();
+  } catch (err: any) {
+    accountStatus.textContent = err.message || 'No se pudo iniciar sesión con Google';
+  }
+});
+
+headerLogoutBtn.addEventListener('click', async () => {
+  await logoutUser();
+  accountStatus.textContent = 'Has cerrado sesión.';
 });
 
 accountGoogleBtn.addEventListener('click', async () => {
@@ -917,6 +941,12 @@ async function loadCities() {
 }
 
 // Initial boot
+const urlParams = new URLSearchParams(window.location.search);
+const initialTab = urlParams.get('tab') as ModeKey | null;
+if (initialTab && initialTab in MODES) {
+  mode = initialTab;
+}
+
 loadList();
 setMode(mode);
 loadCities();
