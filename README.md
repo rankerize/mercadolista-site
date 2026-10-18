@@ -11,7 +11,7 @@ Construido en **Astro 5 Fullstack (SSR)** con Node.js y TypeScript.
 - **Agrupación inteligente**: Comparación por código de barras (EAN), algoritmo de similitud por tokens de texto y promociones por medio de pago (Tarjeta Éxito/Tuya, Cencosud, CMR Falabella, Tarjeta Olímpica, Alkosto).
 - **Comparador por Unidad**: Precio normalizado por gramo ($/g), mililitro ($/ml) o unidad ($/u).
 - **Optimizador de Canasta/Lista**: Cotización de listas de hasta 15 productos comparando el total por comercio o desglosado.
-- **Cuentas y Listas Guardadas**: Persistencia de usuarios y listas con PostgreSQL (Docker Compose). Si la base de datos no está activa, las búsquedas funcionan al 100%.
+- **Cuentas y Listas Guardadas**: Sincronización en la nube mediante **Firebase Auth** (Google Sign-In) y **Cloud Firestore** con el proyecto `mercadologo`. Si no inicias sesión, el comparador sigue funcionando al 100% en modo local.
 
 ## Puesta en Marcha (Astro)
 
@@ -30,11 +30,5 @@ npm start
 npm test
 ```
 
-Abre [http://127.0.0.1:4321](http://127.0.0.1:4321) (o el puerto asignado por Astro).
+Abre [http://127.0.0.1:8765](http://127.0.0.1:8765).
 
-## Base de Datos (Opcional para guardar listas)
-
-```bash
-cp .env.example .env
-docker compose up -d
-```

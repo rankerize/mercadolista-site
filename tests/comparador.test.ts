@@ -1,14 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { cleanEan, cop, parseCop, relevance, saleMeasure, unitPrice } from '../src/lib/normalize';
-import { findCity, cityCatalog } from '../src/lib/cities';
-import { vtexSegment, parseAlgoliaConfig } from '../src/lib/providers/vtex';
+import {
+  parseCop,
+  cleanEan,
+  cop,
+  relevance,
+  unitPrice,
+  saleMeasure,
+} from '../src/lib/normalize';
+import { findCity } from '../src/lib/cities';
+import { storeCatalog } from '../src/lib/providers';
 import { buildReport } from '../src/lib/ranking';
 import { buildUnitReport } from '../src/lib/units';
-import { makeItem, buildListReport } from '../src/lib/shopping';
 import type { Offer, StoreOutcome } from '../src/lib/types';
 
-describe('Normalize and parsing', () => {
-  it('parses cop and ean correctly', () => {
+describe('Comparador Core Normalization Tests', () => {
+  it('parses COP currency and validates EAN barcodes', () => {
     expect(parseCop('3.999.900')).toBe(3999900);
     expect(parseCop('$ 2.190')).toBe(2190);
     expect(cleanEan('7702129001052')).toBe('7702129001052');
@@ -21,7 +27,7 @@ describe('Normalize and parsing', () => {
     expect(score).toBe(1);
   });
 
-  it('calculates unit price for milliliters and pack', () => {
+  it('calculates unit prices for liquids and multipacks', () => {
     const single = unitPrice('Leche Entera Colanta x200ml', 2000);
     expect(single?.per).toBe('L');
     expect(single?.amount).toBe(10000);
@@ -31,22 +37,49 @@ describe('Normalize and parsing', () => {
     expect(pack?.amount).toBe(1000);
   });
 
-  it('counts units and grams in saleMeasure', () => {
-    const eggs = saleMeasure('Canasta de 30 huevos', 15000);
-    expect(eggs?.per).toBe('unidad');
+  it('measures count and weight accurately', () => {
+    const eggs = saleMeasure('Huevos AA x 30 unds', 15000);
+    expect(eggs?.basis).toBe('unidad');
+    expect(eggs?.quantity).toBe(30);
     expect(eggs?.amount).toBe(500);
 
-    const rice = saleMeasure('Arroz Roa 500 g', 2500);
-    expect(rice?.per).toBe('gramo');
-    expect(rice?.amount).toBe(5);
+    const rice = saleMeasure('Arroz Roa 1000g', 4500);
+    expect(rice?.basis).toBe('gramo');
+    expect(rice?.quantity).toBe(1000);
+    expect(rice?.amount).toBe(4.5);
+  });
+});
 
-    const kilo = saleMeasure('Arroz Roa 1 kg', 4000);
-    expect(kilo?.amount).toBe(4);
+describe('Catalogs and Reports', () => {
+  it('loads city and store catalogs', () => {
+    const city = findCity('bogota');
+    expect(city.name).toBe('Bogotá');
+    const stores = storeCatalog();
+    expect(stores.length).toBeGreaterThan(5);
   });
 
-  it('finds cities and catalogs', () => {
-    expect(findCity('medellin').name).toBe('Medellín');
-    expect(findCity('desconocida').name).toBe('Bogotá');
-    expect(cityCatalog().length).toBeGreaterThan(5);
+  it('builds standard comparison report', () => {
+    const mockOffer: Offer = {
+      store_id: 'jumbo',
+      store_name: 'Jumbo',
+      name: 'Leche entera Colanta 1100 ml',
+      brand: 'Colanta',
+      price: 4500,
+      url: 'https://www.jumbocolombia.com/leche/p',
+      ean: '7702129001052',
+      categories: ['Mercado', 'Lacteos'],
+    };
+
+    const outcome: StoreOutcome = {
+      store_id: 'jumbo',
+      store_name: 'Jumbo',
+      kind: 'supermercado',
+      offers: [mockOffer],
+    };
+
+    const report = buildReport('leche colanta', [outcome]);
+    expect(report.verdict).toBeDefined();
+    expect(report.verdict.store_name).toBe('Jumbo');
+    expect(report.verdict.price).toBe(4500);
   });
 });

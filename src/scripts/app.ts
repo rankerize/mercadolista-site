@@ -35,6 +35,12 @@ const savedName = document.querySelector<HTMLInputElement>('#saved-name')!;
 const savedSave = document.querySelector<HTMLButtonElement>('#saved-save')!;
 const savedDelete = document.querySelector<HTMLButtonElement>('#saved-delete')!;
 
+const headerLoginBtn = document.querySelector<HTMLButtonElement>('#header-login-btn')!;
+const headerUserInfo = document.querySelector<HTMLElement>('#header-user-info')!;
+const headerUserAvatar = document.querySelector<HTMLImageElement>('#header-user-avatar')!;
+const headerUserName = document.querySelector<HTMLElement>('#header-user-name')!;
+const headerLogoutBtn = document.querySelector<HTMLButtonElement>('#header-logout-btn')!;
+
 const CITY_KEY = 'comparador-ciudad';
 const LIST_KEY = 'comparador-lista';
 const LIST_MAX = 15;
