@@ -1,29 +1,40 @@
-# Comparador de precios
+# Mercado Lista · Comparador de precios
 
-Busca un producto y compara el precio publicado en tiendas de Colombia: Éxito, Carulla, Jumbo, Olímpica, Alkosto, Ktronix, Falabella y Easy. El resultado indica en cuál está el mejor precio de compra.
+Comparador de precios en tiempo real para compras en tiendas de Colombia (supermercados, tecnología y hogar) y tiendas internacionales (Amazon, eBay, AliExpress).
 
-Cuando el mismo código de barras aparece en varias tiendas, la comparación es entre ese producto. Si no, muestra la oferta más barata parecida a la búsqueda.
+Construido en **Astro 5 Fullstack (SSR)** con Node.js y TypeScript.
 
-Los precios son los de la tienda en línea en el momento de consultar. Pueden cambiar según la ciudad, la sede y las promociones.
+## Características
 
-## Cómo usarlo
+- **Tiendas Nacionales**: Éxito, Carulla, Jumbo, Olímpica, D1, Alkosto, Ktronix, Falabella y Easy.
+- **Tiendas Internacionales**: Amazon, eBay y AliExpress con cálculo de flete estimado a Colombia y conversión a COP.
+- **Agrupación inteligente**: Comparación por código de barras (EAN), algoritmo de similitud por tokens de texto y promociones por medio de pago (Tarjeta Éxito/Tuya, Cencosud, CMR Falabella, Tarjeta Olímpica, Alkosto).
+- **Comparador por Unidad**: Precio normalizado por gramo ($/g), mililitro ($/ml) o unidad ($/u).
+- **Optimizador de Canasta/Lista**: Cotización de listas de hasta 15 productos comparando el total por comercio o desglosado.
+- **Cuentas y Listas Guardadas**: Persistencia de usuarios y listas con PostgreSQL (Docker Compose). Si la base de datos no está activa, las búsquedas funcionan al 100%.
+
+## Puesta en Marcha (Astro)
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8765
+# 1. Instalar dependencias
+npm install
+
+# 2. Iniciar servidor de desarrollo
+npm run dev
+
+# 3. Compilar para producción
+npm run build
+npm start
+
+# 4. Correr pruebas unitarias
+npm test
 ```
 
-Abre http://127.0.0.1:8765
+Abre [http://127.0.0.1:4321](http://127.0.0.1:4321) (o el puerto asignado por Astro).
 
-## Cuentas y listas guardadas
-
-Las cuentas (nombre y correo o teléfono) y sus listas se guardan en Postgres, que corre en Docker y solo escucha en `127.0.0.1`.
+## Base de Datos (Opcional para guardar listas)
 
 ```bash
-cp .env.example .env   # cambia la clave en las dos líneas
+cp .env.example .env
 docker compose up -d
 ```
-
-La app crea las tablas `usuarios`, `sesiones`, `listas` y `lista_productos` la primera vez que se usa una cuenta. Si la base de datos no está corriendo, el comparador sigue funcionando y solo la parte de cuentas avisa que no está disponible.
