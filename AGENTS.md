@@ -6,6 +6,11 @@ Este documento contiene la arquitectura, convenciones y decisiones de diseño cl
 
 ## 📌 Resumen del Proyecto
 
+> ⚠️ **REGLA OBLIGATORIA MULTI-AGENTE (GIT PUSH)**:
+> Hay múltiples agentes de IA trabajando en paralelo en este repositorio.
+> **NUNCA ejecutes `git push` automáticamente**.
+> Antes de subir cambios a `main` o a cualquier rama remota, **SIEMPRE solicita confirmación explícita al usuario**, detallando qué cambios están listos para enviarse.
+
 **Mercado Lista** es un comparador de precios en tiempo real para Colombia (tiendas locales como Éxito, Carulla, Jumbo, Olímpica, D1, Alkosto, Ktronix, Falabella, Easy) y tiendas internacionales (Amazon, eBay, AliExpress).
 
 - **Stack**: Astro 5 (modo `output: "server"` con `@astrojs/node` standalone), TypeScript y Node.js.
@@ -43,6 +48,12 @@ Este documento contiene la arquitectura, convenciones y decisiones de diseño cl
   7. **Añadir a lista desde Búsquedas en Colombia (`AddToListModal`)**:
      - En los resultados de búsqueda de Colombia y Unidad, el veredicto y las ofertas tienen el botón `➕ Añadir a lista`.
      - Abre el modal `AddToListModal.astro`: permite seleccionar una lista existente en Firebase, crear una nueva lista en el momento, o añadirlo a la canasta local del comparador si no ha iniciado sesión.
+  8. **Explorador por Categorías y Autocompletado Inteligente (`src/lib/catalog.ts`)**:
+     - Catálogo estructurado de 8 categorías clave (Lácteos, Despensa, Carnes, Frutas/Verduras, Aseo, Cuidado Personal, Café/Panadería, Tecnología) con ~60 productos de la canasta familiar colombiana.
+     - 100% en el cliente (cero latencia, cero costos de APIs externas).
+     - Carrusel táctil de categorías (`#categories-container`) con botones de adición rápida (`+`) para disparar búsquedas o añadir productos a la lista con un solo toque.
+     - Dropdown de autocompletado flotante (`#query-autocomplete`) con navegación por teclado (flechas, Enter, Escape) y resaltado de coincidencias.
+     - Autocompletado inteligente en las filas de la lista de compras (`#list-rows`) que autocompleta nombre, unidad de medida (`gramos`, `mililitros`, `unidades`) y cantidad sugerida (e.g. Leche -> 1000 ml, Huevos -> 30 unidades).
 - **Archivos de integración**:
   - [`src/lib/firebase.ts`](file:///Users/cesarandresjimenezarci/Documents/Clientes/Comparador%20de%20precios/src/lib/firebase.ts): Inicialización del SDK cliente de Firebase con las credenciales públicas de la Web App `mercadologo`.
   - [`src/lib/firebaseAuth.ts`](file:///Users/cesarandresjimenezarci/Documents/Clientes/Comparador%20de%20precios/src/lib/firebaseAuth.ts): Métodos utilitarios: `loginWithGoogle()`, `logoutUser()`, `subscribeAuth()`, `getUserLists()`, `saveUserList()`, `deleteUserList()`, `getListById()`, `joinSharedList()`, `shareListWithEmail()`, `subscribeList()`, `toggleItemBought()`.

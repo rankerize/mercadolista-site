@@ -352,3 +352,93 @@ export async function toggleItemBought(listId: string, itemIndex: number, compra
   }
 }
 
+export function subscribeUserLists(
+  userId: string,
+  userEmail: string | null | undefined,
+  callback: (lists: SavedList[]) => void
+): () => void {
+  const listsRef = collection(db, LISTS_COLLECTION);
+  const listsMap = new Map<string, SavedList>();
+
+  function notify() {
+    const result = Array.from(listsMap.values());
+    result.sort((a, b) => {
+      const timeA = a.updatedAt?.toMillis?.() || a.createdAt?.toMillis?.() || 0;
+      const timeB = b.updatedAt?.toMillis?.() || b.createdAt?.toMillis?.() || 0;
+      return timeB - timeA;
+    });
+    callback(result);
+  }
+
+  const qOwner = query(listsRef, where('ownerId', '==', userId));
+  const unsubOwner = onSnapshot(
+    qOwner,
+    (snap) => {
+      snap.docChanges().forEach((change) => {
+        if (change.type === 'removed') {
+          listsMap.delete(change.doc.id);
+        } else {
+          const data = change.doc.data();
+          listsMap.set(change.doc.id, {
+            id: change.doc.id,
+            nombre: data.nombre || 'Sin título',
+            ciudad: data.ciudad || 'bogota',
+            items: data.items || [],
+            ownerId: data.ownerId,
+            ownerName: data.ownerName || 'Tú',
+            ownerEmail: data.ownerEmail,
+            collaboratorIds: data.collaboratorIds || [],
+            sharedWithEmails: data.sharedWithEmails || [],
+            isOwner: true,
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
+          });
+        }
+      });
+      notify();
+    },
+    (err) => console.warn('Error en subscribeUserLists (owner):', err)
+  );
+
+  const qCollab = query(listsRef, where('collaboratorIds', 'array-contains', userId));
+  const unsubCollab = onSnapshot(
+    qCollab,
+    (snap) => {
+      snap.docChanges().forEach((change) => {
+        if (change.type === 'removed') {
+          const existing = listsMap.get(change.doc.id);
+          if (existing && !existing.isOwner) {
+            listsMap.delete(change.doc.id);
+          }
+        } else {
+          const data = change.doc.data();
+          if (data.ownerId !== userId) {
+            listsMap.set(change.doc.id, {
+              id: change.doc.id,
+              nombre: data.nombre || 'Sin título',
+              ciudad: data.ciudad || 'bogota',
+              items: data.items || [],
+              ownerId: data.ownerId,
+              ownerName: data.ownerName || 'Pareja / Familiar',
+              ownerEmail: data.ownerEmail,
+              collaboratorIds: data.collaboratorIds || [],
+              sharedWithEmails: data.sharedWithEmails || [],
+              isOwner: false,
+              createdAt: data.createdAt,
+              updatedAt: data.updatedAt,
+            });
+          }
+        }
+      });
+      notify();
+    },
+    (err) => console.warn('Error en subscribeUserLists (collab):', err)
+  );
+
+  return () => {
+    unsubOwner();
+    unsubCollab();
+  };
+}
+
+

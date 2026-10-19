@@ -12,9 +12,20 @@ import {
   type SavedList,
 } from '../lib/firebaseAuth';
 import { initShareModal } from './shareModal';
+import {
+  CATEGORIES,
+  searchCatalog,
+  getItemsByCategory,
+  type CatalogItem,
+} from '../lib/catalog';
 
 const form = document.querySelector<HTMLFormElement>('#search-form')!;
 const queryInput = document.querySelector<HTMLInputElement>('#query')!;
+const queryAutocomplete = document.querySelector<HTMLElement>('#query-autocomplete')!;
+const listAutocomplete = document.querySelector<HTMLElement>('#list-autocomplete')!;
+const categoriesContainer = document.querySelector<HTMLElement>('#categories-container')!;
+const categoryChipsScroll = document.querySelector<HTMLElement>('#category-chips-scroll')!;
+const categoryQuickItems = document.querySelector<HTMLElement>('#category-quick-items')!;
 const citySelect = document.querySelector<HTMLSelectElement>('#city')!;
 const cityRow = document.querySelector<HTMLElement>('#city-row')!;
 const submit = document.querySelector<HTMLButtonElement>('#submit')!;
@@ -45,6 +56,8 @@ const headerLoginBtn = document.querySelector<HTMLButtonElement>('#header-login-
 const headerUserInfo = document.querySelector<HTMLElement>('#header-user-info')!;
 const headerUserName = document.querySelector<HTMLAnchorElement>('#header-user-name')!;
 const headerLogoutBtn = document.querySelector<HTMLButtonElement>('#header-logout-btn')!;
+const headerCartBtn = document.querySelector<HTMLButtonElement>('#header-cart-btn');
+const headerCartCount = document.querySelector<HTMLElement>('#header-cart-count');
 const openShareModal = initShareModal();
 
 let activeListId: string | null = null;
@@ -62,6 +75,39 @@ function setupRealtimeList(listId: string) {
 
   unsubscribeActiveList = subscribeList(listId, (updatedList) => {
     if (!updatedList || !updatedList.items) return;
+
+    // Sincronizar nombre y ciudad si cambiaron en Firestore
+    if (updatedList.nombre && savedName && savedName.value !== updatedList.nombre) {
+      savedName.value = updatedList.nombre;
+    }
+    if (updatedList.ciudad && citySelect && citySelect.value !== updatedList.ciudad) {
+      applyCity(updatedList.ciudad);
+    }
+
+    // Comprobar si los productos de la lista cambiaron en la nube
+    const currentItems = readList();
+    const curSig = JSON.stringify(currentItems.map((i) => `${i.nombre}|${i.marca}|${i.formato}|${i.cantidad}`));
+    const updSig = JSON.stringify(updatedList.items.map((i) => `${i.nombre}|${i.marca}|${i.formato}|${i.cantidad}`));
+
+    if (curSig !== updSig) {
+      const activeEl = document.activeElement;
+      const isTypingInList = activeEl && (listRows.contains(activeEl) || activeEl === savedName);
+
+      if (!isTypingInList) {
+        setRows(updatedList.items);
+        saveListLocal(false);
+        updateAddRow();
+        updateHeaderCartCount();
+        showLiveSyncIndicator(`🟢 Lista «${updatedList.nombre}» sincronizada en tiempo real`);
+        setTimeout(() => {
+          if (accountStatus.textContent?.includes('sincronizada en tiempo real')) {
+            accountStatus.textContent = '';
+          }
+        }, 4000);
+      }
+    }
+
+    // Sincronizar estado de checkboxes en modo compra / veredicto
     updatedList.items.forEach((item, idx) => {
       const cb = document.querySelector<HTMLInputElement>(`.super-checkbox[data-index="${idx}"]`);
       if (cb) {
@@ -145,6 +191,7 @@ const MODES = {
 type ModeKey = keyof typeof MODES;
 let mode: ModeKey = 'local';
 let currentUserId: string | null = null;
+let currentUserObj: any = null;
 let savedLists: SavedList[] = [];
 
 const STORE_COLOR: Record<string, string> = {
@@ -531,6 +578,20 @@ function renderInternational(report: any) {
   buy.target = '_blank';
   buy.rel = 'noreferrer';
   copy.append(buy);
+
+  const addVerdictBtn = el('button', 'btn-add-list-verdict', '➕ Añadir a lista');
+  addVerdictBtn.type = 'button';
+  addVerdictBtn.title = 'Añadir este producto a una lista de compras';
+  addVerdictBtn.addEventListener('click', () => {
+    openAddToListModal({
+      name: verdict.headline || verdict.name,
+      price: verdict.total != null ? verdict.total : verdict.price,
+      store_name: verdict.store_name,
+      image: verdict.image,
+    });
+  });
+  copy.append(addVerdictBtn);
+
   card.append(copy);
   results.append(card);
 
@@ -552,6 +613,20 @@ function renderInternational(report: any) {
     link.target = '_blank';
     link.rel = 'noreferrer';
     info.append(link);
+
+    const addBtn = el('button', 'btn-add-list', '➕ Añadir a lista');
+    addBtn.type = 'button';
+    addBtn.title = 'Añadir a lista de compras';
+    addBtn.addEventListener('click', () => {
+      openAddToListModal({
+        name: offer.name,
+        price: offer.total != null ? offer.total : offer.price,
+        store_name: offer.store_name,
+        image: offer.image,
+      });
+    });
+    info.append(addBtn);
+
     const price = el('div', 'money');
     price.append(el('strong', null, money(offer.total != null ? offer.total : offer.price)));
     price.append(el('span', null, offer.total != null ? `Producto ${money(offer.price)}` : 'Sin flete'));
@@ -848,14 +923,227 @@ function readList() {
   }));
 }
 
-function saveListLocal() {
+function updateHeaderCartCount() {
+  if (!headerCartCount) return;
+  const items = readList().filter((it) => it.nombre && it.nombre.trim().length >= 1);
+  headerCartCount.textContent = String(items.length);
+}
+
+let syncDebounceTimer: any = null;
+
+function showLiveSyncIndicator(msg: string) {
+  if (accountStatus) {
+    accountStatus.textContent = msg;
+  }
+}
+
+function autoSyncActiveListToCloud() {
+  if (!activeListId || !currentUserId) return;
+  clearTimeout(syncDebounceTimer);
+
+  showLiveSyncIndicator('☁️ Sincronizando con tu pareja…');
+
+  syncDebounceTimer = setTimeout(async () => {
+    try {
+      const items = readList().filter((it) => it.nombre && it.nombre.trim().length >= 1);
+      const nombre = savedName.value.trim() || 'Mi Mercado';
+      const ciudad = citySelect.value || 'bogota';
+
+      await saveUserList(
+        currentUserId,
+        { nombre, ciudad, items },
+        activeListId,
+        currentUserObj ? { displayName: currentUserObj.displayName, email: currentUserObj.email } : undefined
+      );
+
+      const inMemory = savedLists.find((l) => l.id === activeListId);
+      if (inMemory) {
+        inMemory.nombre = nombre;
+        inMemory.ciudad = ciudad;
+        inMemory.items = items;
+      }
+
+      showLiveSyncIndicator('✅ Sincronizado en tiempo real con tu pareja');
+      setTimeout(() => {
+        if (accountStatus.textContent?.includes('Sincronizado')) {
+          accountStatus.textContent = '';
+        }
+      }, 3500);
+    } catch (err: any) {
+      console.warn('Error en autosync:', err);
+    }
+  }, 700);
+}
+
+function saveListLocal(shouldSyncToCloud = true) {
   localStorage.setItem(LIST_KEY, JSON.stringify(readList()));
+  updateHeaderCartCount();
+  if (shouldSyncToCloud && activeListId && currentUserId) {
+    autoSyncActiveListToCloud();
+  }
 }
 
 function field(labelText: string, control: HTMLElement) {
   const wrap = el('label', 'list-field');
   wrap.append(el('span', null, labelText), control);
   return wrap;
+}
+
+function highlightMatch(text: string, query: string): string {
+  const normText = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const normQ = query.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  const idx = normText.indexOf(normQ);
+  if (idx === -1) return text;
+  return `${text.slice(0, idx)}<strong>${text.slice(idx, idx + normQ.length)}</strong>${text.slice(idx + normQ.length)}`;
+}
+
+function setupCategoryExplorer() {
+  if (!categoryChipsScroll || !categoryQuickItems) return;
+  categoryChipsScroll.replaceChildren();
+
+  CATEGORIES.forEach((cat) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'category-chip';
+    chip.innerHTML = `<span>${cat.icono}</span><span>${cat.nombre}</span>`;
+
+    chip.addEventListener('click', () => {
+      const isAlreadyActive = chip.classList.contains('is-active');
+      categoryChipsScroll.querySelectorAll('.category-chip').forEach((c) => c.classList.remove('is-active'));
+
+      if (isAlreadyActive) {
+        categoryQuickItems.hidden = true;
+        categoryQuickItems.replaceChildren();
+        return;
+      }
+
+      chip.classList.add('is-active');
+      const items = getItemsByCategory(cat.id);
+      categoryQuickItems.replaceChildren();
+
+      items.forEach((it) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'quick-item-btn';
+        btn.innerHTML = `<span class="plus">+</span><span>${it.icono} ${it.nombre}</span>`;
+
+        btn.addEventListener('click', () => {
+          if (mode === 'list') {
+            const rows = [...listRows.querySelectorAll<HTMLElement>('.list-row')];
+            let targetRow: HTMLElement | null = null;
+            for (const r of rows) {
+              const nameInput = r.querySelector<HTMLInputElement>('[name="nombre"]');
+              if (nameInput && !nameInput.value.trim()) {
+                targetRow = r;
+                break;
+              }
+            }
+            if (!targetRow) {
+              if (listRows.children.length >= LIST_MAX) return;
+              targetRow = listRow(it);
+              listRows.append(targetRow);
+            } else {
+              targetRow.querySelector<HTMLInputElement>('[name="nombre"]')!.value = it.nombre;
+              targetRow.querySelector<HTMLSelectElement>('[name="formato"]')!.value = it.formato;
+              targetRow.querySelector<HTMLInputElement>('[name="cantidad"]')!.value = String(it.cantidad);
+            }
+            saveListLocal();
+            updateAddRow();
+          } else {
+            queryInput.value = it.nombre;
+            search(it.nombre);
+          }
+        });
+
+        categoryQuickItems.append(btn);
+      });
+
+      categoryQuickItems.hidden = false;
+    });
+
+    categoryChipsScroll.append(chip);
+  });
+}
+
+function setupQueryAutocomplete() {
+  if (!queryAutocomplete || !queryInput) return;
+  let selectedIndex = -1;
+
+  function closeDropdown() {
+    queryAutocomplete.classList.remove('is-open');
+    queryAutocomplete.replaceChildren();
+    selectedIndex = -1;
+  }
+
+  queryInput.addEventListener('input', () => {
+    const q = queryInput.value.trim();
+    if (q.length < 2) {
+      closeDropdown();
+      return;
+    }
+
+    const matches = searchCatalog(q);
+    if (!matches.length) {
+      closeDropdown();
+      return;
+    }
+
+    queryAutocomplete.replaceChildren();
+    selectedIndex = -1;
+
+    matches.forEach((m, idx) => {
+      const itemEl = document.createElement('div');
+      itemEl.className = 'autocomplete-item';
+      itemEl.dataset.index = String(idx);
+      const catInfo = CATEGORIES.find((c) => c.id === m.categoria);
+      itemEl.innerHTML = `
+        <div class="autocomplete-item-left">
+          <span class="autocomplete-item-icon">${m.icono}</span>
+          <span class="autocomplete-item-text">${highlightMatch(m.nombre, q)}</span>
+        </div>
+        <span class="autocomplete-item-cat">${catInfo ? catInfo.nombre : m.categoria}</span>
+      `;
+      itemEl.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        queryInput.value = m.nombre;
+        closeDropdown();
+        search(m.nombre);
+      });
+      queryAutocomplete.append(itemEl);
+    });
+
+    queryAutocomplete.classList.add('is-open');
+  });
+
+  queryInput.addEventListener('keydown', (e) => {
+    const items = queryAutocomplete.querySelectorAll<HTMLElement>('.autocomplete-item');
+    if (!queryAutocomplete.classList.contains('is-open') || !items.length) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectedIndex = (selectedIndex + 1) % items.length;
+      items.forEach((it, i) => it.classList.toggle('is-selected', i === selectedIndex));
+      items[selectedIndex]?.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+      items.forEach((it, i) => it.classList.toggle('is-selected', i === selectedIndex));
+      items[selectedIndex]?.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
+      if (selectedIndex >= 0 && items[selectedIndex]) {
+        e.preventDefault();
+        items[selectedIndex].dispatchEvent(new MouseEvent('mousedown'));
+      }
+    } else if (e.key === 'Escape') {
+      closeDropdown();
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!queryAutocomplete.contains(e.target as Node) && e.target !== queryInput) {
+      closeDropdown();
+    }
+  });
 }
 
 function listRow(item: { nombre?: string; marca?: string; formato?: 'gramos' | 'mililitros' | 'unidades'; cantidad?: number }) {
@@ -894,6 +1182,55 @@ function listRow(item: { nombre?: string; marca?: string; formato?: 'gramos' | '
   amount.step = 'any';
   amount.placeholder = '1000';
   amount.value = item.cantidad ? String(item.cantidad) : '';
+
+  // Autocompletado inteligente en filas de la lista
+  name.addEventListener('input', () => {
+    const q = name.value.trim();
+    if (q.length < 2) {
+      listAutocomplete.classList.remove('is-open');
+      return;
+    }
+    const matches = searchCatalog(q);
+    if (!matches.length) {
+      listAutocomplete.classList.remove('is-open');
+      return;
+    }
+
+    listAutocomplete.replaceChildren();
+    matches.forEach((m) => {
+      const itemEl = document.createElement('div');
+      itemEl.className = 'autocomplete-item';
+      itemEl.innerHTML = `
+        <div class="autocomplete-item-left">
+          <span class="autocomplete-item-icon">${m.icono}</span>
+          <span class="autocomplete-item-text">${highlightMatch(m.nombre, q)}</span>
+        </div>
+        <span class="autocomplete-item-cat">${m.cantidad} ${m.formato}</span>
+      `;
+      itemEl.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        name.value = m.nombre;
+        format.value = m.formato;
+        amount.value = String(m.cantidad);
+        saveListLocal();
+        listAutocomplete.classList.remove('is-open');
+        brand.focus();
+      });
+      listAutocomplete.append(itemEl);
+    });
+
+    row.style.position = 'relative';
+    row.append(listAutocomplete);
+    listAutocomplete.style.top = '100%';
+    listAutocomplete.style.left = '0';
+    listAutocomplete.classList.add('is-open');
+  });
+
+  name.addEventListener('blur', () => {
+    setTimeout(() => {
+      listAutocomplete.classList.remove('is-open');
+    }, 250);
+  });
 
   const remove = el('button', 'remove-row', 'Quitar');
   remove.type = 'button';
@@ -998,8 +1335,6 @@ function renderSavedDropdown(selectedId = '') {
   savedShare.hidden = !current;
 }
 
-let currentUserObj: any = null;
-
 async function refreshSavedLists(selectedId = '') {
   if (!currentUserId) return;
   try {
@@ -1069,6 +1404,7 @@ async function saveCurrentList() {
       id || undefined,
       currentUserObj ? { displayName: currentUserObj.displayName, email: currentUserObj.email } : undefined
     );
+    activeListId = saved.id;
     setupRealtimeList(saved.id);
     await refreshSavedLists(saved.id);
     accountStatus.textContent = `Guardé «${saved.nombre}» en tu cuenta.`;
@@ -1148,13 +1484,25 @@ savedName.addEventListener('keydown', (e) => {
     saveCurrentList();
   }
 });
+savedName.addEventListener('input', () => {
+  if (activeListId && currentUserId) {
+    autoSyncActiveListToCloud();
+  }
+});
 
 savedSelect.addEventListener('change', () => {
   const current = savedLists.find((s) => s.id === savedSelect.value);
   renderSavedDropdown(savedSelect.value);
   accountStatus.textContent = '';
   if (savedSelect.value) {
+    activeListId = savedSelect.value;
     setupRealtimeList(savedSelect.value);
+  } else {
+    activeListId = null;
+    if (unsubscribeActiveList) {
+      unsubscribeActiveList();
+      unsubscribeActiveList = null;
+    }
   }
   if (!current) return;
   setRows(current.items);
@@ -1349,7 +1697,7 @@ function initAddToListModalListeners() {
   goListBtn?.addEventListener('click', () => {
     closeModal();
     setMode('list');
-    listForm.scrollIntoView({ behavior: 'smooth' });
+    listEditor.scrollIntoView({ behavior: 'smooth' });
   });
 
   destExisting?.addEventListener('change', () => {
@@ -1521,9 +1869,17 @@ if (sharedListId) {
 }
 
 loadList();
+updateHeaderCartCount();
 setMode(mode);
 loadCities();
 initAddToListModalListeners();
+setupCategoryExplorer();
+setupQueryAutocomplete();
+
+headerCartBtn?.addEventListener('click', () => {
+  setMode('list');
+  listForm.scrollIntoView({ behavior: 'smooth' });
+});
 subscribeAuth(async (user) => {
   handleAuthState(user);
   if (user && sharedListId) {
