@@ -850,28 +850,35 @@ addRow.addEventListener('click', () => {
   updateAddRow();
 });
 
-headerLoginBtn.addEventListener('click', async () => {
+async function handleGoogleLogin() {
   accountStatus.textContent = 'Iniciando sesión con Google…';
   try {
     await loginWithGoogle();
   } catch (err: any) {
-    accountStatus.textContent = err.message || 'No se pudo iniciar sesión con Google';
+    console.error('Error al iniciar sesión con Google:', err);
+    let msg = err.message || 'No se pudo iniciar sesión con Google';
+    if (err.code === 'auth/unauthorized-domain') {
+      msg = `El dominio «${window.location.hostname}» no está autorizado en Firebase. Agrégalo en Firebase Console > Authentication > Settings > Authorized domains.`;
+    } else if (err.code === 'auth/popup-blocked') {
+      msg = 'Tu navegador bloqueó la ventana emergente de Google. Por favor habilita los popups para este sitio.';
+    } else if (err.code === 'auth/popup-closed-by-user') {
+      msg = 'Se cerró la ventana emergente antes de completar el inicio de sesión.';
+    }
+    accountStatus.textContent = msg;
+    if (mode !== 'list') {
+      alert(msg);
+    }
   }
-});
+}
+
+headerLoginBtn.addEventListener('click', handleGoogleLogin);
 
 headerLogoutBtn.addEventListener('click', async () => {
   await logoutUser();
   accountStatus.textContent = 'Has cerrado sesión.';
 });
 
-accountGoogleBtn.addEventListener('click', async () => {
-  accountStatus.textContent = 'Iniciando sesión con Google…';
-  try {
-    await loginWithGoogle();
-  } catch (err: any) {
-    accountStatus.textContent = err.message || 'No se pudo iniciar sesión con Google';
-  }
-});
+accountGoogleBtn.addEventListener('click', handleGoogleLogin);
 
 accountLogout.addEventListener('click', async () => {
   await logoutUser();

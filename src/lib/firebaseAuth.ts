@@ -20,6 +20,7 @@ import {
   serverTimestamp,
   arrayUnion,
   arrayRemove,
+  onSnapshot,
 } from 'firebase/firestore';
 import { auth, db, googleProvider } from './firebase';
 
@@ -28,6 +29,7 @@ export interface ListItemData {
   marca: string;
   formato: 'gramos' | 'mililitros' | 'unidades';
   cantidad: number;
+  comprado?: boolean;
 }
 
 export interface SavedList {
@@ -304,3 +306,49 @@ export async function deleteUserList(userId: string, listId: string, isOwner = t
     });
   }
 }
+
+export function subscribeList(listId: string, callback: (list: SavedList | null) => void) {
+  const docRef = doc(db, LISTS_COLLECTION, listId);
+  return onSnapshot(
+    docRef,
+    (snap) => {
+      if (!snap.exists()) {
+        callback(null);
+        return;
+      }
+      const data = snap.data();
+      callback({
+        id: snap.id,
+        nombre: data.nombre || 'Sin título',
+        ciudad: data.ciudad || 'bogota',
+        items: data.items || [],
+        ownerId: data.ownerId || '',
+        ownerName: data.ownerName || 'Usuario',
+        ownerEmail: data.ownerEmail || '',
+        collaboratorIds: data.collaboratorIds || [],
+        sharedWithEmails: data.sharedWithEmails || [],
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+      });
+    },
+    (err) => {
+      console.warn('Error en suscripción en tiempo real de la lista:', err);
+    }
+  );
+}
+
+export async function toggleItemBought(listId: string, itemIndex: number, comprado: boolean): Promise<void> {
+  const docRef = doc(db, LISTS_COLLECTION, listId);
+  const snap = await getDoc(docRef);
+  if (!snap.exists()) return;
+  const data = snap.data();
+  const items = [...(data.items || [])];
+  if (items[itemIndex]) {
+    items[itemIndex] = { ...items[itemIndex], comprado };
+    await updateDoc(docRef, {
+      items,
+      updatedAt: serverTimestamp(),
+    });
+  }
+}
+

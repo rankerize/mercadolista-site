@@ -911,6 +911,43 @@ footer {
   padding-bottom: 2rem;
 }
 
+/* ─── Scroll behavior global ──────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
+
+/* ─── Animaciones globales ────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Estado de carga: fade-in sutil cuando el elemento tiene contenido */
+.status:not(:empty) {
+  animation: fadeIn 0.2s ease;
+}
+
+/* Reveal animado de cada resultado */
+.results > * {
+  animation: slideUp 0.25s ease both;
+}
+
+/* ─── Accesibilidad touch: targets mínimos 44px ───────────────────────── */
+.examples button {
+  padding: 0.5rem 0.9rem;
+  min-height: 2.75rem;
+}
+
+.buy {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ─── Responsive 720px (tablet y mobile) ─────────────────────────────── */
 @media (max-width: 720px) {
   .tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .list-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -925,4 +962,33 @@ footer {
   #submit { min-height: 3rem; }
   .verdict, .offer { grid-template-columns: 1fr; }
   .verdict img, .offer img { width: 96px; height: 96px; }
+}
+
+/* ─── Responsive 480px (teléfonos pequeños) ──────────────────────────── */
+@media (max-width: 480px) {
+  /* Top bar: ocultar eyebrow para dar espacio al botón de auth */
+  .eyebrow { display: none; }
+
+  /* Lista de productos: 1 columna en lugar de 2 */
+  .list-row {
+    grid-template-columns: 1fr;
+  }
+  .list-row .list-field:first-child { grid-column: unset; }
+  .remove-row { grid-column: unset; }
+
+  /* Offer cards: flex wrap para evitar columna de imagen sola */
+  .offer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+  .offer img {
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+  }
+
+  /* Modal: reducir padding en pantallas muy pequeñas */
+  .modal-card { padding: 1.25rem; }
 }

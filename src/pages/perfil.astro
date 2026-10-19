@@ -16,6 +16,11 @@ import ShareModal from '../components/ShareModal.astro';
     <meta property="og:description" content="Gestiona tus listas de compras guardadas y compartidas en Mercado Lista." />
     <meta property="og:url" content="https://mercadolista.com/perfil" />
     <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#0e6a45" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Mercado Lista" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -218,7 +223,16 @@ import ShareModal from '../components/ShareModal.astro';
         try {
           await loginWithGoogle();
         } catch (err: any) {
-          alert(err.message || 'Error al iniciar sesión');
+          console.error('Error al iniciar sesión con Google:', err);
+          let msg = err.message || 'Error al iniciar sesión';
+          if (err.code === 'auth/unauthorized-domain') {
+            msg = `El dominio «${window.location.hostname}» no está autorizado en Firebase. Agrégalo en Firebase Console > Authentication > Settings > Authorized domains.`;
+          } else if (err.code === 'auth/popup-blocked') {
+            msg = 'Tu navegador bloqueó la ventana emergente de Google. Por favor habilita los popups para este sitio.';
+          } else if (err.code === 'auth/popup-closed-by-user') {
+            msg = 'Se cerró la ventana emergente antes de completar el inicio de sesión.';
+          }
+          alert(msg);
         }
       });
 
