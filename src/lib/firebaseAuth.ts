@@ -14,6 +14,7 @@ import {
   updateDoc,
   deleteDoc,
   getDoc,
+  setDoc,
   getDocs,
   query,
   where,
@@ -53,6 +54,20 @@ export interface SavedList {
   sharedWithEmails?: string[];
   isOwner?: boolean;
   createdAt?: any;
+  updatedAt?: any;
+}
+
+export interface UserProfileData {
+  uid: string;
+  nombre?: string;
+  email?: string;
+  telefono?: string;
+  ciudadPrincipal?: string;
+  direccionPrincipal?: string;
+  barrioPrincipal?: string;
+  direccionSecundaria?: string;
+  barrioSecundario?: string;
+  notasUbicacion?: string;
   updatedAt?: any;
 }
 
@@ -492,5 +507,37 @@ export function subscribeUserLists(
     unsubCollab();
   };
 }
+
+/**
+ * Obtiene los datos del perfil de usuario (direcciones, teléfono, ciudad principal).
+ */
+export async function getUserProfile(uid: string): Promise<UserProfileData | null> {
+  try {
+    const profileRef = doc(db, 'user_profiles', uid);
+    const snap = await getDoc(profileRef);
+    if (!snap.exists()) return null;
+    return snap.data() as UserProfileData;
+  } catch (err) {
+    console.warn('Error al obtener perfil de usuario:', err);
+    return null;
+  }
+}
+
+/**
+ * Guarda o actualiza los datos del perfil de usuario (dirección principal, secundaria, teléfono, ciudad).
+ */
+export async function saveUserProfile(uid: string, profile: Partial<UserProfileData>): Promise<void> {
+  const profileRef = doc(db, 'user_profiles', uid);
+  await setDoc(
+    profileRef,
+    {
+      ...profile,
+      uid,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+}
+
 
 

@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================================================
+    // REGLAS DE SEGURIDAD PARA MERCADO LISTA (Cloud Firestore)
+    // =====================================================================
+    // Para aplicar estas reglas:
+    // 1. Ve a https://console.firebase.google.com/
+    // 2. Selecciona tu proyecto: "mercadologo"
+    // 3. Menú lateral: "Firestore Database" > Pestaña "Reglas" (Rules)
+    // 4. Pega este contenido exacto y haz clic en "Publicar" (Publish)
+    // =====================================================================
+
+    // Colección principal: Listas de compras compartidas
+    match /shared_lists/{listId} {
+
+      // Verifica si el usuario actual es el propietario de la lista
+      function isOwner() {
+        return request.auth != null && resource.data.ownerId == request.auth.uid;
+      }
+
+      // Verifica si el usuario actual es colaborador por su UID o su Correo
+      function isCollaborator() {
+        return request.auth != null && (
+          (resource.data.collaboratorIds is list && request.auth.uid in resource.data.collaboratorIds) ||
+          (request.auth.token.email != null && resource.data.sharedWithEmails is list && request.auth.token.email.lower() in resource.data.sharedWithEmails)
+        );
+      }
+
+      // LECTURA: Solo el dueño o personas invitadas (colaboradores / correos)
+      allow read: if request.auth != null && (isOwner() || isCollaborator());
+
+      // CREACIÓN: Cualquier usuario autenticado puede crear su propia lista
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+
+      // ACTUALIZACIÓN: El dueño o los colaboradores pueden modificar productos y tachar
+      allow update: if request.auth != null && (
+        isOwner() || 
+        isCollaborator() ||
+        // Permite unirse a una lista si se tiene el link (agregar su propio UID a collaboratorIds)
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['collaboratorIds', 'collaborators', 'sharedWithEmails', 'updatedAt']))
+      );
+
+      // BORRADO: Únicamente el dueño que creó la lista puede eliminarla
+      allow delete: if request.auth != null && isOwner();
+    }
+
+    // Subcolecciones privadas por usuario (fallback)
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Perfiles de usuario: Direcciones, teléfono y datos de ubicación
+    match /user_profiles/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

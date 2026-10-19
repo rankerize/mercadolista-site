@@ -1,9 +1,28 @@
 import type { APIRoute } from 'astro';
 import { findCity } from '../../lib/cities';
 import { makeItem, searchList, type ListItem } from '../../lib/shopping';
+import { checkRateLimit, rateLimitResponse } from '../../lib/rateLimit';
 
 export const POST: APIRoute = async ({ request }) => {
+  // Limitar a máximo 10 consultas de lista completa por minuto por IP
+  const limit = checkRateLimit(request, {
+    prefix: 'api-lista',
+    windowMs: 60_000,
+    max: 10,
+  });
+  if (!limit.allowed) {
+    return rateLimitResponse(limit);
+  }
+
   try {
+    const contentLength = request.headers.get('content-length');
+    if (contentLength && parseInt(contentLength, 10) > 50_000) {
+      return new Response(
+        JSON.stringify({ detail: 'La solicitud excede el tamaño máximo permitido' }),
+        { status: 413, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     const body = await request.json();
     const ciudadParam = body.ciudad || 'bogota';
     const rawItems = Array.isArray(body.items) ? body.items : [];

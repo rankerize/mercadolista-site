@@ -1,9 +1,18 @@
 import { f as findCity } from '../../chunks/cities_Bh7Qi1an.mjs';
 import { s as searchStores } from '../../chunks/index_qWqYRXjv.mjs';
 import { b as buildUnitReport } from '../../chunks/units_Cl9q3VkI.mjs';
+import { c as checkRateLimit, r as rateLimitResponse } from '../../chunks/rateLimit_BX5-YUpX.mjs';
 export { renderers } from '../../renderers.mjs';
 
-const GET = async ({ url }) => {
+const GET = async ({ request, url }) => {
+  const limit = checkRateLimit(request, {
+    prefix: "api-unidad",
+    windowMs: 6e4,
+    max: 30
+  });
+  if (!limit.allowed) {
+    return rateLimitResponse(limit);
+  }
   const q = url.searchParams.get("q") || "";
   const ciudadParam = url.searchParams.get("ciudad") || "bogota";
   const query = q.trim().replace(/\s+/g, " ");

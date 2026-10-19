@@ -84,6 +84,7 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
           <div class="profile-user-info">
             <h2 id="user-display-name">Usuario</h2>
             <p id="user-email">correo@ejemplo.com</p>
+            <div id="user-quick-meta" class="user-quick-meta" style="margin-top: 0.45rem; display: flex; gap: 0.5rem; flex-wrap: wrap;"></div>
           </div>
           <button type="button" id="profile-logout-btn" class="logout-btn" style="padding: 0.5rem 1rem; border: 1px solid var(--line);">
             Cerrar sesión
@@ -98,6 +99,9 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
         </button>
         <button type="button" id="tab-btn-shopping" class="profile-tab-btn">
           🛒 Modo Compra (En el Súper)
+        </button>
+        <button type="button" id="tab-btn-data" class="profile-tab-btn">
+          📍 Mis Direcciones y Contacto
         </button>
       </div>
 
@@ -142,6 +146,122 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
         <div id="shopping-items-container" class="shopping-items-list"></div>
       </section>
 
+      <!-- Vista 3: Mis Direcciones y Datos de Contacto -->
+      <section id="data-section" class="profile-card" hidden>
+        <div class="profile-section-header" style="margin-bottom: 1.25rem;">
+          <h2 style="margin: 0 0 0.35rem; font-size: 1.35rem; color: var(--pine-deep);">📍 Mis Direcciones y Datos de Contacto</h2>
+          <p style="margin: 0; color: var(--muted); font-size: 0.9rem;">
+            Configura tu ubicación principal, dirección secundaria y teléfono. Estos datos nos permitirán a futuro calcular las tiendas más cercanas a tu casa o trabajo y optimizar tus rutas de compra.
+          </p>
+        </div>
+
+        <form id="profile-data-form" class="profile-data-form">
+          <div class="profile-form-grid">
+            <!-- Nombre de contacto -->
+            <div class="profile-form-group">
+              <label for="profile-input-name" class="profile-form-label">
+                👤 Nombre de contacto
+              </label>
+              <input
+                type="text"
+                id="profile-input-name"
+                class="profile-form-input"
+                placeholder="Tu nombre completo"
+                autocomplete="name"
+              />
+            </div>
+
+            <!-- Teléfono / WhatsApp -->
+            <div class="profile-form-group">
+              <label for="profile-input-phone" class="profile-form-label">
+                📱 Teléfono / WhatsApp
+              </label>
+              <input
+                type="tel"
+                id="profile-input-phone"
+                class="profile-form-input"
+                placeholder="Ej: 310 123 4567"
+                autocomplete="tel"
+              />
+              <span class="profile-form-hint">Para soporte, coordinación y alertas de precios.</span>
+            </div>
+
+            <!-- Ciudad Principal -->
+            <div class="profile-form-group profile-form-group-full">
+              <label for="profile-select-city" class="profile-form-label">
+                🏙️ Ciudad principal (para comparar precios)
+              </label>
+              <select id="profile-select-city" class="profile-form-select"></select>
+              <span class="profile-form-hint">Esta ciudad se seleccionará automáticamente en tus búsquedas de precios.</span>
+            </div>
+
+            <!-- Dirección Principal -->
+            <div class="profile-form-group profile-form-group-full">
+              <label for="profile-input-address-main" class="profile-form-label">
+                🏠 Dirección principal (Casa / Residencia)
+              </label>
+              <div class="profile-address-row">
+                <input
+                  type="text"
+                  id="profile-input-address-main"
+                  class="profile-form-input"
+                  placeholder="Dirección (Ej: Cra 15 # 85-30 Apto 402)"
+                  autocomplete="street-address"
+                />
+                <input
+                  type="text"
+                  id="profile-input-neighborhood-main"
+                  class="profile-form-input"
+                  placeholder="Barrio (Ej: Chicó Norte)"
+                />
+              </div>
+              <span class="profile-form-hint">Tu punto de partida para supermercados cercanos (Éxito, Jumbo, D1, Carulla, Olímpica).</span>
+            </div>
+
+            <!-- Dirección Secundaria -->
+            <div class="profile-form-group profile-form-group-full">
+              <label for="profile-input-address-sec" class="profile-form-label">
+                🏢 Dirección secundaria (Trabajo / Familiar / Otra) <span style="font-weight: 400; color: var(--muted);">(Opcional)</span>
+              </label>
+              <div class="profile-address-row">
+                <input
+                  type="text"
+                  id="profile-input-address-sec"
+                  class="profile-form-input"
+                  placeholder="Dirección (Ej: Cl. 100 # 19-61 Torre B)"
+                />
+                <input
+                  type="text"
+                  id="profile-input-neighborhood-sec"
+                  class="profile-form-input"
+                  placeholder="Barrio (Ej: Santa Bárbara)"
+                />
+              </div>
+            </div>
+
+            <!-- Notas de ubicación / Puntos de referencia -->
+            <div class="profile-form-group profile-form-group-full">
+              <label for="profile-input-notes" class="profile-form-label">
+                📌 Punto de referencia o notas
+              </label>
+              <textarea
+                id="profile-input-notes"
+                class="profile-form-textarea"
+                rows="2"
+                placeholder="Ej: Frente al parque, conjunto cerrado torre 3, portería peatonal..."
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="profile-form-actions">
+            <button type="submit" id="profile-save-btn" class="btn-primary" style="padding: 0.65rem 1.75rem; font-size: 0.95rem;">
+              💾 Guardar datos
+            </button>
+            <span id="profile-save-status" class="profile-save-status" role="status" aria-live="polite"></span>
+          </div>
+        </form>
+      </section>
+
       <ShareModal />
     </main>
 
@@ -159,20 +279,27 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
         deleteUserList,
         subscribeList,
         toggleItemBought,
+        getUserProfile,
+        saveUserProfile,
         type SavedList,
+        type UserProfileData,
       } from '../lib/firebaseAuth';
+      import { CITIES } from '../lib/cities';
       import { initShareModal } from '../scripts/shareModal';
+      import { escapeHtml } from '../lib/normalize';
 
       const authGate = document.querySelector<HTMLElement>('#auth-gate')!;
       const userProfile = document.querySelector<HTMLElement>('#user-profile')!;
       const userDisplayName = document.querySelector<HTMLElement>('#user-display-name')!;
       const userEmail = document.querySelector<HTMLElement>('#user-email')!;
+      const userQuickMeta = document.querySelector<HTMLElement>('#user-quick-meta')!;
       const profileLoginBtn = document.querySelector<HTMLButtonElement>('#profile-login-btn')!;
       const profileLogoutBtn = document.querySelector<HTMLButtonElement>('#profile-logout-btn')!;
 
       const profileTabsNav = document.querySelector<HTMLElement>('#profile-tabs-nav')!;
       const tabBtnLists = document.querySelector<HTMLButtonElement>('#tab-btn-lists')!;
       const tabBtnShopping = document.querySelector<HTMLButtonElement>('#tab-btn-shopping')!;
+      const tabBtnData = document.querySelector<HTMLButtonElement>('#tab-btn-data')!;
 
       const listsSection = document.querySelector<HTMLElement>('#lists-section')!;
       const listsGrid = document.querySelector<HTMLElement>('#lists-grid')!;
@@ -186,6 +313,19 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
       const shoppingProgressFill = document.querySelector<HTMLElement>('#shopping-progress-fill')!;
       const shoppingItemsContainer = document.querySelector<HTMLElement>('#shopping-items-container')!;
 
+      const dataSection = document.querySelector<HTMLElement>('#data-section')!;
+      const profileDataForm = document.querySelector<HTMLFormElement>('#profile-data-form')!;
+      const profileInputName = document.querySelector<HTMLInputElement>('#profile-input-name')!;
+      const profileInputPhone = document.querySelector<HTMLInputElement>('#profile-input-phone')!;
+      const profileSelectCity = document.querySelector<HTMLSelectElement>('#profile-select-city')!;
+      const profileInputAddressMain = document.querySelector<HTMLInputElement>('#profile-input-address-main')!;
+      const profileInputNeighborhoodMain = document.querySelector<HTMLInputElement>('#profile-input-neighborhood-main')!;
+      const profileInputAddressSec = document.querySelector<HTMLInputElement>('#profile-input-address-sec')!;
+      const profileInputNeighborhoodSec = document.querySelector<HTMLInputElement>('#profile-input-neighborhood-sec')!;
+      const profileInputNotes = document.querySelector<HTMLTextAreaElement>('#profile-input-notes')!;
+      const profileSaveBtn = document.querySelector<HTMLButtonElement>('#profile-save-btn')!;
+      const profileSaveStatus = document.querySelector<HTMLElement>('#profile-save-status')!;
+
       const openShareModal = initShareModal();
 
       let currentUid: string | null = null;
@@ -195,20 +335,30 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
       let unsubscribeShoppingLive: (() => void) | null = null;
       let unsubscribeUserListsLive: (() => void) | null = null;
 
-      function setProfileTab(tab: 'lists' | 'shopping') {
-        const isLists = tab === 'lists';
-        tabBtnLists.classList.toggle('is-active', isLists);
-        tabBtnShopping.classList.toggle('is-active', !isLists);
-        listsSection.hidden = !isLists;
-        shoppingSection.hidden = isLists;
+      // Inicializar selector de ciudades en el formulario de datos
+      CITIES.forEach((c) => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name;
+        profileSelectCity.append(opt);
+      });
 
-        if (!isLists && cachedLists.length > 0 && !activeShoppingList) {
+      function setProfileTab(tab: 'lists' | 'shopping' | 'data') {
+        tabBtnLists.classList.toggle('is-active', tab === 'lists');
+        tabBtnShopping.classList.toggle('is-active', tab === 'shopping');
+        tabBtnData.classList.toggle('is-active', tab === 'data');
+        listsSection.hidden = tab !== 'lists';
+        shoppingSection.hidden = tab !== 'shopping';
+        dataSection.hidden = tab !== 'data';
+
+        if (tab === 'shopping' && cachedLists.length > 0 && !activeShoppingList) {
           selectShoppingList(cachedLists[0].id);
         }
       }
 
       tabBtnLists.addEventListener('click', () => setProfileTab('lists'));
       tabBtnShopping.addEventListener('click', () => setProfileTab('shopping'));
+      tabBtnData.addEventListener('click', () => setProfileTab('data'));
 
       function renderLists(lists: SavedList[]) {
         listsGrid.replaceChildren();
@@ -249,22 +399,24 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
           let collabBadge = '';
           if (list.isOwner) {
             if (uniqueCollabs.length > 0) {
-              collabBadge = `<span class="collab-badge">👥 Compartida con: <strong>${uniqueCollabs.join(', ')}</strong></span>`;
+              const safeCollabs = uniqueCollabs.map(escapeHtml).join(', ');
+              collabBadge = `<span class="collab-badge">👥 Compartida con: <strong>${safeCollabs}</strong></span>`;
             } else {
               collabBadge = `<span style="display: inline-block; font-size: 0.72rem; color: var(--muted); margin-bottom: 0.35rem;">🔒 Solo tú</span>`;
             }
           } else {
             const ownerDisplayName = list.ownerName || (list.ownerEmail ? list.ownerEmail.split('@')[0] : 'tu pareja');
             const others = uniqueCollabs.filter((n) => n !== ownerDisplayName);
-            collabBadge = `<span class="collab-badge">👥 Compartida por <strong>${ownerDisplayName}</strong>${others.length > 0 ? ` (y ${others.join(', ')})` : ''}</span>`;
+            const othersText = others.length > 0 ? ` (y ${others.map(escapeHtml).join(', ')})` : '';
+            collabBadge = `<span class="collab-badge">👥 Compartida por <strong>${escapeHtml(ownerDisplayName)}</strong>${othersText}</span>`;
           }
 
           const itemsText = list.items
             .slice(0, 4)
             .map((i) => {
               const isMe = currentUid && i.addedById === currentUid;
-              const author = isMe ? ' <span style="color: #0e6a45; font-size: 0.75rem;">(por ti)</span>' : (i.addedBy ? ` <span style="color: #0e6a45; font-size: 0.75rem;">(por ${i.addedBy})</span>` : '');
-              return `${i.nombre} (${i.cantidad} ${i.formato})${author}`;
+              const author = isMe ? ' <span style="color: #0e6a45; font-size: 0.75rem;">(por ti)</span>' : (i.addedBy ? ` <span style="color: #0e6a45; font-size: 0.75rem;">(por ${escapeHtml(i.addedBy)})</span>` : '');
+              return `${escapeHtml(i.nombre)} (${Number(i.cantidad)} ${escapeHtml(i.formato)})${author}`;
             })
             .join(', ');
           const extraCount = list.items.length > 4 ? ` y ${list.items.length - 4} más…` : '';
@@ -278,8 +430,8 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
             <div>
               ${collabBadge}
               <div class="saved-list-header">
-                <h3 class="saved-list-title">${list.nombre}</h3>
-                <span class="saved-list-city">${list.ciudad || 'Bogotá'}</span>
+                <h3 class="saved-list-title">${escapeHtml(list.nombre)}</h3>
+                <span class="saved-list-city">${escapeHtml(list.ciudad || 'Bogotá')}</span>
               </div>
               <p class="saved-list-items-preview">
                 <strong>${list.items.length} producto${list.items.length === 1 ? '' : 's'}:</strong>${boughtBadge}<br />
@@ -409,19 +561,19 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
           const isMe = currentUid && item.addedById === currentUid;
           const authorName = isMe ? 'Tú' : (item.addedBy || '');
           const authorBadge = authorName
-            ? `<span class="shopping-item-author">👤 ${authorName}</span>`
+            ? `<span class="shopping-item-author">👤 ${escapeHtml(authorName)}</span>`
             : '';
 
           row.innerHTML = `
             <div class="shopping-item-check"></div>
             <div class="shopping-item-info">
               <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.35rem;">
-                <h4 class="shopping-item-name" style="margin: 0;">${item.nombre}</h4>
+                <h4 class="shopping-item-name" style="margin: 0;">${escapeHtml(item.nombre)}</h4>
                 ${authorBadge}
               </div>
               <p class="shopping-item-meta" style="margin-top: 0.2rem;">
-                <strong>${item.cantidad} ${item.formato}</strong>
-                ${item.marca && item.marca.toUpperCase() !== 'TODAS' ? `· Marca: ${item.marca}` : ''}
+                <strong>${Number(item.cantidad)} ${escapeHtml(item.formato)}</strong>
+                ${item.marca && item.marca.toUpperCase() !== 'TODAS' ? `· Marca: ${escapeHtml(item.marca)}` : ''}
               </p>
             </div>
           `;
@@ -493,6 +645,132 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
         }
       });
 
+      function renderUserQuickMeta(data: UserProfileData | null) {
+        userQuickMeta.replaceChildren();
+        if (!data || (!data.direccionPrincipal && !data.telefono && !data.ciudadPrincipal)) {
+          const emptyBadge = document.createElement('span');
+          emptyBadge.className = 'user-quick-badge';
+          emptyBadge.innerHTML = '📍 <em>Sin direcciones guardadas · Puedes agregarlas en «Mis Direcciones»</em>';
+          userQuickMeta.append(emptyBadge);
+          return;
+        }
+
+        if (data.direccionPrincipal) {
+          const badge = document.createElement('span');
+          badge.className = 'user-quick-badge';
+          const barrio = data.barrioPrincipal ? ` (${escapeHtml(data.barrioPrincipal)})` : '';
+          badge.innerHTML = `🏠 <strong>Principal:</strong> ${escapeHtml(data.direccionPrincipal)}${barrio}`;
+          userQuickMeta.append(badge);
+        }
+
+        if (data.direccionSecundaria) {
+          const badge = document.createElement('span');
+          badge.className = 'user-quick-badge';
+          const barrio = data.barrioSecundario ? ` (${escapeHtml(data.barrioSecundario)})` : '';
+          badge.innerHTML = `🏢 <strong>Secundaria:</strong> ${escapeHtml(data.direccionSecundaria)}${barrio}`;
+          userQuickMeta.append(badge);
+        }
+
+        if (data.ciudadPrincipal) {
+          const cName = CITIES.find((c) => c.id === data.ciudadPrincipal)?.name || data.ciudadPrincipal;
+          const badge = document.createElement('span');
+          badge.className = 'user-quick-badge';
+          badge.innerHTML = `🏙️ <strong>Ciudad:</strong> ${escapeHtml(cName)}`;
+          userQuickMeta.append(badge);
+        }
+
+        if (data.telefono) {
+          const badge = document.createElement('span');
+          badge.className = 'user-quick-badge';
+          badge.innerHTML = `📱 <strong>Tel:</strong> ${escapeHtml(data.telefono)}`;
+          userQuickMeta.append(badge);
+        }
+      }
+
+      async function loadUserProfileData(uid: string, user: any) {
+        try {
+          const profile = await getUserProfile(uid);
+          const currentCityInStorage = localStorage.getItem('comparador-ciudad') || 'bogota';
+
+          if (profile) {
+            profileInputName.value = profile.nombre || user.displayName || '';
+            profileInputPhone.value = profile.telefono || '';
+            profileSelectCity.value = profile.ciudadPrincipal || currentCityInStorage;
+            profileInputAddressMain.value = profile.direccionPrincipal || '';
+            profileInputNeighborhoodMain.value = profile.barrioPrincipal || '';
+            profileInputAddressSec.value = profile.direccionSecundaria || '';
+            profileInputNeighborhoodSec.value = profile.barrioSecundario || '';
+            profileInputNotes.value = profile.notasUbicacion || '';
+            renderUserQuickMeta(profile);
+          } else {
+            profileInputName.value = user.displayName || '';
+            profileInputPhone.value = '';
+            profileSelectCity.value = currentCityInStorage;
+            profileInputAddressMain.value = '';
+            profileInputNeighborhoodMain.value = '';
+            profileInputAddressSec.value = '';
+            profileInputNeighborhoodSec.value = '';
+            profileInputNotes.value = '';
+            renderUserQuickMeta(null);
+          }
+        } catch (e) {
+          console.warn('Error al cargar datos del perfil:', e);
+        }
+      }
+
+      profileDataForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!currentUid) return;
+
+        profileSaveBtn.disabled = true;
+        profileSaveBtn.textContent = 'Guardando…';
+        profileSaveStatus.className = 'profile-save-status';
+        profileSaveStatus.textContent = 'Guardando datos en la nube…';
+
+        const updatedProfile: Partial<UserProfileData> = {
+          nombre: profileInputName.value.trim(),
+          telefono: profileInputPhone.value.trim(),
+          ciudadPrincipal: profileSelectCity.value,
+          direccionPrincipal: profileInputAddressMain.value.trim(),
+          barrioPrincipal: profileInputNeighborhoodMain.value.trim(),
+          direccionSecundaria: profileInputAddressSec.value.trim(),
+          barrioSecundario: profileInputNeighborhoodSec.value.trim(),
+          notasUbicacion: profileInputNotes.value.trim(),
+          email: currentUserEmail || undefined,
+        };
+
+        try {
+          await saveUserProfile(currentUid, updatedProfile);
+
+          // Sincronizar ciudad preferida con comparador local
+          if (updatedProfile.ciudadPrincipal) {
+            localStorage.setItem('comparador-ciudad', updatedProfile.ciudadPrincipal);
+          }
+
+          if (updatedProfile.nombre) {
+            userDisplayName.textContent = updatedProfile.nombre;
+          }
+
+          renderUserQuickMeta({ ...updatedProfile, uid: currentUid });
+
+          profileSaveStatus.className = 'profile-save-status is-success';
+          profileSaveStatus.textContent = '¡Tus datos de ubicación y contacto se guardaron con éxito! ✅';
+
+          setTimeout(() => {
+            if (profileSaveStatus.textContent.includes('éxito')) {
+              profileSaveStatus.textContent = '';
+            }
+          }, 4500);
+        } catch (err: any) {
+          console.error('Error al guardar datos:', err);
+          profileSaveStatus.className = 'profile-save-status is-error';
+          profileSaveStatus.textContent = 'Ocurrió un error al guardar los datos. Intenta nuevamente.';
+        } finally {
+          profileSaveBtn.disabled = false;
+          profileSaveBtn.textContent = '💾 Guardar datos';
+        }
+      });
+
       async function loadLists(uid: string, email?: string | null) {
         listsStatus.textContent = 'Cargando tus listas…';
         try {
@@ -502,12 +780,15 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
           renderLists(lists);
           updateShoppingDropdown();
 
-          // Revisar si viene con parámetro de modo compra
+          // Revisar si viene con parámetro de modo compra o pestañas
           const urlParams = new URLSearchParams(window.location.search);
           const paramListId = urlParams.get('listaId');
           const isShoppingMode = urlParams.get('modo') === 'compra' || !!paramListId;
+          const paramTab = urlParams.get('tab');
 
-          if (isShoppingMode && lists.length > 0) {
+          if (paramTab === 'datos' || paramTab === 'direcciones') {
+            setProfileTab('data');
+          } else if (isShoppingMode && lists.length > 0) {
             const targetId = paramListId && lists.some((l) => l.id === paramListId) ? paramListId : lists[0].id;
             selectShoppingList(targetId);
             setProfileTab('shopping');
@@ -562,6 +843,7 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
           });
 
           loadLists(user.uid, currentUserEmail);
+          loadUserProfileData(user.uid, user);
         } else {
           currentUid = null;
           currentUserEmail = null;
@@ -572,6 +854,7 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
           profileTabsNav.hidden = true;
           listsSection.hidden = true;
           shoppingSection.hidden = true;
+          dataSection.hidden = true;
         }
       });
     </script>

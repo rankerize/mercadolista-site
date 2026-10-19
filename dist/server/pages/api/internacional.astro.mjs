@@ -1,4 +1,5 @@
 import { r as requiredMatchRatio, a as relevance, s as stripAccents, c as cop } from '../../chunks/normalize_BklFQcMY.mjs';
+import { c as checkRateLimit, r as rateLimitResponse } from '../../chunks/rateLimit_BX5-YUpX.mjs';
 export { renderers } from '../../renderers.mjs';
 
 const USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
@@ -374,7 +375,15 @@ function buildInternationalReport(query, outcomes) {
   };
 }
 
-const GET = async ({ url }) => {
+const GET = async ({ request, url }) => {
+  const limit = checkRateLimit(request, {
+    prefix: "api-intl",
+    windowMs: 6e4,
+    max: 20
+  });
+  if (!limit.allowed) {
+    return rateLimitResponse(limit);
+  }
   const q = url.searchParams.get("q") || "";
   const query = q.trim().replace(/\s+/g, " ");
   if (query.length < 2) {

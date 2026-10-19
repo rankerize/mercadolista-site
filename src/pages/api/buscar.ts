@@ -2,8 +2,19 @@ import type { APIRoute } from 'astro';
 import { findCity } from '../../lib/cities';
 import { searchStores } from '../../lib/providers';
 import { buildReport } from '../../lib/ranking';
+import { checkRateLimit, rateLimitResponse } from '../../lib/rateLimit';
 
-export const GET: APIRoute = async ({ url }) => {
+export const GET: APIRoute = async ({ request, url }) => {
+  // Limitar a máximo 30 búsquedas por minuto por IP
+  const limit = checkRateLimit(request, {
+    prefix: 'api-buscar',
+    windowMs: 60_000,
+    max: 30,
+  });
+  if (!limit.allowed) {
+    return rateLimitResponse(limit);
+  }
+
   const q = url.searchParams.get('q') || '';
   const ciudadParam = url.searchParams.get('ciudad') || 'bogota';
   const query = q.trim().replace(/\s+/g, ' ');

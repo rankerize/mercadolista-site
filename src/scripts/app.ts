@@ -19,6 +19,7 @@ import {
   getItemsByCategory,
   type CatalogItem,
 } from '../lib/catalog';
+import { escapeHtml } from '../lib/normalize';
 
 const form = document.querySelector<HTMLFormElement>('#search-form')!;
 const queryInput = document.querySelector<HTMLInputElement>('#query')!;
@@ -96,8 +97,9 @@ function updateCollabBanner(list: SavedList | null | undefined) {
 
   if (list.isOwner ?? (list.ownerId === currentUserId)) {
     if (uniqueCollabs.length > 0) {
+      const safeCollabs = uniqueCollabs.map(escapeHtml).join(', ');
       listCollabBanner.hidden = false;
-      listCollabBanner.innerHTML = `<span class="collab-badge">👥 Compartida con: <strong>${uniqueCollabs.join(', ')}</strong></span>`;
+      listCollabBanner.innerHTML = `<span class="collab-badge">👥 Compartida con: <strong>${safeCollabs}</strong></span>`;
     } else {
       listCollabBanner.hidden = false;
       listCollabBanner.innerHTML = `<span style="font-size: 0.72rem; color: var(--muted);">🔒 Lista privada (solo tú). Usa 📲 Compartir para colaborar.</span>`;
@@ -105,8 +107,9 @@ function updateCollabBanner(list: SavedList | null | undefined) {
   } else {
     const ownerDisplayName = list.ownerName || (list.ownerEmail ? list.ownerEmail.split('@')[0] : 'tu pareja');
     const others = uniqueCollabs.filter((n) => n !== ownerDisplayName);
+    const safeOthers = others.length > 0 ? ` (con ${others.map(escapeHtml).join(', ')})` : '';
     listCollabBanner.hidden = false;
-    listCollabBanner.innerHTML = `<span class="collab-badge">👥 Lista compartida de <strong>${ownerDisplayName}</strong>${others.length > 0 ? ` (con ${others.join(', ')})` : ''}</span>`;
+    listCollabBanner.innerHTML = `<span class="collab-badge">👥 Lista compartida de <strong>${escapeHtml(ownerDisplayName)}</strong>${safeOthers}</span>`;
   }
 }
 
@@ -1074,8 +1077,11 @@ function highlightMatch(text: string, query: string): string {
   const normText = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const normQ = query.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   const idx = normText.indexOf(normQ);
-  if (idx === -1) return text;
-  return `${text.slice(0, idx)}<strong>${text.slice(idx, idx + normQ.length)}</strong>${text.slice(idx + normQ.length)}`;
+  if (idx === -1) return escapeHtml(text);
+  const before = escapeHtml(text.slice(0, idx));
+  const matched = escapeHtml(text.slice(idx, idx + normQ.length));
+  const after = escapeHtml(text.slice(idx + normQ.length));
+  return `${before}<strong>${matched}</strong>${after}`;
 }
 
 function setupCategoryExplorer() {

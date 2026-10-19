@@ -1,7 +1,18 @@
 import type { APIRoute } from 'astro';
 import { buildInternationalReport, searchInternational } from '../../lib/international';
+import { checkRateLimit, rateLimitResponse } from '../../lib/rateLimit';
 
-export const GET: APIRoute = async ({ url }) => {
+export const GET: APIRoute = async ({ request, url }) => {
+  // Limitar a máximo 20 búsquedas internacionales por minuto por IP
+  const limit = checkRateLimit(request, {
+    prefix: 'api-intl',
+    windowMs: 60_000,
+    max: 20,
+  });
+  if (!limit.allowed) {
+    return rateLimitResponse(limit);
+  }
+
   const q = url.searchParams.get('q') || '';
   const query = q.trim().replace(/\s+/g, ' ');
 

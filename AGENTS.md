@@ -62,13 +62,20 @@ Este documento contiene la arquitectura, convenciones y decisiones de diseño cl
      - En el banner de lista compartida: Banner inteligente `#list-collab-banner` que indica con quién está compartida la lista (`👥 Compartida con: Andrea`, `👥 Lista compartida de César`, o `🔒 Lista privada`).
      - En `/perfil`: Las tarjetas de listas muestran el badge `👥 Compartida con: [Nombres]` y en la vista previa qué productos agregó cada quién (`(por ti)` o `(por Andrea)`).
      - En «🛒 Modo Compra»: Cada producto muestra la insignia destacada `👤 Tú` o `👤 [Nombre]` para saber quién lo pidió en el momento de tomarlo en el pasillo.
+  10. **Seguridad, XSS y Rate Limiting**:
+     - **Escape HTML contra XSS (`escapeHtml` en `src/lib/normalize.ts`)**: Todo texto ingresado por el usuario o sincronizado desde Firestore (nombres de listas, productos, colaboradores) se escapa antes de renderizarse.
+     - **Rate Limiting en Endpoints SSR (`src/lib/rateLimit.ts`)**: Los endpoints `/api/lista`, `/api/buscar`, `/api/unidad`, y `/api/internacional` tienen control de tasa por IP en memoria con limpieza automática cada 5 minutos. Protege el servidor Node.js y previene baneos de IP de los supermercados (VTEX, Akamai, Cloudflare). Retorna HTTP 429 con cabecera `Retry-After`.
+     - **Reglas de Seguridad de Firestore (`firestore.rules`)**: Archivo en la raíz con reglas estrictas: solo el creador puede borrar su lista; solo creador y colaboradores pueden leer y modificar productos.
 - **Archivos de integración**:
   - [`src/lib/firebase.ts`](file:///Users/cesarandresjimenezarci/Documents/Clientes/Comparador%20de%20precios/src/lib/firebase.ts): Inicialización del SDK cliente de Firebase con las credenciales públicas de la Web App `mercadologo`.
-  - [`src/lib/firebaseAuth.ts`](file:///Users/cesarandresjimenezarci/Documents/Clientes/Comparador%20de%20precios/src/lib/firebaseAuth.ts): Métodos utilitarios: `loginWithGoogle()`, `logoutUser()`, `subscribeAuth()`, `getUserLists()`, `saveUserList()`, `deleteUserList()`, `getListById()`, `joinSharedList()`, `shareListWithEmail()`, `subscribeList()`, `toggleItemBought()`.
+  - [`src/lib/firebaseAuth.ts`](file:///Users/cesarandresjimenezarci/Documents/Clientes/Comparador%20de%20precios/src/lib/firebaseAuth.ts): Métodos utilitarios: `loginWithGoogle()`, `logoutUser()`, `subscribeAuth()`, `getUserLists()`, `saveUserList()`, `deleteUserList()`, `getListById()`, `joinSharedList()`, `shareListWithEmail()`, `subscribeList()`, `toggleItemBought()`, `getUserProfile()`, `saveUserProfile()`.
 
 ### UX de Autenticación y Perfil
 - Existe un botón de **«Iniciar sesión»** con Google en el header superior derecho (`.top-bar`) accesible desde todas las pestañas. Al iniciar sesión, muestra `👤 [Nombre]` como enlace directo a `/perfil`.
-- Página `/perfil`: Vista de gestión con dos pestañas principales: **«📋 Mis Listas»** (administración, compartir, comparar o borrar) y **«🛒 Modo Compra»** (checklist táctil interactiva para el pasillo del supermercado con selector de lista y seguro de desmarcado).
+- Página `/perfil`: Vista de gestión con tres pestañas principales:
+  1. **«📋 Mis Listas»**: Administración, compartir por WhatsApp/correo, comparar en tiendas o borrar listas.
+  2. **«🛒 Modo Compra»**: Checklist táctil interactiva para el pasillo del supermercado con selector de lista, sincronización en vivo y seguro contra desmarcado accidental.
+  3. **«📍 Mis Direcciones y Contacto»**: Gestión de datos de contacto (teléfono/WhatsApp, ciudad preferida, dirección principal con barrio, dirección secundaria de oficina/familiar y notas de referencia) persistidos en la colección `user_profiles` de Firestore con el propósito de calcular a futuro las tiendas más cercanas y optimizar rutas de compra.
 - En la pestaña **«Lista»**, hay un botón contextual para invitar a guardar o cargar listas con la cuenta de Google, y un botón **«📲 Compartir»**.
 - Si el usuario no inicia sesión, el comparador sigue funcionando al 100% de manera anónima y almacena la lista actual en `localStorage`.
 

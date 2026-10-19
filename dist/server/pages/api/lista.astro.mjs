@@ -3,6 +3,7 @@ import { r as requiredMatchRatio, a as relevance, c as cop, b as copExact } from
 import { d as dedupe } from '../../chunks/ranking_5o1QqFy4.mjs';
 import { s as searchStores } from '../../chunks/index_qWqYRXjv.mjs';
 import { m as measureOffer, q as quantityText } from '../../chunks/units_Cl9q3VkI.mjs';
+import { c as checkRateLimit, r as rateLimitResponse } from '../../chunks/rateLimit_BX5-YUpX.mjs';
 export { renderers } from '../../renderers.mjs';
 
 const FORMAT_BASIS = {
@@ -236,7 +237,22 @@ async function searchList(items, city) {
 }
 
 const POST = async ({ request }) => {
+  const limit = checkRateLimit(request, {
+    prefix: "api-lista",
+    windowMs: 6e4,
+    max: 10
+  });
+  if (!limit.allowed) {
+    return rateLimitResponse(limit);
+  }
   try {
+    const contentLength = request.headers.get("content-length");
+    if (contentLength && parseInt(contentLength, 10) > 5e4) {
+      return new Response(
+        JSON.stringify({ detail: "La solicitud excede el tamaño máximo permitido" }),
+        { status: 413, headers: { "Content-Type": "application/json" } }
+      );
+    }
     const body = await request.json();
     const ciudadParam = body.ciudad || "bogota";
     const rawItems = Array.isArray(body.items) ? body.items : [];

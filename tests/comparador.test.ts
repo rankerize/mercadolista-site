@@ -6,6 +6,7 @@ import {
   relevance,
   unitPrice,
   saleMeasure,
+  escapeHtml,
 } from '../src/lib/normalize';
 import { findCity } from '../src/lib/cities';
 import { storeCatalog } from '../src/lib/providers';
@@ -48,6 +49,12 @@ describe('Comparador Core Normalization Tests', () => {
     expect(rice?.quantity).toBe(1000);
     expect(rice?.amount).toBe(4.5);
   });
+
+  it('escapes dangerous HTML characters to prevent XSS', () => {
+    expect(escapeHtml('<script>alert("hack")</script>')).toBe('&lt;script&gt;alert(&quot;hack&quot;)&lt;/script&gt;');
+    expect(escapeHtml("Pedro & María's")).toBe('Pedro &amp; María&#39;s');
+    expect(escapeHtml('')).toBe('');
+  });
 });
 
 describe('Catalogs and Reports', () => {
@@ -83,5 +90,32 @@ describe('Catalogs and Reports', () => {
     expect(report.verdict).toBeDefined();
     expect(report.verdict.store_name).toBe('Jumbo');
     expect(report.verdict.price).toBe(4500);
+  });
+});
+
+describe('API Security and Rate Limiting', () => {
+  it('allows requests within threshold and blocks exceeding ones', async () => {
+    const { checkRateLimit, getClientIp } = await import('../src/lib/rateLimit');
+
+    const fakeReq = new Request('https://mercadolista.com/api/buscar', {
+      headers: { 'x-forwarded-for': '192.168.1.100' },
+    });
+
+    expect(getClientIp(fakeReq)).toBe('192.168.1.100');
+
+    const config = { prefix: 'test-limit', windowMs: 10000, max: 2 };
+
+    const first = checkRateLimit(fakeReq, config);
+    expect(first.allowed).toBe(true);
+    expect(first.remaining).toBe(1);
+
+    const second = checkRateLimit(fakeReq, config);
+    expect(second.allowed).toBe(true);
+    expect(second.remaining).toBe(0);
+
+    const third = checkRateLimit(fakeReq, config);
+    expect(third.allowed).toBe(false);
+    expect(third.remaining).toBe(0);
+    expect(third.resetSeconds).toBeGreaterThan(0);
   });
 });
