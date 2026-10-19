@@ -61,11 +61,33 @@ Abre [http://localhost:3001](http://localhost:3001) en tu navegador.
 
 ## 🌐 Despliegue en Producción (Hostinger)
 
-El proyecto incluye el archivo de entrada universal [`server.js`](server.js) y la carpeta compilada [`dist/`](dist/) lista para servir:
+> ⚠️ **Leer antes de tocar el despliegue** — ver también [`BITACORA.md`](BITACORA.md).
 
-1. En hPanel de Hostinger, ve a **Avanzado > Node.js**.
-2. Configura:
-   * **Node.js version**: 20.x o 22.x.
-   * **Application startup file**: `server.js`
-   * **Application root**: `public_html` (o la ruta donde esté el repositorio).
-3. Haz clic en **Instalar dependencias** y luego en **Iniciar / Reiniciar aplicación**.
+El servidor en producción usa **LiteSpeed + Passenger**, que carga el startup file con
+`require()` (CommonJS). Por eso el archivo de entrada es **`server.cjs`** (no `server.js`).
+
+### Configuración correcta en hPanel › Node.js
+
+| Campo | Valor |
+|---|---|
+| Node.js version | `22` |
+| Application type | `Other` |
+| Build command | `npm run build` |
+| Output directory | `dist` |
+| **Application startup file** | **`server.cjs`** |
+
+### Flujo de despliegue
+
+```bash
+# El build script copia server.cjs al dist/ automáticamente:
+npm run build
+# → astro build  +  cp server.cjs dist/server.cjs
+
+git push origin main
+# Hostinger redespliega automáticamente desde GitHub (rama: main)
+```
+
+> **¿Por qué `.cjs` y no `.js`?** `package.json` tiene `"type": "module"`, lo que
+> convierte todos los `.js` en ESM. Passenger no puede cargar ESM con top-level await
+> vía `require()` → HTTP 403. Ver [`BITACORA.md`](BITACORA.md) para el diagnóstico
+> completo del incidente.

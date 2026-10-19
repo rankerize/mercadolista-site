@@ -89,3 +89,99 @@ npm test
 ```
 
 > **Nota**: Se utiliza la variable de entorno `ASTRO_TELEMETRY_DISABLED=1` en los scripts de `package.json` para evitar advertencias de permisos en macOS.
+
+---
+
+## 🌐 Despliegue en Hostinger
+
+### Stack del servidor en producción
+
+Hostinger usa **LiteSpeed Web Server + Passenger** para correr Node.js. Passenger carga el startup file con `require()` (CommonJS), **no** con `node` directamente ni con `import`.
+
+### ⚠️ REGLA CRÍTICA: El startup file DEBE ser `.cjs`
+
+> **NUNCA uses `server.js` (ESM) como `entry_file` en Hostinger.**
+
+`package.json` tiene `"type": "module"`, lo que hace que todos los `.js` sean ESM. El `server.js` original usaba `import ...` + `await import(...)` a nivel superior (top-level await). Cuando Passenger intentaba cargarlo con `require()`, fallaba con:
+> `ERR_REQUIRE_ASYNC_MODULE: require() cannot be used on an ESM graph with top-level await`
+
+Esto causaba que el proceso Node.js nunca arrancara, y LiteSpeed devolvía **HTTP 403**.
+
+### La solución: `server.cjs`
+
+El archivo `server.cjs` es un wrapper en **CommonJS puro** que usa `import()` dinámico (permitido desde CJS) para cargar el entry point de Astro:
+
+```
+server.cjs (CJS)  ──require()──>  [LiteSpeed/Passenger]
+                  ──import()──>   dist/server/entry.mjs  (ESM, Astro standalone)
+```
+
+`__dirname` en `server.cjs` apunta a `hbuilds/versions/<uuid>/nodejs/dist/` (donde Hostinger publica el output de `dist/`). El primer candidato `path.join(__dirname, 'server', 'entry.mjs')` resuelve correctamente a `dist/server/entry.mjs`.
+
+### Configuración correcta en Hostinger (API / hPanel)
+
+| Campo | Valor |
+|---|---|
+| `app_type` | `other` (no `astro` — ese modo trata la app como estático) |
+| `node_version` | `22` |
+| `output_directory` | `dist` |
+| `build_script` | `build` |
+| `entry_file` | **`server.cjs`** |
+| `package_manager` | `npm` |
+
+### Build script en `package.json`
+
+```json
+"build": "ASTRO_TELEMETRY_DISABLED=1 astro build && cp server.cjs dist/server.cjs"
+```
+
+El `cp server.cjs dist/server.cjs` es necesario porque Hostinger publica el contenido de `dist/` y el entry_file debe estar dentro de ese directorio publicado.
+
+### Estructura de directorios en Hostinger después del deploy
+
+```
+hbuilds/versions/<uuid>/nodejs/   ← raíz publicada (contenido de dist/)
+├── server.cjs                    ← startup file (entry_file)
+├── server/
+│   ├── entry.mjs                 ← Astro SSR entrypoint
+│   ├── manifest_*.mjs
+│   └── chunks/
+└── client/
+    └── _astro/                   ← assets estáticos
+```
+
+### `.htaccess` generado automáticamente
+
+Hostinger escribe este `.htaccess` en `public_html` para el proxy:
+
+```apache
+PassengerAppRoot /home/u336252580/domains/mercadolista.com/hbuilds/current/nodejs
+PassengerAppType node
+PassengerNodejs /opt/alt/alt-nodejs22/root/bin/node
+PassengerStartupFile server.cjs
+PassengerBaseURI /
+PassengerRestartDir .../hbuilds/current/nodejs/tmp
+SetEnv NODE_OPTIONS "--require .../preload-timestamp.js"
+SetEnv LSNODE_CONSOLE_LOG console.log
+SetEnv TOKIO_WORKER_THREADS 2
+```
+
+Passenger **no expone** `PORT` al proceso hijo — usa sockets internos. El log de Astro mostrará `http://localhost:undefined`, lo cual es normal y no indica error.
+
+### Diagnóstico rápido de problemas
+
+| Síntoma | Causa probable | Acción |
+|---|---|---|
+| HTTP 403 | `entry_file: null` o `app_type: astro` → modo estático | Verificar settings en Hostinger API |
+| `ERR_REQUIRE_ASYNC_MODULE` en runtime logs | `entry_file` apunta a un `.js` ESM con top-level await | Cambiar a `server.cjs` |
+| `ERR_MODULE_NOT_FOUND` en runtime logs | `server.cjs` no fue copiado al `dist/` por el build | Revisar build script en `package.json` |
+| HTTP 500 | Firebase falla en Node.js 22 (requiere ≥24) | Subir `node_version` a `24` en Hostinger settings |
+
+### Cómo redesplegar manualmente (vía API de Hostinger MCP)
+
+```
+1. hosting_nodejs_update-build-settings  → confirmar entry_file: "server.cjs"
+2. hosting_nodejs_start-build            → source_type: "git", branch: "main"
+3. hosting_nodejs_build                  → polling hasta state: "completed"
+4. hosting_nodejs_runtime-logs           → verificar que no hay ERRORs
+```
