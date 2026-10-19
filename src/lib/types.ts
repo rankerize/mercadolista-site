@@ -55,8 +55,3 @@ export interface ListItemIn {
   cantidad: number;
 }
 
-export interface UserSession {
-  id: number;
-  nombre: string;
-  contacto: string;
-}
