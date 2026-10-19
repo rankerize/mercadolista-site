@@ -84,15 +84,55 @@ import ShareModal from '../components/ShareModal.astro';
         </div>
       </section>
 
-      <!-- Listas Guardadas -->
+      <!-- Navegación de Pestañas de Perfil -->
+      <div id="profile-tabs-nav" class="profile-tabs" hidden>
+        <button type="button" id="tab-btn-lists" class="profile-tab-btn is-active">
+          📋 Mis Listas Guardadas
+        </button>
+        <button type="button" id="tab-btn-shopping" class="profile-tab-btn">
+          🛒 Modo Compra (En el Súper)
+        </button>
+      </div>
+
+      <!-- Vista 1: Listas Guardadas -->
       <section id="lists-section" hidden>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-          <h2 style="margin: 0; font-size: 1.4rem;">Mis Listas Guardadas</h2>
+          <h2 style="margin: 0; font-size: 1.4rem;">Mis Listas</h2>
           <a href="/?tab=list" class="btn-primary">+ Nueva lista</a>
         </div>
 
         <p id="lists-status" class="status" role="status"></p>
         <div id="lists-grid" class="profile-lists-grid"></div>
+      </section>
+
+      <!-- Vista 2: Modo Compra (En el Súper) -->
+      <section id="shopping-section" class="shopping-view-card" hidden>
+        <div class="shopping-selector-bar">
+          <div class="shopping-selector-group">
+            <label for="shopping-list-select" class="shopping-selector-label">🛒 Lista para comprar:</label>
+            <select id="shopping-list-select" class="shopping-select-dropdown"></select>
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <button type="button" id="shopping-compare-btn" class="btn-primary" style="background: #4a5568;" title="Comparar precios en tiendas">
+              Comparar precios
+            </button>
+            <button type="button" id="shopping-reset-btn" class="btn-reset-checklist" title="Seguro para desmarcar toda la lista">
+              🔒 Desmarcar todo
+            </button>
+          </div>
+        </div>
+
+        <div id="shopping-progress-panel">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; font-size: 0.92rem; font-weight: 600;">
+            <span id="shopping-progress-text">0 de 0 en el carrito (0%)</span>
+            <span id="shopping-live-badge" style="font-size: 0.75rem; color: #0e6a45; background: #e7f6ee; padding: 0.15rem 0.45rem; border-radius: 999px;">● Sincronización en vivo</span>
+          </div>
+          <div class="super-progress-bar">
+            <div id="shopping-progress-fill" class="super-progress-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <div id="shopping-items-container" class="shopping-items-list"></div>
       </section>
 
       <ShareModal />
@@ -109,6 +149,8 @@ import ShareModal from '../components/ShareModal.astro';
         subscribeAuth,
         getUserLists,
         deleteUserList,
+        subscribeList,
+        toggleItemBought,
         type SavedList,
       } from '../lib/firebaseAuth';
       import { initShareModal } from '../scripts/shareModal';
@@ -119,13 +161,45 @@ import ShareModal from '../components/ShareModal.astro';
       const userEmail = document.querySelector<HTMLElement>('#user-email')!;
       const profileLoginBtn = document.querySelector<HTMLButtonElement>('#profile-login-btn')!;
       const profileLogoutBtn = document.querySelector<HTMLButtonElement>('#profile-logout-btn')!;
+
+      const profileTabsNav = document.querySelector<HTMLElement>('#profile-tabs-nav')!;
+      const tabBtnLists = document.querySelector<HTMLButtonElement>('#tab-btn-lists')!;
+      const tabBtnShopping = document.querySelector<HTMLButtonElement>('#tab-btn-shopping')!;
+
       const listsSection = document.querySelector<HTMLElement>('#lists-section')!;
       const listsGrid = document.querySelector<HTMLElement>('#lists-grid')!;
       const listsStatus = document.querySelector<HTMLElement>('#lists-status')!;
+
+      const shoppingSection = document.querySelector<HTMLElement>('#shopping-section')!;
+      const shoppingListSelect = document.querySelector<HTMLSelectElement>('#shopping-list-select')!;
+      const shoppingCompareBtn = document.querySelector<HTMLButtonElement>('#shopping-compare-btn')!;
+      const shoppingResetBtn = document.querySelector<HTMLButtonElement>('#shopping-reset-btn')!;
+      const shoppingProgressText = document.querySelector<HTMLElement>('#shopping-progress-text')!;
+      const shoppingProgressFill = document.querySelector<HTMLElement>('#shopping-progress-fill')!;
+      const shoppingItemsContainer = document.querySelector<HTMLElement>('#shopping-items-container')!;
+
       const openShareModal = initShareModal();
 
       let currentUid: string | null = null;
       let currentUserEmail: string | null = null;
+      let cachedLists: SavedList[] = [];
+      let activeShoppingList: SavedList | null = null;
+      let unsubscribeShoppingLive: (() => void) | null = null;
+
+      function setProfileTab(tab: 'lists' | 'shopping') {
+        const isLists = tab === 'lists';
+        tabBtnLists.classList.toggle('is-active', isLists);
+        tabBtnShopping.classList.toggle('is-active', !isLists);
+        listsSection.hidden = !isLists;
+        shoppingSection.hidden = isLists;
+
+        if (!isLists && cachedLists.length > 0 && !activeShoppingList) {
+          selectShoppingList(cachedLists[0].id);
+        }
+      }
+
+      tabBtnLists.addEventListener('click', () => setProfileTab('lists'));
+      tabBtnShopping.addEventListener('click', () => setProfileTab('shopping'));
 
       function renderLists(lists: SavedList[]) {
         listsGrid.replaceChildren();
@@ -153,6 +227,11 @@ import ShareModal from '../components/ShareModal.astro';
             ? `<span style="display: inline-block; font-size: 0.72rem; color: #0e6a45; background: #e7f6ee; padding: 0.15rem 0.45rem; border-radius: 4px; margin-bottom: 0.35rem; font-weight: 500;">👥 Compartida por ${list.ownerName || 'tu pareja'}</span>`
             : '';
 
+          const boughtCount = list.items.filter((i) => i.comprado).length;
+          const boughtBadge = boughtCount > 0
+            ? `<span style="display: inline-block; font-size: 0.72rem; color: #0e6a45; background: #e7f6ee; padding: 0.15rem 0.45rem; border-radius: 4px; margin-left: 0.35rem; font-weight: 600;">✓ ${boughtCount}/${list.items.length} en carrito</span>`
+            : '';
+
           card.innerHTML = `
             <div>
               ${sharedBadge}
@@ -161,12 +240,15 @@ import ShareModal from '../components/ShareModal.astro';
                 <span class="saved-list-city">${list.ciudad || 'Bogotá'}</span>
               </div>
               <p class="saved-list-items-preview">
-                <strong>${list.items.length} producto${list.items.length === 1 ? '' : 's'}:</strong><br />
+                <strong>${list.items.length} producto${list.items.length === 1 ? '' : 's'}:</strong>${boughtBadge}<br />
                 ${itemsText}${extraCount}
               </p>
             </div>
             <div class="saved-list-actions" style="flex-wrap: wrap; gap: 0.4rem;">
-              <button type="button" class="btn-primary compare-btn">
+              <button type="button" class="btn-primary shop-mode-btn" style="background: #0e6a45; font-weight: 600;" title="Abrir checklist de compra para ir tachando en el súper">
+                🛒 Modo Compra
+              </button>
+              <button type="button" class="btn-primary compare-btn" style="background: #4a5568;" title="Comparar precios en tiendas">
                 Comparar precios
               </button>
               <button type="button" class="btn-primary share-btn" style="background: #128c7e;" title="Compartir lista con tu pareja por WhatsApp o Correo">
@@ -178,6 +260,12 @@ import ShareModal from '../components/ShareModal.astro';
             </div>
           `;
 
+          // Botón Modo Compra
+          card.querySelector('.shop-mode-btn')!.addEventListener('click', () => {
+            selectShoppingList(list.id);
+            setProfileTab('shopping');
+          });
+
           // Botón Comparar
           card.querySelector('.compare-btn')!.addEventListener('click', () => {
             localStorage.setItem('comparador-lista', JSON.stringify(list.items));
@@ -187,12 +275,12 @@ import ShareModal from '../components/ShareModal.astro';
             window.location.href = `/?tab=list&listaId=${list.id}`;
           });
 
-          // Botón Compartir (Abre Modal elegante con WhatsApp y Correo)
+          // Botón Compartir
           card.querySelector('.share-btn')!.addEventListener('click', () => {
             openShareModal({ listId: list.id, listName: list.nombre });
           });
 
-          // Botón Eliminar
+          // Botón Eliminar con seguro de confirmación
           card.querySelector('.delete-btn')!.addEventListener('click', async () => {
             const accion = list.isOwner ? 'eliminar' : 'desvincularte de';
             if (!currentUid || !window.confirm(`¿Deseas ${accion} la lista «${list.nombre}»?`)) return;
@@ -208,12 +296,171 @@ import ShareModal from '../components/ShareModal.astro';
         });
       }
 
+      function updateShoppingDropdown() {
+        shoppingListSelect.replaceChildren();
+        if (cachedLists.length === 0) {
+          const opt = document.createElement('option');
+          opt.value = '';
+          opt.textContent = 'No tienes listas creadas';
+          shoppingListSelect.append(opt);
+          return;
+        }
+
+        cachedLists.forEach((l) => {
+          const opt = document.createElement('option');
+          opt.value = l.id;
+          opt.textContent = `${l.nombre} (${l.items.length} productos)`;
+          shoppingListSelect.append(opt);
+        });
+
+        if (activeShoppingList) {
+          shoppingListSelect.value = activeShoppingList.id;
+        }
+      }
+
+      function selectShoppingList(listId: string) {
+        const found = cachedLists.find((l) => l.id === listId);
+        if (!found) return;
+        activeShoppingList = found;
+        shoppingListSelect.value = listId;
+
+        renderShoppingChecklist(found);
+
+        // Suscripción en tiempo real a los cambios de la lista
+        if (unsubscribeShoppingLive) unsubscribeShoppingLive();
+        unsubscribeShoppingLive = subscribeList(listId, (updated) => {
+          if (!updated) return;
+          const idx = cachedLists.findIndex((l) => l.id === listId);
+          if (idx !== -1) cachedLists[idx] = updated;
+          activeShoppingList = updated;
+          renderShoppingChecklist(updated);
+        });
+      }
+
+      function renderShoppingChecklist(list: SavedList) {
+        shoppingItemsContainer.replaceChildren();
+
+        const total = list.items.length;
+        const bought = list.items.filter((i) => i.comprado).length;
+        const pct = total > 0 ? Math.round((bought / total) * 100) : 0;
+
+        shoppingProgressText.textContent = `${bought} de ${total} en el carrito (${pct}%)`;
+        shoppingProgressFill.style.width = `${pct}%`;
+
+        if (total === 0) {
+          shoppingItemsContainer.innerHTML = `
+            <div style="text-align: center; color: var(--muted); padding: 2rem;">
+              <p>Esta lista no tiene productos agregados todavía.</p>
+              <a href="/?tab=list&listaId=${list.id}" class="btn-primary" style="display: inline-flex;">Editar productos</a>
+            </div>
+          `;
+          return;
+        }
+
+        list.items.forEach((item, index) => {
+          const row = document.createElement('div');
+          row.className = `shopping-item-row ${item.comprado ? 'is-bought' : ''}`;
+          row.setAttribute('role', 'checkbox');
+          row.setAttribute('aria-checked', item.comprado ? 'true' : 'false');
+          row.setAttribute('tabindex', '0');
+
+          row.innerHTML = `
+            <div class="shopping-item-check"></div>
+            <div class="shopping-item-info">
+              <h4 class="shopping-item-name">${item.nombre}</h4>
+              <p class="shopping-item-meta">
+                <strong>${item.cantidad} ${item.formato}</strong>
+                ${item.marca && item.marca.toUpperCase() !== 'TODAS' ? `· Marca: ${item.marca}` : ''}
+              </p>
+            </div>
+          `;
+
+          async function toggleThisItem() {
+            const nextBought = !item.comprado;
+            item.comprado = nextBought;
+            row.classList.toggle('is-bought', nextBought);
+            row.setAttribute('aria-checked', nextBought ? 'true' : 'false');
+
+            const newBought = list.items.filter((i) => i.comprado).length;
+            const newPct = total > 0 ? Math.round((newBought / total) * 100) : 0;
+            shoppingProgressText.textContent = `${newBought} de ${total} en el carrito (${newPct}%)`;
+            shoppingProgressFill.style.width = `${newPct}%`;
+
+            try {
+              await toggleItemBought(list.id, index, nextBought);
+            } catch (err) {
+              console.error('Error al actualizar item:', err);
+            }
+          }
+
+          row.addEventListener('click', toggleThisItem);
+          row.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault();
+              toggleThisItem();
+            }
+          });
+
+          shoppingItemsContainer.append(row);
+        });
+      }
+
+      shoppingListSelect.addEventListener('change', () => {
+        selectShoppingList(shoppingListSelect.value);
+      });
+
+      shoppingCompareBtn.addEventListener('click', () => {
+        if (!activeShoppingList) return;
+        localStorage.setItem('comparador-lista', JSON.stringify(activeShoppingList.items));
+        if (activeShoppingList.ciudad) {
+          localStorage.setItem('comparador-ciudad', activeShoppingList.ciudad);
+        }
+        window.location.href = `/?tab=list&listaId=${activeShoppingList.id}`;
+      });
+
+      // Seguro para desmarcar: Confirmación obligatoria para evitar accidentes
+      shoppingResetBtn.addEventListener('click', async () => {
+        if (!activeShoppingList) return;
+        const confirmReset = window.confirm(
+          `🔒 ¿Seguro que deseas desmarcar todos los productos de «${activeShoppingList.nombre}» para empezar una nueva compra?`
+        );
+        if (!confirmReset) return;
+
+        shoppingResetBtn.disabled = true;
+        shoppingResetBtn.textContent = 'Desmarcando…';
+        try {
+          for (let i = 0; i < activeShoppingList.items.length; i++) {
+            if (activeShoppingList.items[i].comprado) {
+              activeShoppingList.items[i].comprado = false;
+              await toggleItemBought(activeShoppingList.id, i, false);
+            }
+          }
+          renderShoppingChecklist(activeShoppingList);
+        } finally {
+          shoppingResetBtn.disabled = false;
+          shoppingResetBtn.textContent = '🔒 Desmarcar todo';
+        }
+      });
+
       async function loadLists(uid: string, email?: string | null) {
         listsStatus.textContent = 'Cargando tus listas…';
         try {
           const lists = await getUserLists(uid, email);
+          cachedLists = lists;
           listsStatus.textContent = '';
           renderLists(lists);
+          updateShoppingDropdown();
+
+          // Revisar si viene con parámetro de modo compra
+          const urlParams = new URLSearchParams(window.location.search);
+          const paramListId = urlParams.get('listaId');
+          const isShoppingMode = urlParams.get('modo') === 'compra' || !!paramListId;
+
+          if (isShoppingMode && lists.length > 0) {
+            const targetId = paramListId && lists.some((l) => l.id === paramListId) ? paramListId : lists[0].id;
+            selectShoppingList(targetId);
+            setProfileTab('shopping');
+          }
         } catch (err: any) {
           listsStatus.textContent = 'No se pudieron cargar las listas.';
         }
@@ -237,6 +484,7 @@ import ShareModal from '../components/ShareModal.astro';
       });
 
       profileLogoutBtn.addEventListener('click', async () => {
+        if (unsubscribeShoppingLive) unsubscribeShoppingLive();
         await logoutUser();
         window.location.href = '/';
       });
@@ -247,6 +495,7 @@ import ShareModal from '../components/ShareModal.astro';
           currentUserEmail = user.email || null;
           authGate.hidden = true;
           userProfile.hidden = false;
+          profileTabsNav.hidden = false;
           listsSection.hidden = false;
 
           userDisplayName.textContent = user.displayName || 'Usuario';
@@ -256,9 +505,12 @@ import ShareModal from '../components/ShareModal.astro';
         } else {
           currentUid = null;
           currentUserEmail = null;
+          if (unsubscribeShoppingLive) unsubscribeShoppingLive();
           authGate.hidden = false;
           userProfile.hidden = true;
+          profileTabsNav.hidden = true;
           listsSection.hidden = true;
+          shoppingSection.hidden = true;
         }
       });
     </script>

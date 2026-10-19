@@ -7,6 +7,8 @@ import {
   deleteUserList,
   getListById,
   joinSharedList,
+  subscribeList,
+  toggleItemBought,
   type SavedList,
 } from '../lib/firebaseAuth';
 import { initShareModal } from './shareModal';
@@ -44,6 +46,37 @@ const headerUserInfo = document.querySelector<HTMLElement>('#header-user-info')!
 const headerUserName = document.querySelector<HTMLAnchorElement>('#header-user-name')!;
 const headerLogoutBtn = document.querySelector<HTMLButtonElement>('#header-logout-btn')!;
 const openShareModal = initShareModal();
+
+let activeListId: string | null = null;
+let unsubscribeActiveList: (() => void) | null = null;
+const boughtIndices = new Set<number>();
+let updateSuperStatsGlobal: () => void = () => {};
+
+function setupRealtimeList(listId: string) {
+  if (unsubscribeActiveList) {
+    unsubscribeActiveList();
+    unsubscribeActiveList = null;
+  }
+  activeListId = listId;
+  if (!listId) return;
+
+  unsubscribeActiveList = subscribeList(listId, (updatedList) => {
+    if (!updatedList || !updatedList.items) return;
+    updatedList.items.forEach((item, idx) => {
+      const cb = document.querySelector<HTMLInputElement>(`.super-checkbox[data-index="${idx}"]`);
+      if (cb) {
+        const isBought = !!item.comprado;
+        if (cb.checked !== isBought) {
+          cb.checked = isBought;
+          cb.closest('.offer')?.classList.toggle('is-bought', isBought);
+          if (isBought) boughtIndices.add(idx);
+          else boughtIndices.delete(idx);
+          updateSuperStatsGlobal();
+        }
+      }
+    });
+  });
+}
 
 const CITY_KEY = 'comparador-ciudad';
 const LIST_KEY = 'comparador-lista';
@@ -243,6 +276,23 @@ function render(report: any) {
   buy.target = '_blank';
   buy.rel = 'noreferrer';
   copy.append(buy);
+
+  const addVerdictBtn = el('button', 'btn-add-list-verdict', '➕ Añadir a lista');
+  addVerdictBtn.type = 'button';
+  addVerdictBtn.title = 'Añadir este producto a una lista de compras';
+  addVerdictBtn.addEventListener('click', () => {
+    openAddToListModal({
+      name: verdict.name || verdict.headline,
+      brand: verdict.brand,
+      unit_name: verdict.unit_name,
+      unit_quantity: verdict.unit_quantity,
+      price: verdict.price,
+      store_name: verdict.store_name,
+      image: verdict.image,
+    });
+  });
+  copy.append(addVerdictBtn);
+
   card.append(copy);
   results.append(card);
 
@@ -274,6 +324,23 @@ function render(report: any) {
       link.target = '_blank';
       link.rel = 'noreferrer';
       right.append(link);
+
+      const addBtn = el('button', 'btn-add-list', '➕ Lista');
+      addBtn.type = 'button';
+      addBtn.title = 'Añadir a lista';
+      addBtn.addEventListener('click', () => {
+        openAddToListModal({
+          name: offer.name || report.same_product.name,
+          brand: offer.brand,
+          unit_name: offer.unit_name,
+          unit_quantity: offer.unit_quantity,
+          price: offer.price,
+          store_name: offer.store_name,
+          image: offer.image,
+        });
+      });
+      right.append(addBtn);
+
       row.append(left, right);
       list.append(row);
     }
@@ -299,6 +366,23 @@ function render(report: any) {
     link.target = '_blank';
     link.rel = 'noreferrer';
     info.append(link);
+
+    const addBtn = el('button', 'btn-add-list', '➕ Añadir a lista');
+    addBtn.type = 'button';
+    addBtn.title = 'Añadir a lista de compras';
+    addBtn.addEventListener('click', () => {
+      openAddToListModal({
+        name: offer.name,
+        brand: offer.brand,
+        unit_name: offer.unit_name,
+        unit_quantity: offer.unit_quantity,
+        price: offer.price,
+        store_name: offer.store_name,
+        image: offer.image,
+      });
+    });
+    info.append(addBtn);
+
     const price = el('div', 'money');
     price.append(el('strong', null, money(offer.price)));
     if (offer.list_price) price.append(el('span', 'was', money(offer.list_price)));
@@ -335,6 +419,23 @@ function renderUnit(report: any) {
   buy.target = '_blank';
   buy.rel = 'noreferrer';
   copy.append(buy);
+
+  const addVerdictBtn = el('button', 'btn-add-list-verdict', '➕ Añadir a lista');
+  addVerdictBtn.type = 'button';
+  addVerdictBtn.title = 'Añadir este producto a una lista de compras';
+  addVerdictBtn.addEventListener('click', () => {
+    openAddToListModal({
+      name: verdict.name || verdict.headline,
+      brand: verdict.brand,
+      unit_name: verdict.unit_name,
+      unit_quantity: verdict.unit_quantity,
+      price: verdict.price || verdict.unit_price,
+      store_name: verdict.store_name,
+      image: verdict.image,
+    });
+  });
+  copy.append(addVerdictBtn);
+
   card.append(copy);
   results.append(card);
 
@@ -369,6 +470,22 @@ function renderUnit(report: any) {
     link.target = '_blank';
     link.rel = 'noreferrer';
     info.append(link);
+
+    const addBtn = el('button', 'btn-add-list', '➕ Añadir a lista');
+    addBtn.type = 'button';
+    addBtn.title = 'Añadir a lista de compras';
+    addBtn.addEventListener('click', () => {
+      openAddToListModal({
+        name: offer.name,
+        brand: offer.brand,
+        unit_name: offer.unit_name,
+        unit_quantity: offer.unit_quantity,
+        price: offer.price,
+        store_name: offer.store_name,
+        image: offer.image,
+      });
+    });
+    info.append(addBtn);
     const price = el('div', 'money');
     price.append(el('strong', null, moneyExact(offer.unit_price)));
     price.append(el('span', null, `por ${offer.unit_label}`));
@@ -467,14 +584,145 @@ function renderList(report: any) {
       : `Toda la lista en ${single.store_name}: ${money(single.total)}.`;
     copy.append(el('p', 'card-line', text));
   }
+
+  // Botón para exportar compra organizada a WhatsApp
+  if (report.found) {
+    const exportBtn = el('button', 'btn-whatsapp-export');
+    exportBtn.type = 'button';
+    exportBtn.innerHTML = `
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m.01 1.67c4.54 0 8.24 3.7 8.24 8.24 0 2.2-.86 4.27-2.42 5.82a8.19 8.19 0 0 1-5.82 2.42c-1.45 0-2.88-.39-4.13-1.12l-.3-.18-3.08.81.82-3-.19-.31a8.18 8.18 0 0 1-1.25-4.44c0-4.54 3.7-8.24 8.24-8.24m4.52 11.66c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.02-1.25-.75-.67-1.26-1.5-1.41-1.75-.14-.25-.02-.39.11-.51.11-.11.25-.29.37-.44.13-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.78 2.71 4.3 3.8.6.26 1.07.41 1.44.53.6.19 1.15.16 1.58.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.15-1.18-.06-.1-.23-.17-.48-.29z"/>
+      </svg>
+      <span>📲 Enviar compra a WhatsApp</span>
+    `;
+    exportBtn.addEventListener('click', () => {
+      const curId = activeListId || savedSelect.value || '';
+      const shareUrl = curId ? `${window.location.origin}/?listaId=${curId}` : `${window.location.origin}/?tab=list`;
+
+      const storeGroups = new Map<string, { total: number; items: string[] }>();
+      for (const it of report.items) {
+        if (!it.winner) continue;
+        const sName = it.winner.store_name;
+        if (!storeGroups.has(sName)) {
+          storeGroups.set(sName, { total: 0, items: [] });
+        }
+        const g = storeGroups.get(sName)!;
+        g.total += it.winner.total || 0;
+        g.items.push(`◻ ${it.winner.name} (${money(it.winner.total)})`);
+      }
+
+      let text = `🛒 *Mercado Óptimo - Mercado Lista*\n`;
+      text += `📍 Total estimado: ${money(report.total)}\n\n`;
+
+      for (const [sName, g] of storeGroups.entries()) {
+        text += `🏪 *Comprar en ${sName}* (${money(g.total)}):\n`;
+        text += g.items.join('\n') + '\n\n';
+      }
+
+      if (report.missing && report.missing.length) {
+        text += `⚠️ *No encontrados:* ${report.missing.join(', ')}\n\n`;
+      }
+
+      text += `🔗 *Tacha mientras compras en tiempo real:*\n${shareUrl}`;
+
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+    });
+    copy.append(exportBtn);
+  }
+
   card.append(copy);
   results.append(card);
 
   const panel = el('section', 'panel');
+
+  // Modo Supermercado: Panel de Progreso y Presupuesto
+  const superPanel = el('div', 'super-panel');
+  const superHeader = el('div', 'super-panel-header');
+  const badge = el('span', 'super-badge');
+  badge.innerHTML = `<span>🛒</span><span>Modo Supermercado · Tacha mientras compras</span>`;
+  const actionsWrap = el('div', 'super-actions');
+  const resetBtn = el('button', 'btn-reset-checklist', 'Desmarcar todo');
+  resetBtn.type = 'button';
+  actionsWrap.append(resetBtn);
+  superHeader.append(badge, actionsWrap);
+
+  const progressBar = el('div', 'super-progress-bar');
+  const progressFill = el('div', 'super-progress-fill');
+  progressBar.append(progressFill);
+
+  const statsWrap = el('div', 'super-stats');
+  const countStat = el('span', null, `0 de ${report.items.length} en el carrito (0%)`);
+  const moneyStat = el('span', 'super-stat-highlight', `$0 en carrito`);
+  statsWrap.append(countStat, moneyStat);
+
+  function updateSuperStats() {
+    const totalItems = report.items.length;
+    const boughtCount = boughtIndices.size;
+    let spentTotal = 0;
+    for (const idx of boughtIndices) {
+      const it = report.items[idx];
+      if (it && it.winner && it.winner.total) {
+        spentTotal += it.winner.total;
+      }
+    }
+    const pct = totalItems > 0 ? Math.round((boughtCount / totalItems) * 100) : 0;
+    progressFill.style.width = `${pct}%`;
+    countStat.textContent = `${boughtCount} de ${totalItems} en el carrito (${pct}%)`;
+    moneyStat.textContent = `${money(spentTotal)} en carrito`;
+  }
+
+  updateSuperStatsGlobal = updateSuperStats;
+
+  resetBtn.addEventListener('click', () => {
+    boughtIndices.clear();
+    panel.querySelectorAll<HTMLInputElement>('.super-checkbox').forEach((cb, idx) => {
+      cb.checked = false;
+      cb.closest('.offer')?.classList.remove('is-bought');
+      const curId = activeListId || savedSelect.value;
+      if (curId) {
+        toggleItemBought(curId, idx, false).catch(() => {});
+      }
+    });
+    updateSuperStats();
+  });
+
+  superPanel.append(superHeader, progressBar, statsWrap);
+  panel.append(superPanel);
+
   panel.append(el('h3', null, 'Producto por producto'));
   const list = el('div', 'offers');
-  for (const item of report.items) {
+  report.items.forEach((item: any, index: number) => {
     const row = el('article', 'offer list-item');
+    const isInitiallyBought = boughtIndices.has(index);
+    if (isInitiallyBought) {
+      row.classList.add('is-bought');
+    }
+
+    // Checkbox táctil para marcar en el pasillo del súper
+    const checkWrap = el('label', 'super-check-label');
+    const checkInput = document.createElement('input');
+    checkInput.type = 'checkbox';
+    checkInput.className = 'super-checkbox';
+    checkInput.dataset.index = String(index);
+    checkInput.checked = isInitiallyBought;
+    checkInput.setAttribute('aria-label', `Marcar ${item.label} como comprado`);
+
+    checkInput.addEventListener('change', () => {
+      const isChecked = checkInput.checked;
+      row.classList.toggle('is-bought', isChecked);
+      if (isChecked) boughtIndices.add(index);
+      else boughtIndices.delete(index);
+      updateSuperStats();
+
+      const curId = activeListId || savedSelect.value;
+      if (curId) {
+        toggleItemBought(curId, index, isChecked).catch(() => {});
+      }
+    });
+
+    checkWrap.append(checkInput);
+    row.append(checkWrap);
+
     const winner = item.winner;
     row.append((winner && safeImage(winner.image)) || el('div'));
     const info = el('div');
@@ -483,7 +731,7 @@ function renderList(report: any) {
       info.append(el('p', 'note', 'No encontré ese producto con la marca y el formato pedidos.'));
       row.append(info, el('div'));
       list.append(row);
-      continue;
+      return;
     }
     info.append(el('h4', null, winner.name));
     const meta = el('p', 'meta');
@@ -508,9 +756,11 @@ function renderList(report: any) {
     if (winner.from_card) price.append(el('span', 'card-line', winner.payment_label));
     row.append(info, price);
     list.append(row);
-  }
+  });
   panel.append(list);
   results.append(panel);
+
+  updateSuperStats();
 
   const stores = el('section', 'panel');
   stores.append(el('h3', null, 'Toda la lista en una sola tienda'));
@@ -589,11 +839,12 @@ async function search(query: string) {
 }
 
 function readList() {
-  return [...listRows.querySelectorAll('.list-row')].map((row) => ({
+  return [...listRows.querySelectorAll('.list-row')].map((row, idx) => ({
     nombre: (row.querySelector<HTMLInputElement>('[name="nombre"]')!.value || '').trim(),
     marca: (row.querySelector<HTMLInputElement>('[name="marca"]')!.value || '').trim() || 'TODAS',
     formato: row.querySelector<HTMLSelectElement>('[name="formato"]')!.value as 'gramos' | 'mililitros' | 'unidades',
     cantidad: Number(row.querySelector<HTMLInputElement>('[name="cantidad"]')!.value),
+    comprado: boughtIndices.has(idx),
   }));
 }
 
@@ -670,6 +921,10 @@ function updateAddRow() {
 }
 
 function setRows(items: any[]) {
+  boughtIndices.clear();
+  items.forEach((item, idx) => {
+    if (item.comprado) boughtIndices.add(idx);
+  });
   listRows.replaceChildren(...items.slice(0, LIST_MAX).map(listRow));
   saveListLocal();
   updateAddRow();
@@ -814,6 +1069,7 @@ async function saveCurrentList() {
       id || undefined,
       currentUserObj ? { displayName: currentUserObj.displayName, email: currentUserObj.email } : undefined
     );
+    setupRealtimeList(saved.id);
     await refreshSavedLists(saved.id);
     accountStatus.textContent = `Guardé «${saved.nombre}» en tu cuenta.`;
   } catch (err: any) {
@@ -897,6 +1153,9 @@ savedSelect.addEventListener('change', () => {
   const current = savedLists.find((s) => s.id === savedSelect.value);
   renderSavedDropdown(savedSelect.value);
   accountStatus.textContent = '';
+  if (savedSelect.value) {
+    setupRealtimeList(savedSelect.value);
+  }
   if (!current) return;
   setRows(current.items);
   applyCity(current.ciudad);
@@ -963,6 +1222,280 @@ async function loadCities() {
   footnote.textContent = config.footnote.replaceAll('{ciudad}', cityName());
 }
 
+// Modal Añadir a Lista
+interface AddModalProduct {
+  name: string;
+  brand?: string;
+  unit_name?: string;
+  unit_quantity?: number;
+  price?: number;
+  store_name?: string;
+  image?: string;
+}
+
+let pendingAddProduct: AddModalProduct | null = null;
+
+function openAddToListModal(prod: AddModalProduct) {
+  pendingAddProduct = prod;
+  const modal = document.getElementById('add-to-list-modal');
+  if (!modal) return;
+
+  const thumb = document.getElementById('add-modal-thumb')!;
+  const prodName = document.getElementById('add-modal-prod-name')!;
+  const prodMeta = document.getElementById('add-modal-prod-meta')!;
+  const qtyInput = document.getElementById('add-modal-qty') as HTMLInputElement;
+  const formatSelect = document.getElementById('add-modal-format') as HTMLSelectElement;
+  const feedback = document.getElementById('add-modal-feedback')!;
+
+  const authListsSec = document.getElementById('add-modal-auth-lists')!;
+  const authNoListsSec = document.getElementById('add-modal-auth-nolists')!;
+  const guestSec = document.getElementById('add-modal-guest')!;
+  const existingSelect = document.getElementById('add-modal-existing-select') as HTMLSelectElement;
+  const newNameInput = document.getElementById('add-modal-new-name') as HTMLInputElement;
+  const destExisting = document.getElementById('add-dest-existing') as HTMLInputElement;
+  const destNew = document.getElementById('add-dest-new') as HTMLInputElement;
+
+  // Llenar datos de producto
+  thumb.replaceChildren();
+  const imgEl = safeImage(prod.image);
+  if (imgEl) thumb.append(imgEl);
+
+  prodName.textContent = prod.name;
+  const metaParts: string[] = [];
+  if (prod.store_name) metaParts.push(prod.store_name);
+  if (prod.price) metaParts.push(money(prod.price));
+  prodMeta.textContent = metaParts.join(' · ') || 'Producto de supermercado';
+
+  // Configurar cantidad y formato sugeridos
+  const detectedQty = prod.unit_quantity && prod.unit_quantity > 0 ? prod.unit_quantity : 1;
+  qtyInput.value = String(detectedQty);
+
+  if (prod.unit_name === 'gramos' || prod.unit_name === 'g') {
+    formatSelect.value = 'gramos';
+  } else if (prod.unit_name === 'mililitros' || prod.unit_name === 'ml') {
+    formatSelect.value = 'mililitros';
+  } else {
+    formatSelect.value = 'unidades';
+  }
+
+  // Ocultar feedback al abrir
+  feedback.hidden = true;
+
+  // Evaluar estado de sesión
+  if (currentUserId) {
+    guestSec.hidden = true;
+    if (savedLists.length > 0) {
+      authListsSec.hidden = false;
+      authNoListsSec.hidden = true;
+
+      // Llenar selector de listas existentes
+      existingSelect.replaceChildren();
+      for (const list of savedLists) {
+        const count = list.items ? list.items.length : 0;
+        const opt = el('option', null, `${list.nombre} (${count} producto${count === 1 ? '' : 's'})`);
+        opt.value = list.id;
+        existingSelect.append(opt);
+      }
+      destExisting.checked = true;
+      existingSelect.disabled = false;
+      destNew.checked = false;
+      newNameInput.disabled = true;
+      newNameInput.value = '';
+    } else {
+      authListsSec.hidden = true;
+      authNoListsSec.hidden = false;
+      (document.getElementById('add-modal-first-name') as HTMLInputElement).value = '';
+    }
+  } else {
+    authListsSec.hidden = true;
+    authNoListsSec.hidden = true;
+    guestSec.hidden = false;
+  }
+
+  modal.classList.add('is-open');
+}
+
+function initAddToListModalListeners() {
+  const modal = document.getElementById('add-to-list-modal');
+  if (!modal) return;
+
+  const closeBtn = document.getElementById('add-modal-close');
+  const continueBtn = document.getElementById('add-modal-continue');
+  const goListBtn = document.getElementById('add-modal-go-list');
+
+  const destExisting = document.getElementById('add-dest-existing') as HTMLInputElement;
+  const destNew = document.getElementById('add-dest-new') as HTMLInputElement;
+  const existingSelect = document.getElementById('add-modal-existing-select') as HTMLSelectElement;
+  const newNameInput = document.getElementById('add-modal-new-name') as HTMLInputElement;
+
+  const submitAuth = document.getElementById('add-modal-submit-auth');
+  const submitFirst = document.getElementById('add-modal-submit-first');
+  const addLocalBtn = document.getElementById('add-modal-add-local');
+  const modalLoginBtn = document.getElementById('add-modal-login-btn');
+
+  const qtyInput = document.getElementById('add-modal-qty') as HTMLInputElement;
+  const formatSelect = document.getElementById('add-modal-format') as HTMLSelectElement;
+  const feedback = document.getElementById('add-modal-feedback')!;
+  const feedbackMsg = document.getElementById('add-modal-feedback-msg')!;
+
+  const closeModal = () => modal.classList.remove('is-open');
+
+  closeBtn?.addEventListener('click', closeModal);
+  continueBtn?.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  goListBtn?.addEventListener('click', () => {
+    closeModal();
+    setMode('list');
+    listForm.scrollIntoView({ behavior: 'smooth' });
+  });
+
+  destExisting?.addEventListener('change', () => {
+    existingSelect.disabled = false;
+    newNameInput.disabled = true;
+  });
+  destNew?.addEventListener('change', () => {
+    existingSelect.disabled = true;
+    newNameInput.disabled = false;
+    newNameInput.focus();
+  });
+
+  function showSuccess(msg: string) {
+    feedbackMsg.textContent = msg;
+    feedback.hidden = false;
+    document.getElementById('add-modal-auth-lists')!.hidden = true;
+    document.getElementById('add-modal-auth-nolists')!.hidden = true;
+    document.getElementById('add-modal-guest')!.hidden = true;
+  }
+
+  submitAuth?.addEventListener('click', async () => {
+    if (!pendingAddProduct || !currentUserId) return;
+    const isNew = destNew.checked;
+    const qty = Number(qtyInput.value) || 1;
+    const format = formatSelect.value as 'gramos' | 'mililitros' | 'unidades';
+
+    const newItem = {
+      nombre: pendingAddProduct.name,
+      producto: pendingAddProduct.name,
+      marca: pendingAddProduct.brand || 'TODAS',
+      formato: format,
+      cantidad: qty,
+      comprado: false,
+    };
+
+    if (isNew) {
+      const name = newNameInput.value.trim();
+      if (!name) {
+        alert('Escribe un nombre para la nueva lista');
+        newNameInput.focus();
+        return;
+      }
+      try {
+        const saved = await saveUserList(
+          currentUserId,
+          { nombre: name, ciudad: citySelect.value || 'bogota', items: [newItem] },
+          undefined,
+          currentUserObj ? { displayName: currentUserObj.displayName, email: currentUserObj.email } : undefined
+        );
+        await refreshSavedLists(saved.id);
+        showSuccess(`¡Lista «${saved.nombre}» creada y producto guardado!`);
+      } catch (err: any) {
+        alert(err.message || 'Error al crear la lista.');
+      }
+    } else {
+      const targetId = existingSelect.value;
+      const targetList = savedLists.find((l) => l.id === targetId);
+      if (!targetList) return;
+      try {
+        const items = [...(targetList.items || []), newItem];
+        await saveUserList(
+          currentUserId,
+          { nombre: targetList.nombre, ciudad: targetList.ciudad, items },
+          targetList.id,
+          currentUserObj ? { displayName: currentUserObj.displayName, email: currentUserObj.email } : undefined
+        );
+        targetList.items = items;
+        if (savedSelect.value === targetList.id) {
+          setRows(items);
+        }
+        await refreshSavedLists(targetList.id);
+        showSuccess(`¡Agregado a «${targetList.nombre}»! Ahora tiene ${items.length} productos.`);
+      } catch (err: any) {
+        alert(err.message || 'Error al guardar en la lista.');
+      }
+    }
+  });
+
+  submitFirst?.addEventListener('click', async () => {
+    if (!pendingAddProduct || !currentUserId) return;
+    const firstNameInput = document.getElementById('add-modal-first-name') as HTMLInputElement;
+    const name = firstNameInput.value.trim() || 'Mi Mercado';
+    const qty = Number(qtyInput.value) || 1;
+    const format = formatSelect.value as 'gramos' | 'mililitros' | 'unidades';
+
+    const newItem = {
+      nombre: pendingAddProduct.name,
+      producto: pendingAddProduct.name,
+      marca: pendingAddProduct.brand || 'TODAS',
+      formato: format,
+      cantidad: qty,
+      comprado: false,
+    };
+
+    try {
+      const saved = await saveUserList(
+        currentUserId,
+        { nombre: name, ciudad: citySelect.value || 'bogota', items: [newItem] },
+        undefined,
+        currentUserObj ? { displayName: currentUserObj.displayName, email: currentUserObj.email } : undefined
+      );
+      await refreshSavedLists(saved.id);
+      showSuccess(`¡Lista «${saved.nombre}» creada y producto guardado!`);
+    } catch (err: any) {
+      alert(err.message || 'Error al crear la lista.');
+    }
+  });
+
+  addLocalBtn?.addEventListener('click', () => {
+    if (!pendingAddProduct) return;
+    const qty = Number(qtyInput.value) || 1;
+    const format = formatSelect.value as 'gramos' | 'mililitros' | 'unidades';
+
+    const newItem = {
+      nombre: pendingAddProduct.name,
+      marca: pendingAddProduct.brand || 'TODAS',
+      formato: format,
+      cantidad: qty,
+      comprado: false,
+    };
+
+    const rows = [...listRows.querySelectorAll('.list-row')];
+    if (rows.length === 1 && !rows[0].querySelector<HTMLInputElement>('[name="nombre"]')?.value.trim()) {
+      listRows.replaceChildren(listRow(newItem));
+    } else {
+      if (listRows.children.length < LIST_MAX) {
+        listRows.append(listRow(newItem));
+      } else {
+        alert('Has alcanzado el límite de 15 productos en la lista.');
+        return;
+      }
+    }
+
+    saveListLocal();
+    updateAddRow();
+    showSuccess(`¡Agregado a tu canasta de compras! Ya puedes cotizarla en la pestaña «Lista».`);
+  });
+
+  modalLoginBtn?.addEventListener('click', async () => {
+    await handleGoogleLogin();
+    if (currentUserId && pendingAddProduct) {
+      openAddToListModal(pendingAddProduct);
+    }
+  });
+}
+
 // Initial boot
 const urlParams = new URLSearchParams(window.location.search);
 const sharedListId = urlParams.get('listaId');
@@ -970,6 +1503,7 @@ const initialTab = urlParams.get('tab') as ModeKey | null;
 
 if (sharedListId) {
   mode = 'list';
+  setupRealtimeList(sharedListId);
   getListById(sharedListId).then(async (sharedList) => {
     if (sharedList) {
       setRows(sharedList.items);
@@ -989,6 +1523,7 @@ if (sharedListId) {
 loadList();
 setMode(mode);
 loadCities();
+initAddToListModalListeners();
 subscribeAuth(async (user) => {
   handleAuthState(user);
   if (user && sharedListId) {

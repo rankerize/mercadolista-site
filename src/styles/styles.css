@@ -993,3 +993,518 @@ html { scroll-behavior: smooth; }
   .modal-card { padding: 1.25rem; }
 }
 
+/* ─── Pestañas de Perfil (Mis Listas / Modo Compra) ─────────────────────── */
+.profile-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid var(--line);
+  padding-bottom: 0.5rem;
+}
+
+.profile-tab-btn {
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 0.6rem 1.1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.profile-tab-btn:hover {
+  color: var(--ink);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.profile-tab-btn.is-active {
+  color: #0e6a45;
+  background: #e7f6ee;
+}
+
+/* ─── Modo Compra en Perfil (Checklist Súper) ─────────────────────────── */
+.shopping-view-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+.shopping-selector-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.shopping-selector-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 260px;
+}
+
+.shopping-selector-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.shopping-select-dropdown {
+  flex: 1;
+  padding: 0.6rem 0.85rem;
+  font-family: inherit;
+  font-size: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.shopping-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+}
+
+.shopping-item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.95rem 1.15rem;
+  background: #fff;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+.shopping-item-row:hover {
+  border-color: #0e6a45;
+  box-shadow: 0 2px 8px rgba(14, 106, 69, 0.06);
+}
+
+.shopping-item-row.is-bought {
+  background: #f8fbf9;
+  border-color: #d1e7dd;
+  opacity: 0.55;
+}
+
+.shopping-item-row.is-bought .shopping-item-name {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.shopping-item-info {
+  flex: 1;
+}
+
+.shopping-item-name {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.shopping-item-meta {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.shopping-item-check {
+  width: 26px;
+  height: 26px;
+  border: 2px solid #b4c2b9;
+  border-radius: 6px;
+  background: #fff;
+  display: grid;
+  place-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.shopping-item-row.is-bought .shopping-item-check {
+  background: #0e6a45;
+  border-color: #0e6a45;
+}
+
+.shopping-item-row.is-bought .shopping-item-check::after {
+  content: "";
+  width: 6px;
+  height: 11px;
+  border: solid white;
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+/* ─── Modo En el Súper (Checklist & Presupuesto) ────────────────────────── */
+.super-panel {
+  background: var(--card);
+  border: 2px solid #d4ede1;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 16px rgba(14, 106, 69, 0.06);
+}
+
+.super-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.super-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #0e6a45;
+  background: #e7f6ee;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+}
+
+.super-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.btn-reset-checklist {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-weight: 500;
+}
+
+.btn-reset-checklist:hover {
+  background: #fff;
+  color: var(--clay);
+  border-color: var(--clay);
+}
+
+.super-progress-bar {
+  width: 100%;
+  height: 10px;
+  background: #e9ecef;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 0.6rem 0;
+}
+
+.super-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #128c7e, #0e6a45);
+  border-radius: 999px;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.super-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.super-stat-highlight {
+  color: var(--pine-deep);
+  font-weight: 700;
+}
+
+/* Checkbox interactivo en la lista comparador */
+.offer.list-item {
+  grid-template-columns: 36px 72px 1fr auto;
+  align-items: center;
+  position: relative;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.super-check-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding-right: 0.5rem;
+  user-select: none;
+}
+
+.super-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  border: 2px solid #b4c2b9;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  display: grid;
+  place-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.super-checkbox:hover {
+  border-color: #0e6a45;
+}
+
+.super-checkbox:checked {
+  background: #0e6a45;
+  border-color: #0e6a45;
+}
+
+.super-checkbox:checked::before {
+  content: "";
+  width: 6px;
+  height: 11px;
+  border: solid white;
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+.offer.is-bought {
+  background: rgba(14, 106, 69, 0.035);
+  opacity: 0.65;
+}
+
+.offer.is-bought h4 {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.offer.is-bought .list-label {
+  text-decoration: line-through;
+}
+
+/* Botón de Exportar Compra a WhatsApp */
+.btn-whatsapp-export {
+  background: #128c7e;
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  padding: 0.65rem 1.1rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+  transition: background 0.15s ease, transform 0.15s ease;
+  box-shadow: 0 2px 8px rgba(18, 140, 126, 0.25);
+}
+
+.btn-whatsapp-export:hover {
+  background: #075e54;
+  transform: translateY(-1px);
+}
+
+/* Botones de Añadir a Lista en Resultados de Búsqueda */
+.btn-add-list {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(14, 106, 69, 0.08);
+  color: var(--pine);
+  border: 1px solid rgba(14, 106, 69, 0.2);
+  border-radius: 6px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: 0.35rem;
+}
+
+.btn-add-list:hover {
+  background: var(--pine);
+  color: #fff;
+  border-color: var(--pine);
+}
+
+.btn-add-list-verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  backdrop-filter: blur(4px);
+  margin-left: 0.5rem;
+}
+
+.btn-add-list-verdict:hover {
+  background: #fff;
+  color: var(--pine-deep);
+  border-color: #fff;
+}
+
+/* Estilos de AddToListModal */
+.add-modal-product-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: var(--tint);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.add-modal-thumb img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+
+.add-modal-thumb:empty {
+  display: none;
+}
+
+.add-modal-prod-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.add-modal-prod-title {
+  margin: 0 0 0.2rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.add-modal-prod-meta {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.add-modal-qty-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.add-modal-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.add-modal-input,
+.add-modal-select {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: #fff;
+  color: var(--ink);
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+
+.add-modal-input:focus,
+.add-modal-select:focus {
+  outline: none;
+  border-color: var(--pine);
+}
+
+.add-modal-input:disabled {
+  background: #f4f3f0;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.add-modal-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+}
+
+.add-modal-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.add-modal-radio-label input[type="radio"] {
+  accent-color: var(--pine);
+  cursor: pointer;
+}
+
+.add-modal-feedback {
+  text-align: center;
+  padding: 1.5rem 0 0.5rem;
+}
+
+.feedback-success-badge {
+  display: inline-block;
+  background: rgba(14, 106, 69, 0.1);
+  color: var(--pine);
+  font-size: 1.05rem;
+  font-weight: 600;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  margin-bottom: 0.5rem;
+}
+
+.feedback-msg {
+  font-size: 0.88rem;
+  color: var(--muted);
+  margin: 0 0 1.25rem;
+}
+
+.feedback-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+

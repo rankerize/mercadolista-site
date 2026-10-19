@@ -26,17 +26,30 @@ Este documento contiene la arquitectura, convenciones y decisiones de diseño cl
   1. **Firebase Authentication**: Inicio de sesión federado con Google Sign-In (`signInWithPopup`). El proveedor de Google ya está habilitado en la consola de Firebase.
   2. **Cloud Firestore**: Persistencia y sincronización de las listas de compras en la colección `shared_lists`.
   3. **Listas Colaborativas (WhatsApp y Correo)**:
-     - Cualquier lista se puede compartir por **WhatsApp** (con número directo o eligiendo el chat) o por **correo de Google**.
+     - Cualquier lista se puede compartir por **WhatsApp** (con selector de código de país por defecto `🇨🇴 +57` o chat general) o por **correo de Google**.
      - Genera un enlace: `/?listaId=ID`.
      - Cuando la pareja abre ese enlace desde WhatsApp, la app carga la lista automáticamente y, al iniciar sesión, **vincula su UID a la lista como colaborador (`collaboratorIds`)**.
      - Ambos pueden verla en su `/perfil`, editarla, cotizarla y guardarla en tiempo real.
+  4. **Modo «En el Súper / Modo Compra» (Checklist y Presupuesto en Tiempo Real)**:
+     - En `/perfil`: pestaña dedicada **«🛒 Modo Compra»** con selector desplegable de listas para alternar entre mercados al instante.
+     - En cada tarjeta de lista en `/perfil`: botón verde directo **«🛒 Modo Compra»** para abrir la lista a comprar con un solo toque.
+     - Filas táctiles grandes donde al tocar cualquier parte se tacha el producto (`is-bought`) y actualiza la barra de progreso en vivo.
+     - Sincronización en tiempo real entre la pareja con `subscribeList` (`onSnapshot` de Firestore) y `toggleItemBought`.
+     - **Seguro contra borrado/reseteo accidental**: Los productos no se pueden eliminar por error en este modo, y el botón **«🔒 Desmarcar todo»** exige confirmación explícita con diálogo de seguridad antes de reiniciar la lista.
+  5. **Exportador a WhatsApp de Compra Óptima**:
+     - Botón en el veredicto que agrupa los productos por tienda ganadora (D1, Éxito, Jumbo, etc.) con casillas de verificación en texto plano `◻ [ ]`, precios y link directo para el chat de WhatsApp.
+  6. **PWA (Progressive Web App)**:
+     - Archivo `public/manifest.webmanifest` con meta tags para iOS y Android para instalarse en la pantalla de inicio del teléfono sin tiendas de aplicaciones.
+  7. **Añadir a lista desde Búsquedas en Colombia (`AddToListModal`)**:
+     - En los resultados de búsqueda de Colombia y Unidad, el veredicto y las ofertas tienen el botón `➕ Añadir a lista`.
+     - Abre el modal `AddToListModal.astro`: permite seleccionar una lista existente en Firebase, crear una nueva lista en el momento, o añadirlo a la canasta local del comparador si no ha iniciado sesión.
 - **Archivos de integración**:
   - [`src/lib/firebase.ts`](file:///Users/cesarandresjimenezarci/Documents/Clientes/Comparador%20de%20precios/src/lib/firebase.ts): Inicialización del SDK cliente de Firebase con las credenciales públicas de la Web App `mercadologo`.
-  - [`src/lib/firebaseAuth.ts`](file:///Users/cesarandresjimenezarci/Documents/Clientes/Comparador%20de%20precios/src/lib/firebaseAuth.ts): Métodos utilitarios: `loginWithGoogle()`, `logoutUser()`, `subscribeAuth()`, `getUserLists()`, `saveUserList()`, `deleteUserList()`, `getListById()`, `joinSharedList()`, `shareListWithEmail()`.
+  - [`src/lib/firebaseAuth.ts`](file:///Users/cesarandresjimenezarci/Documents/Clientes/Comparador%20de%20precios/src/lib/firebaseAuth.ts): Métodos utilitarios: `loginWithGoogle()`, `logoutUser()`, `subscribeAuth()`, `getUserLists()`, `saveUserList()`, `deleteUserList()`, `getListById()`, `joinSharedList()`, `shareListWithEmail()`, `subscribeList()`, `toggleItemBought()`.
 
 ### UX de Autenticación y Perfil
 - Existe un botón de **«Iniciar sesión»** con Google en el header superior derecho (`.top-bar`) accesible desde todas las pestañas. Al iniciar sesión, muestra `👤 [Nombre]` como enlace directo a `/perfil`.
-- Página `/perfil`: Vista de gestión donde se listan todas las listas propias y compartidas, con botones para cotizar, borrar o compartir por WhatsApp/Correo.
+- Página `/perfil`: Vista de gestión con dos pestañas principales: **«📋 Mis Listas»** (administración, compartir, comparar o borrar) y **«🛒 Modo Compra»** (checklist táctil interactiva para el pasillo del supermercado con selector de lista y seguro de desmarcado).
 - En la pestaña **«Lista»**, hay un botón contextual para invitar a guardar o cargar listas con la cuenta de Google, y un botón **«📲 Compartir»**.
 - Si el usuario no inicia sesión, el comparador sigue funcionando al 100% de manera anónima y almacena la lista actual en `localStorage`.
 
