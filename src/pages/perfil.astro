@@ -117,6 +117,7 @@ import ShareModal from '../components/ShareModal.astro';
       const listsSection = document.querySelector<HTMLElement>('#lists-section')!;
       const listsGrid = document.querySelector<HTMLElement>('#lists-grid')!;
       const listsStatus = document.querySelector<HTMLElement>('#lists-status')!;
+      const openShareModal = initShareModal();
 
       let currentUid: string | null = null;
       let currentUserEmail: string | null = null;
@@ -163,11 +164,8 @@ import ShareModal from '../components/ShareModal.astro';
               <button type="button" class="btn-primary compare-btn">
                 Comparar precios
               </button>
-              <button type="button" class="btn-primary whatsapp-btn" style="background: #128c7e;" title="Compartir a WhatsApp de tu pareja">
-                📲 WhatsApp
-              </button>
-              <button type="button" class="btn-primary email-btn" style="background: #4a5568;" title="Compartir por correo de Google">
-                ✉️ Correo
+              <button type="button" class="btn-primary share-btn" style="background: #128c7e;" title="Compartir lista con tu pareja por WhatsApp o Correo">
+                📲 Compartir
               </button>
               <button type="button" class="btn-danger-ghost delete-btn">
                 ${list.isOwner ? 'Borrar' : 'Desvincularme'}
@@ -184,34 +182,9 @@ import ShareModal from '../components/ShareModal.astro';
             window.location.href = `/?tab=list&listaId=${list.id}`;
           });
 
-          // Botón WhatsApp
-          card.querySelector('.whatsapp-btn')!.addEventListener('click', () => {
-            const shareUrl = `${window.location.origin}/?listaId=${list.id}`;
-            const phone = window.prompt(
-              'Ingresa el número de WhatsApp con código de país (ej. 573001234567) o déjalo vacío para elegir el chat en WhatsApp:',
-              ''
-            );
-            if (phone === null) return;
-            const msg = `🛒 ¡Hola! Te comparto nuestra lista de compras «${list.nombre}» para comparar precios y editarla juntos:\n${shareUrl}`;
-            const target = phone.trim()
-              ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone.replace(/[^0-9]/g, ''))}&text=${encodeURIComponent(msg)}`
-              : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-            window.open(target, '_blank');
-          });
-
-          // Botón Compartir por Correo
-          card.querySelector('.email-btn')!.addEventListener('click', async () => {
-            const email = window.prompt(
-              `Ingresa el correo de Google de tu pareja para compartirle «${list.nombre}»:`,
-              ''
-            );
-            if (!email || !email.includes('@')) return;
-            try {
-              await shareListWithEmail(list.id, email);
-              alert(`¡Listo! Se compartió la lista con ${email}. Podrá verla y editarla en su perfil.`);
-            } catch (err: any) {
-              alert(err.message || 'Error al compartir la lista.');
-            }
+          // Botón Compartir (Abre Modal elegante con WhatsApp y Correo)
+          card.querySelector('.share-btn')!.addEventListener('click', () => {
+            openShareModal({ listId: list.id, listName: list.nombre });
           });
 
           // Botón Eliminar

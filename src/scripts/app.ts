@@ -9,6 +9,7 @@ import {
   joinSharedList,
   type SavedList,
 } from '../lib/firebaseAuth';
+import { initShareModal } from './shareModal';
 
 const form = document.querySelector<HTMLFormElement>('#search-form')!;
 const queryInput = document.querySelector<HTMLInputElement>('#query')!;
@@ -42,6 +43,7 @@ const headerLoginBtn = document.querySelector<HTMLButtonElement>('#header-login-
 const headerUserInfo = document.querySelector<HTMLElement>('#header-user-info')!;
 const headerUserName = document.querySelector<HTMLAnchorElement>('#header-user-name')!;
 const headerLogoutBtn = document.querySelector<HTMLButtonElement>('#header-logout-btn')!;
+const openShareModal = initShareModal();
 
 const CITY_KEY = 'comparador-ciudad';
 const LIST_KEY = 'comparador-lista';
@@ -898,17 +900,7 @@ savedSelect.addEventListener('change', () => {
 savedShare.addEventListener('click', () => {
   const current = savedLists.find((s) => s.id === savedSelect.value);
   if (!current) return;
-  const shareUrl = `${window.location.origin}/?listaId=${current.id}`;
-  const phone = window.prompt(
-    'Ingresa el número de WhatsApp con código de país (ej. 573001234567) o déjalo en blanco para abrir WhatsApp y elegir el chat:',
-    ''
-  );
-  if (phone === null) return;
-  const msg = `🛒 ¡Hola! Te comparto nuestra lista de compras «${current.nombre}» para comparar precios y editarla juntos:\n${shareUrl}`;
-  const target = phone.trim()
-    ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone.replace(/[^0-9]/g, ''))}&text=${encodeURIComponent(msg)}`
-    : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-  window.open(target, '_blank');
+  openShareModal({ listId: current.id, listName: current.nombre });
 });
 
 savedDelete.addEventListener('click', async () => {
