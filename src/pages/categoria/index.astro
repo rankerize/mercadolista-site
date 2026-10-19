@@ -1,0 +1,85 @@
+---
+import '../../styles/styles.css';
+import { CATEGORIES, getItemsByCategory } from '../../lib/catalog';
+import { toSlug } from '../../lib/slugs';
+
+const BASE = 'https://mercadolista.com';
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Categorías de productos · Mercado Lista</title>
+    <meta name="description" content="Compara precios por categoría: lácteos, despensa, carnes, frutas, aseo y más. Precios en tiempo real en Éxito, D1, Jumbo, Carulla y otras tiendas de Colombia." />
+    <link rel="canonical" href={`${BASE}/categoria`} />
+    <meta name="theme-color" content="#0e6a45" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json" set:html={JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Inicio', item: BASE },
+        { '@type': 'ListItem', position: 2, name: 'Categorías', item: `${BASE}/categoria` },
+      ],
+    })} />
+  </head>
+  <body>
+    <header class="top">
+      <div class="top-bar">
+        <a href="/" class="eyebrow">Mercado Lista</a>
+      </div>
+      <h1>Categorías de productos</h1>
+      <p class="lead">Precios en tiempo real por tienda para cada producto de la canasta familiar colombiana.</p>
+    </header>
+
+    <main class="cat-index">
+      <nav class="breadcrumb" aria-label="Navegación">
+        <a href="/">Inicio</a>
+        <span aria-hidden="true">›</span>
+        <span aria-current="page">Categorías</span>
+      </nav>
+
+      <ul class="cat-grid" role="list">
+        {CATEGORIES.map((cat) => {
+          const items = getItemsByCategory(cat.id);
+          return (
+            <li>
+              <a href={`/categoria/${cat.id}`} class="cat-card">
+                <span class="cat-icon">{cat.icono}</span>
+                <div class="cat-info">
+                  <strong>{cat.nombre}</strong>
+                  <span class="cat-count">{items.length} productos</span>
+                </div>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </main>
+
+    <footer class="site-footer">
+      <p>© {new Date().getFullYear()} Mercado Lista · Precios consultados en tiempo real</p>
+    </footer>
+
+    <style>
+      .cat-index { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+      .breadcrumb { display: flex; gap: 0.5rem; align-items: center; font-size: 0.875rem; color: #666; margin-bottom: 2rem; }
+      .breadcrumb a { color: #0e6a45; text-decoration: none; }
+      .breadcrumb a:hover { text-decoration: underline; }
+      .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; list-style: none; margin: 0; padding: 0; }
+      .cat-card { display: flex; align-items: center; gap: 1rem; padding: 1.25rem; border: 1.5px solid #e2e8f0; border-radius: 12px; text-decoration: none; color: inherit; transition: border-color 0.15s, box-shadow 0.15s; }
+      .cat-card:hover { border-color: #0e6a45; box-shadow: 0 2px 12px rgba(14,106,69,0.12); }
+      .cat-icon { font-size: 2rem; flex-shrink: 0; }
+      .cat-info { display: flex; flex-direction: column; gap: 0.2rem; }
+      .cat-info strong { font-size: 1rem; }
+      .cat-count { font-size: 0.8rem; color: #888; }
+      .site-footer { text-align: center; padding: 2rem 1rem; color: #999; font-size: 0.8rem; border-top: 1px solid #f0f0f0; }
+    </style>
+  </body>
+</html>

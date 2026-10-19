@@ -191,6 +191,7 @@ import ShareModal from '../components/ShareModal.astro';
       let cachedLists: SavedList[] = [];
       let activeShoppingList: SavedList | null = null;
       let unsubscribeShoppingLive: (() => void) | null = null;
+      let unsubscribeUserListsLive: (() => void) | null = null;
 
       function setProfileTab(tab: 'lists' | 'shopping') {
         const isLists = tab === 'lists';
@@ -224,14 +225,47 @@ import ShareModal from '../components/ShareModal.astro';
           const card = document.createElement('article');
           card.className = 'saved-list-card';
 
+          const otherCollabs: string[] = [];
+          if (list.collaborators && list.collaborators.length > 0) {
+            list.collaborators.forEach((c) => {
+              if (c.uid !== currentUid && (c.name || c.email)) {
+                otherCollabs.push(c.name || (c.email ? c.email.split('@')[0] : 'Colaborador'));
+              }
+            });
+          }
+          if (list.sharedWithEmails && list.sharedWithEmails.length > 0) {
+            list.sharedWithEmails.forEach((email) => {
+              const short = email.split('@')[0];
+              if (email !== currentUserEmail && !otherCollabs.includes(short)) {
+                otherCollabs.push(short);
+              }
+            });
+          }
+
+          const uniqueCollabs = [...new Set(otherCollabs)];
+
+          let collabBadge = '';
+          if (list.isOwner) {
+            if (uniqueCollabs.length > 0) {
+              collabBadge = `<span class="collab-badge">👥 Compartida con: <strong>${uniqueCollabs.join(', ')}</strong></span>`;
+            } else {
+              collabBadge = `<span style="display: inline-block; font-size: 0.72rem; color: var(--muted); margin-bottom: 0.35rem;">🔒 Solo tú</span>`;
+            }
+          } else {
+            const ownerDisplayName = list.ownerName || (list.ownerEmail ? list.ownerEmail.split('@')[0] : 'tu pareja');
+            const others = uniqueCollabs.filter((n) => n !== ownerDisplayName);
+            collabBadge = `<span class="collab-badge">👥 Compartida por <strong>${ownerDisplayName}</strong>${others.length > 0 ? ` (y ${others.join(', ')})` : ''}</span>`;
+          }
+
           const itemsText = list.items
             .slice(0, 4)
-            .map((i) => `${i.nombre} (${i.cantidad} ${i.formato})`)
+            .map((i) => {
+              const isMe = currentUid && i.addedById === currentUid;
+              const author = isMe ? ' <span style="color: #0e6a45; font-size: 0.75rem;">(por ti)</span>' : (i.addedBy ? ` <span style="color: #0e6a45; font-size: 0.75rem;">(por ${i.addedBy})</span>` : '');
+              return `${i.nombre} (${i.cantidad} ${i.formato})${author}`;
+            })
             .join(', ');
           const extraCount = list.items.length > 4 ? ` y ${list.items.length - 4} más…` : '';
-          const sharedBadge = !list.isOwner
-            ? `<span style="display: inline-block; font-size: 0.72rem; color: #0e6a45; background: #e7f6ee; padding: 0.15rem 0.45rem; border-radius: 4px; margin-bottom: 0.35rem; font-weight: 500;">👥 Compartida por ${list.ownerName || 'tu pareja'}</span>`
-            : '';
 
           const boughtCount = list.items.filter((i) => i.comprado).length;
           const boughtBadge = boughtCount > 0
@@ -240,7 +274,7 @@ import ShareModal from '../components/ShareModal.astro';
 
           card.innerHTML = `
             <div>
-              ${sharedBadge}
+              ${collabBadge}
               <div class="saved-list-header">
                 <h3 class="saved-list-title">${list.nombre}</h3>
                 <span class="saved-list-city">${list.ciudad || 'Bogotá'}</span>
@@ -370,11 +404,20 @@ import ShareModal from '../components/ShareModal.astro';
           row.setAttribute('aria-checked', item.comprado ? 'true' : 'false');
           row.setAttribute('tabindex', '0');
 
+          const isMe = currentUid && item.addedById === currentUid;
+          const authorName = isMe ? 'Tú' : (item.addedBy || '');
+          const authorBadge = authorName
+            ? `<span class="shopping-item-author">👤 ${authorName}</span>`
+            : '';
+
           row.innerHTML = `
             <div class="shopping-item-check"></div>
             <div class="shopping-item-info">
-              <h4 class="shopping-item-name">${item.nombre}</h4>
-              <p class="shopping-item-meta">
+              <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.35rem;">
+                <h4 class="shopping-item-name" style="margin: 0;">${item.nombre}</h4>
+                ${authorBadge}
+              </div>
+              <p class="shopping-item-meta" style="margin-top: 0.2rem;">
                 <strong>${item.cantidad} ${item.formato}</strong>
                 ${item.marca && item.marca.toUpperCase() !== 'TODAS' ? `· Marca: ${item.marca}` : ''}
               </p>
@@ -491,6 +534,7 @@ import ShareModal from '../components/ShareModal.astro';
 
       profileLogoutBtn.addEventListener('click', async () => {
         if (unsubscribeShoppingLive) unsubscribeShoppingLive();
+        if (unsubscribeUserListsLive) unsubscribeUserListsLive();
         await logoutUser();
         window.location.href = '/';
       });
@@ -507,11 +551,20 @@ import ShareModal from '../components/ShareModal.astro';
           userDisplayName.textContent = user.displayName || 'Usuario';
           userEmail.textContent = user.email || '';
 
+          if (unsubscribeUserListsLive) unsubscribeUserListsLive();
+          unsubscribeUserListsLive = subscribeUserLists(user.uid, currentUserEmail, (liveLists) => {
+            cachedLists = liveLists;
+            listsStatus.textContent = '';
+            renderLists(liveLists);
+            updateShoppingDropdown();
+          });
+
           loadLists(user.uid, currentUserEmail);
         } else {
           currentUid = null;
           currentUserEmail = null;
           if (unsubscribeShoppingLive) unsubscribeShoppingLive();
+          if (unsubscribeUserListsLive) unsubscribeUserListsLive();
           authGate.hidden = false;
           userProfile.hidden = true;
           profileTabsNav.hidden = true;

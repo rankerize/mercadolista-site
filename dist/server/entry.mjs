@@ -1,6 +1,6 @@
 import { renderers } from './renderers.mjs';
-import { c as createExports, s as serverEntrypointModule } from './chunks/_@astrojs-ssr-adapter_CytlMMcI.mjs';
-import { manifest } from './manifest_CasSzL28.mjs';
+import { c as createExports, s as serverEntrypointModule } from './chunks/_@astrojs-ssr-adapter_3MSL7_aE.mjs';
+import { manifest } from './manifest_BGaKEWSY.mjs';
 
 const serverIslandMap = new Map();;
 
@@ -11,8 +11,12 @@ const _page3 = () => import('./pages/api/internacional.astro.mjs');
 const _page4 = () => import('./pages/api/lista.astro.mjs');
 const _page5 = () => import('./pages/api/tiendas.astro.mjs');
 const _page6 = () => import('./pages/api/unidad.astro.mjs');
-const _page7 = () => import('./pages/perfil.astro.mjs');
-const _page8 = () => import('./pages/index.astro.mjs');
+const _page7 = () => import('./pages/categoria/_categoria_.astro.mjs');
+const _page8 = () => import('./pages/categoria.astro.mjs');
+const _page9 = () => import('./pages/perfil.astro.mjs');
+const _page10 = () => import('./pages/privacidad.astro.mjs');
+const _page11 = () => import('./pages/terminos.astro.mjs');
+const _page12 = () => import('./pages/index.astro.mjs');
 const pageMap = new Map([
     ["node_modules/astro/dist/assets/endpoint/node.js", _page0],
     ["src/pages/api/buscar.ts", _page1],
@@ -21,8 +25,12 @@ const pageMap = new Map([
     ["src/pages/api/lista.ts", _page4],
     ["src/pages/api/tiendas.ts", _page5],
     ["src/pages/api/unidad.ts", _page6],
-    ["src/pages/perfil.astro", _page7],
-    ["src/pages/index.astro", _page8]
+    ["src/pages/categoria/[categoria].astro", _page7],
+    ["src/pages/categoria/index.astro", _page8],
+    ["src/pages/perfil.astro", _page9],
+    ["src/pages/privacidad.astro", _page10],
+    ["src/pages/terminos.astro", _page11],
+    ["src/pages/index.astro", _page12]
 ]);
 
 const _manifest = Object.assign(manifest, {

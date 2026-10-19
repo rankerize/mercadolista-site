@@ -1,7 +1,7 @@
-import { f as createComponent, k as renderHead, l as renderComponent, n as renderScript, r as renderTemplate } from '../chunks/astro/server_DncXONAL.mjs';
+import { f as createComponent, k as renderHead, n as renderComponent, l as renderScript, r as renderTemplate } from '../chunks/astro/server_Ds2HOX1Q.mjs';
 import 'piccolore';
-/* empty css                                 */
-import { $ as $$ShareModal } from '../chunks/ShareModal_LcUXWbPe.mjs';
+/* empty css                                       */
+import { $ as $$ShareModal } from '../chunks/ShareModal_BmSzjjF5.mjs';
 export { renderers } from '../renderers.mjs';
 
 const $$Perfil = createComponent(async ($$result, $$props, $$slots) => {

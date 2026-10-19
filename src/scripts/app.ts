@@ -10,6 +10,7 @@ import {
   subscribeList,
   toggleItemBought,
   type SavedList,
+  type ListItemData,
 } from '../lib/firebaseAuth';
 import { initShareModal } from './shareModal';
 import {
@@ -51,6 +52,7 @@ const savedName = document.querySelector<HTMLInputElement>('#saved-name')!;
 const savedSave = document.querySelector<HTMLButtonElement>('#saved-save')!;
 const savedShare = document.querySelector<HTMLButtonElement>('#saved-share')!;
 const savedDelete = document.querySelector<HTMLButtonElement>('#saved-delete')!;
+const listCollabBanner = document.querySelector<HTMLElement>('#list-collab-banner');
 
 const headerLoginBtn = document.querySelector<HTMLButtonElement>('#header-login-btn')!;
 const headerUserInfo = document.querySelector<HTMLElement>('#header-user-info')!;
@@ -65,6 +67,49 @@ let unsubscribeActiveList: (() => void) | null = null;
 const boughtIndices = new Set<number>();
 let updateSuperStatsGlobal: () => void = () => {};
 
+function updateCollabBanner(list: SavedList | null | undefined) {
+  if (!listCollabBanner) return;
+  if (!list) {
+    listCollabBanner.hidden = true;
+    listCollabBanner.replaceChildren();
+    return;
+  }
+
+  const otherCollabs: string[] = [];
+  if (list.collaborators && list.collaborators.length > 0) {
+    list.collaborators.forEach((c) => {
+      if (c.uid !== currentUserId && (c.name || c.email)) {
+        otherCollabs.push(c.name || (c.email ? c.email.split('@')[0] : 'Colaborador'));
+      }
+    });
+  }
+  if (list.sharedWithEmails && list.sharedWithEmails.length > 0) {
+    list.sharedWithEmails.forEach((email) => {
+      const short = email.split('@')[0];
+      if (email !== currentUserObj?.email && !otherCollabs.includes(short)) {
+        otherCollabs.push(short);
+      }
+    });
+  }
+
+  const uniqueCollabs = [...new Set(otherCollabs)];
+
+  if (list.isOwner ?? (list.ownerId === currentUserId)) {
+    if (uniqueCollabs.length > 0) {
+      listCollabBanner.hidden = false;
+      listCollabBanner.innerHTML = `<span class="collab-badge">👥 Compartida con: <strong>${uniqueCollabs.join(', ')}</strong></span>`;
+    } else {
+      listCollabBanner.hidden = false;
+      listCollabBanner.innerHTML = `<span style="font-size: 0.72rem; color: var(--muted);">🔒 Lista privada (solo tú). Usa 📲 Compartir para colaborar.</span>`;
+    }
+  } else {
+    const ownerDisplayName = list.ownerName || (list.ownerEmail ? list.ownerEmail.split('@')[0] : 'tu pareja');
+    const others = uniqueCollabs.filter((n) => n !== ownerDisplayName);
+    listCollabBanner.hidden = false;
+    listCollabBanner.innerHTML = `<span class="collab-badge">👥 Lista compartida de <strong>${ownerDisplayName}</strong>${others.length > 0 ? ` (con ${others.join(', ')})` : ''}</span>`;
+  }
+}
+
 function setupRealtimeList(listId: string) {
   if (unsubscribeActiveList) {
     unsubscribeActiveList();
@@ -75,6 +120,7 @@ function setupRealtimeList(listId: string) {
 
   unsubscribeActiveList = subscribeList(listId, (updatedList) => {
     if (!updatedList || !updatedList.items) return;
+    updateCollabBanner(updatedList);
 
     // Sincronizar nombre y ciudad si cambiaron en Firestore
     if (updatedList.nombre && savedName && savedName.value !== updatedList.nombre) {
@@ -638,6 +684,8 @@ function renderInternational(report: any) {
   renderStores(report.stores);
 }
 
+let lastSearchedItems: ListItemData[] = [];
+
 function renderList(report: any) {
   results.replaceChildren();
   results.hidden = false;
@@ -801,7 +849,16 @@ function renderList(report: any) {
     const winner = item.winner;
     row.append((winner && safeImage(winner.image)) || el('div'));
     const info = el('div');
-    info.append(el('p', 'list-label', item.label));
+    const labelP = el('p', 'list-label', item.label);
+    const origItem = lastSearchedItems[index];
+    if (origItem && (origItem.addedBy || origItem.addedById)) {
+      const isMe = currentUserId && origItem.addedById === currentUserId;
+      const authorName = isMe ? 'Tú' : (origItem.addedBy || '');
+      if (authorName) {
+        labelP.append(el('span', 'item-author-pill', `👤 ${authorName}`));
+      }
+    }
+    info.append(labelP);
     if (!winner) {
       info.append(el('p', 'note', 'No encontré ese producto con la marca y el formato pedidos.'));
       row.append(info, el('div'));
@@ -913,14 +970,36 @@ async function search(query: string) {
   }
 }
 
-function readList() {
-  return [...listRows.querySelectorAll('.list-row')].map((row, idx) => ({
-    nombre: (row.querySelector<HTMLInputElement>('[name="nombre"]')!.value || '').trim(),
-    marca: (row.querySelector<HTMLInputElement>('[name="marca"]')!.value || '').trim() || 'TODAS',
-    formato: row.querySelector<HTMLSelectElement>('[name="formato"]')!.value as 'gramos' | 'mililitros' | 'unidades',
-    cantidad: Number(row.querySelector<HTMLInputElement>('[name="cantidad"]')!.value),
-    comprado: boughtIndices.has(idx),
-  }));
+function readList(): ListItemData[] {
+  return [...listRows.querySelectorAll('.list-row')].map((row, idx) => {
+    const r = row as HTMLElement;
+    const nombre = (r.querySelector<HTMLInputElement>('[name="nombre"]')!.value || '').trim();
+    const marca = (r.querySelector<HTMLInputElement>('[name="marca"]')!.value || '').trim() || 'TODAS';
+    const formato = r.querySelector<HTMLSelectElement>('[name="formato"]')!.value as 'gramos' | 'mililitros' | 'unidades';
+    const cantidad = Number(r.querySelector<HTMLInputElement>('[name="cantidad"]')!.value);
+    const comprado = boughtIndices.has(idx);
+
+    let addedBy = r.dataset.addedBy;
+    let addedById = r.dataset.addedById;
+
+    if (nombre && !addedBy && currentUserObj) {
+      addedBy = currentUserObj.displayName || 'Tú';
+      addedById = currentUserId || '';
+      r.dataset.addedBy = addedBy;
+      r.dataset.addedById = addedById;
+    }
+
+    const item: ListItemData = {
+      nombre,
+      marca,
+      formato,
+      cantidad,
+      comprado,
+    };
+    if (addedBy) item.addedBy = addedBy;
+    if (addedById) item.addedById = addedById;
+    return item;
+  });
 }
 
 function updateHeaderCartCount() {
@@ -938,7 +1017,9 @@ function showLiveSyncIndicator(msg: string) {
 }
 
 function autoSyncActiveListToCloud() {
-  if (!activeListId || !currentUserId) return;
+  const targetUid = currentUserId;
+  const targetListId = activeListId;
+  if (!targetListId || !targetUid) return;
   clearTimeout(syncDebounceTimer);
 
   showLiveSyncIndicator('☁️ Sincronizando con tu pareja…');
@@ -950,13 +1031,13 @@ function autoSyncActiveListToCloud() {
       const ciudad = citySelect.value || 'bogota';
 
       await saveUserList(
-        currentUserId,
+        targetUid,
         { nombre, ciudad, items },
-        activeListId,
+        targetListId,
         currentUserObj ? { displayName: currentUserObj.displayName, email: currentUserObj.email } : undefined
       );
 
-      const inMemory = savedLists.find((l) => l.id === activeListId);
+      const inMemory = savedLists.find((l) => l.id === targetListId);
       if (inMemory) {
         inMemory.nombre = nombre;
         inMemory.ciudad = ciudad;
@@ -1040,12 +1121,25 @@ function setupCategoryExplorer() {
             }
             if (!targetRow) {
               if (listRows.children.length >= LIST_MAX) return;
-              targetRow = listRow(it);
+              targetRow = listRow({
+                ...it,
+                addedBy: currentUserObj?.displayName || 'Tú',
+                addedById: currentUserId || undefined,
+              });
               listRows.append(targetRow);
             } else {
               targetRow.querySelector<HTMLInputElement>('[name="nombre"]')!.value = it.nombre;
               targetRow.querySelector<HTMLSelectElement>('[name="formato"]')!.value = it.formato;
               targetRow.querySelector<HTMLInputElement>('[name="cantidad"]')!.value = String(it.cantidad);
+              if (currentUserObj) {
+                targetRow.dataset.addedBy = currentUserObj.displayName || 'Tú';
+                targetRow.dataset.addedById = currentUserId || '';
+                let authorPill = targetRow.querySelector<HTMLElement>('.item-author-pill');
+                if (!authorPill) {
+                  authorPill = el('span', 'item-author-pill', '👤 Tú');
+                  targetRow.querySelector('.list-field span')?.append(authorPill);
+                }
+              }
             }
             saveListLocal();
             updateAddRow();
@@ -1146,8 +1240,19 @@ function setupQueryAutocomplete() {
   });
 }
 
-function listRow(item: { nombre?: string; marca?: string; formato?: 'gramos' | 'mililitros' | 'unidades'; cantidad?: number }) {
+function listRow(item: {
+  nombre?: string;
+  marca?: string;
+  formato?: 'gramos' | 'mililitros' | 'unidades';
+  cantidad?: number;
+  addedBy?: string;
+  addedById?: string;
+  comprado?: boolean;
+}) {
   const row = el('div', 'list-row');
+  if (item.addedBy) row.dataset.addedBy = item.addedBy;
+  if (item.addedById) row.dataset.addedById = item.addedById;
+
   const name = document.createElement('input');
   name.name = 'nombre';
   name.type = 'text';
@@ -1155,6 +1260,14 @@ function listRow(item: { nombre?: string; marca?: string; formato?: 'gramos' | '
   name.maxLength = 60;
   name.autocomplete = 'off';
   name.value = item.nombre || '';
+
+  const isMe = currentUserId && item.addedById === currentUserId;
+  const authorName = isMe ? 'Tú' : (item.addedBy || '');
+  const authorPill = authorName && item.nombre ? el('span', 'item-author-pill', `👤 ${authorName}`) : null;
+  const nameField = field('Nombre', name);
+  if (authorPill) {
+    nameField.querySelector('span')?.append(authorPill);
+  }
 
   const brand = document.createElement('input');
   brand.name = 'marca';
@@ -1185,6 +1298,15 @@ function listRow(item: { nombre?: string; marca?: string; formato?: 'gramos' | '
 
   // Autocompletado inteligente en filas de la lista
   name.addEventListener('input', () => {
+    if (currentUserObj && !row.dataset.addedBy) {
+      row.dataset.addedBy = currentUserObj.displayName || 'Tú';
+      row.dataset.addedById = currentUserId || '';
+      if (!nameField.querySelector('.item-author-pill') && name.value.trim().length >= 1) {
+        const pill = el('span', 'item-author-pill', '👤 Tú');
+        nameField.querySelector('span')?.append(pill);
+      }
+    }
+
     const q = name.value.trim();
     if (q.length < 2) {
       listAutocomplete.classList.remove('is-open');
@@ -1242,14 +1364,14 @@ function listRow(item: { nombre?: string; marca?: string; formato?: 'gramos' | '
   });
 
   row.append(
-    field('Nombre', name),
+    nameField,
     field('Marca', brand),
     field('Formato', format),
     field('Cantidad', amount),
     remove
   );
-  row.addEventListener('input', saveListLocal);
-  row.addEventListener('change', saveListLocal);
+  row.addEventListener('input', () => saveListLocal());
+  row.addEventListener('change', () => saveListLocal());
   return row;
 }
 
@@ -1296,6 +1418,7 @@ async function searchList() {
     status.textContent = `Falta la cantidad de ${invalid.nombre}.`;
     return;
   }
+  lastSearchedItems = items;
   const config = MODES.list;
   listSubmit.disabled = true;
   status.textContent = config.status.replace('{n}', String(items.length)).replaceAll('{ciudad}', cityName());
@@ -1324,7 +1447,9 @@ function renderSavedDropdown(selectedId = '') {
   fresh.value = '';
   savedSelect.append(fresh);
   for (const saved of savedLists) {
-    const option = el('option', null, `${saved.nombre} · ${saved.items.length} productos`);
+    const isShared = !saved.isOwner || (saved.collaborators && saved.collaborators.length > 0) || (saved.sharedWithEmails && saved.sharedWithEmails.length > 0);
+    const prefix = isShared ? '👥 ' : '📋 ';
+    const option = el('option', null, `${prefix}${saved.nombre} · ${saved.items.length} productos`);
     option.value = String(saved.id);
     savedSelect.append(option);
   }
@@ -1333,6 +1458,7 @@ function renderSavedDropdown(selectedId = '') {
   savedName.value = current ? current.nombre : '';
   savedDelete.hidden = !current;
   savedShare.hidden = !current;
+  updateCollabBanner(current);
 }
 
 async function refreshSavedLists(selectedId = '') {
@@ -1435,7 +1561,11 @@ form.addEventListener('submit', (event) => {
 
 addRow.addEventListener('click', () => {
   if (listRows.children.length >= LIST_MAX) return;
-  const row = listRow({ formato: 'gramos' });
+  const row = listRow({
+    formato: 'gramos',
+    addedBy: currentUserObj?.displayName || 'Tú',
+    addedById: currentUserId || undefined,
+  });
   listRows.append(row);
   row.querySelector<HTMLInputElement>('[name="nombre"]')!.focus();
   saveListLocal();
@@ -1724,13 +1854,14 @@ function initAddToListModalListeners() {
     const qty = Number(qtyInput.value) || 1;
     const format = formatSelect.value as 'gramos' | 'mililitros' | 'unidades';
 
-    const newItem = {
+    const newItem: ListItemData = {
       nombre: pendingAddProduct.name,
-      producto: pendingAddProduct.name,
       marca: pendingAddProduct.brand || 'TODAS',
       formato: format,
       cantidad: qty,
       comprado: false,
+      addedBy: currentUserObj?.displayName || 'Tú',
+      addedById: currentUserId || undefined,
     };
 
     if (isNew) {
@@ -1783,13 +1914,14 @@ function initAddToListModalListeners() {
     const qty = Number(qtyInput.value) || 1;
     const format = formatSelect.value as 'gramos' | 'mililitros' | 'unidades';
 
-    const newItem = {
+    const newItem: ListItemData = {
       nombre: pendingAddProduct.name,
-      producto: pendingAddProduct.name,
       marca: pendingAddProduct.brand || 'TODAS',
       formato: format,
       cantidad: qty,
       comprado: false,
+      addedBy: currentUserObj?.displayName || 'Tú',
+      addedById: currentUserId || undefined,
     };
 
     try {
@@ -1811,12 +1943,14 @@ function initAddToListModalListeners() {
     const qty = Number(qtyInput.value) || 1;
     const format = formatSelect.value as 'gramos' | 'mililitros' | 'unidades';
 
-    const newItem = {
+    const newItem: ListItemData = {
       nombre: pendingAddProduct.name,
       marca: pendingAddProduct.brand || 'TODAS',
       formato: format,
       cantidad: qty,
       comprado: false,
+      addedBy: currentUserObj?.displayName || 'Tú',
+      addedById: currentUserId || undefined,
     };
 
     const rows = [...listRows.querySelectorAll('.list-row')];
@@ -1878,7 +2012,7 @@ setupQueryAutocomplete();
 
 headerCartBtn?.addEventListener('click', () => {
   setMode('list');
-  listForm.scrollIntoView({ behavior: 'smooth' });
+  listEditor.scrollIntoView({ behavior: 'smooth' });
 });
 subscribeAuth(async (user) => {
   handleAuthState(user);

@@ -1,0 +1,43 @@
+---
+// src/components/CookieBanner.astro
+---
+
+<div id="cookie-banner" class="cookie-banner" role="dialog" aria-live="polite" aria-label="Aviso de cookies" hidden>
+  <div class="cookie-content">
+    <div class="cookie-text">
+      <p class="cookie-title">🍪 Tu privacidad y uso de cookies</p>
+      <p class="cookie-desc">
+        Utilizamos cookies técnicas y de terceros (incluido Google) para analizar el tráfico, personalizar anuncios y optimizar tu experiencia de ahorro en el mercado. Puedes consultar más detalles en nuestra 
+        <a href="/privacidad" target="_blank" rel="noopener noreferrer">Política de Privacidad</a>.
+      </p>
+    </div>
+    <div class="cookie-actions">
+      <button type="button" id="cookie-accept" class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
+        Aceptar todas
+      </button>
+      <button type="button" id="cookie-necessary" class="ghost" style="padding: 0.5rem 0.85rem; font-size: 0.85rem;">
+        Solo necesarias
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'ml_cookie_consent_choice';
+  const banner = document.getElementById('cookie-banner');
+  const acceptBtn = document.getElementById('cookie-accept');
+  const necessaryBtn = document.getElementById('cookie-necessary');
+
+  const savedConsent = localStorage.getItem(STORAGE_KEY);
+  if (!savedConsent && banner) {
+    banner.hidden = false;
+  }
+
+  function setConsent(choice: 'all' | 'necessary') {
+    localStorage.setItem(STORAGE_KEY, choice);
+    if (banner) banner.hidden = true;
+  }
+
+  acceptBtn?.addEventListener('click', () => setConsent('all'));
+  necessaryBtn?.addEventListener('click', () => setConsent('necessary'));
+</script>

@@ -30,11 +30,13 @@ Este documento contiene la arquitectura, convenciones y decisiones de diseño cl
 - **Servicios utilizados**:
   1. **Firebase Authentication**: Inicio de sesión federado con Google Sign-In (`signInWithPopup`). El proveedor de Google ya está habilitado en la consola de Firebase.
   2. **Cloud Firestore**: Persistencia y sincronización de las listas de compras en la colección `shared_lists`.
-  3. **Listas Colaborativas (WhatsApp y Correo)**:
+  3. **Listas Colaborativas y Sincronización Bidireccional en Tiempo Real (WhatsApp y Correo)**:
      - Cualquier lista se puede compartir por **WhatsApp** (con selector de código de país por defecto `🇨🇴 +57` o chat general) o por **correo de Google**.
      - Genera un enlace: `/?listaId=ID`.
-     - Cuando la pareja abre ese enlace desde WhatsApp, la app carga la lista automáticamente y, al iniciar sesión, **vincula su UID a la lista como colaborador (`collaboratorIds`)**.
-     - Ambos pueden verla en su `/perfil`, editarla, cotizarla y guardarla en tiempo real.
+     - Cuando la pareja abre ese enlace o selecciona la lista:
+       - **Autosync en caliente**: Cualquier modificación en el editor (agregar fila, quitar fila, editar nombre, unidad, cantidad o cambiar ciudad) se guarda automáticamente a Firestore con debounce (`autoSyncActiveListToCloud`).
+       - **Sincronización en tiempo real (`subscribeList`)**: Ambas pantallas se actualizan automáticamente mediante `onSnapshot` de Firestore sin necesidad de recargar la página.
+       - **Sincronización en `/perfil` (`subscribeUserLists`)**: Las tarjetas de listas y el selector de «Modo Compra» se refrescan en vivo cuando cualquier colaborador realiza cambios.
   4. **Modo «En el Súper / Modo Compra» (Checklist y Presupuesto en Tiempo Real)**:
      - En `/perfil`: pestaña dedicada **«🛒 Modo Compra»** con selector desplegable de listas para alternar entre mercados al instante.
      - En cada tarjeta de lista en `/perfil`: botón verde directo **«🛒 Modo Compra»** para abrir la lista a comprar con un solo toque.
@@ -54,6 +56,12 @@ Este documento contiene la arquitectura, convenciones y decisiones de diseño cl
      - Carrusel táctil de categorías (`#categories-container`) con botones de adición rápida (`+`) para disparar búsquedas o añadir productos a la lista con un solo toque.
      - Dropdown de autocompletado flotante (`#query-autocomplete`) con navegación por teclado (flechas, Enter, Escape) y resaltado de coincidencias.
      - Autocompletado inteligente en las filas de la lista de compras (`#list-rows`) que autocompleta nombre, unidad de medida (`gramos`, `mililitros`, `unidades`) y cantidad sugerida (e.g. Leche -> 1000 ml, Huevos -> 30 unidades).
+  9. **Identificación de Colaboradores y Quién Agregó Cada Producto**:
+     - Atribución de autor por producto (`addedBy` y `addedById` en `ListItemData`): Cada vez que un usuario añade o edita un producto (en el editor de listas, categorías, o buscador), se registra su autoría.
+     - En el editor de la lista: Cada fila muestra la píldora `👤 Tú` o `👤 [Nombre]` junto al campo de nombre.
+     - En el banner de lista compartida: Banner inteligente `#list-collab-banner` que indica con quién está compartida la lista (`👥 Compartida con: Andrea`, `👥 Lista compartida de César`, o `🔒 Lista privada`).
+     - En `/perfil`: Las tarjetas de listas muestran el badge `👥 Compartida con: [Nombres]` y en la vista previa qué productos agregó cada quién (`(por ti)` o `(por Andrea)`).
+     - En «🛒 Modo Compra»: Cada producto muestra la insignia destacada `👤 Tú` o `👤 [Nombre]` para saber quién lo pidió en el momento de tomarlo en el pasillo.
 - **Archivos de integración**:
   - [`src/lib/firebase.ts`](file:///Users/cesarandresjimenezarci/Documents/Clientes/Comparador%20de%20precios/src/lib/firebase.ts): Inicialización del SDK cliente de Firebase con las credenciales públicas de la Web App `mercadologo`.
   - [`src/lib/firebaseAuth.ts`](file:///Users/cesarandresjimenezarci/Documents/Clientes/Comparador%20de%20precios/src/lib/firebaseAuth.ts): Métodos utilitarios: `loginWithGoogle()`, `logoutUser()`, `subscribeAuth()`, `getUserLists()`, `saveUserList()`, `deleteUserList()`, `getListById()`, `joinSharedList()`, `shareListWithEmail()`, `subscribeList()`, `toggleItemBought()`.

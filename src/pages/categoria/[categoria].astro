@@ -1,0 +1,127 @@
+---
+import '../../styles/styles.css';
+import { CATEGORIES, getItemsByCategory } from '../../lib/catalog';
+import { getCategoryBySlug, toSlug } from '../../lib/slugs';
+
+const { categoria } = Astro.params;
+const cat = getCategoryBySlug(categoria!);
+
+if (!cat) {
+  return Astro.redirect('/categoria', 302);
+}
+
+const items = getItemsByCategory(cat.id);
+const BASE = 'https://mercadolista.com';
+const canonicalUrl = `${BASE}/categoria/${cat.id}`;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Precios {cat.nombre} en Colombia hoy · Mercado Lista</title>
+    <meta name="description" content={`Compara precios de ${cat.nombre.toLowerCase()} en Éxito, D1, Jumbo, Carulla, Olímpica y más tiendas de Colombia. Precios actualizados en tiempo real.`} />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta property="og:title" content={`Precios ${cat.nombre} en Colombia hoy`} />
+    <meta property="og:description" content={`Precios actualizados de ${items.length} productos de ${cat.nombre.toLowerCase()} en supermercados colombianos.`} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#0e6a45" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json" set:html={JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Inicio', item: BASE },
+        { '@type': 'ListItem', position: 2, name: 'Categorías', item: `${BASE}/categoria` },
+        { '@type': 'ListItem', position: 3, name: cat.nombre, item: canonicalUrl },
+      ],
+    })} />
+  </head>
+  <body>
+    <header class="top">
+      <div class="top-bar">
+        <a href="/" class="eyebrow">Mercado Lista</a>
+      </div>
+      <h1>{cat.icono} Precios {cat.nombre} en Colombia hoy</h1>
+      <p class="lead">
+        {items.length} productos · Precios consultados en tiempo real en Éxito, D1, Jumbo, Carulla y más.
+      </p>
+    </header>
+
+    <main class="cat-page">
+      <nav class="breadcrumb" aria-label="Navegación">
+        <a href="/">Inicio</a>
+        <span aria-hidden="true">›</span>
+        <a href="/categoria">Categorías</a>
+        <span aria-hidden="true">›</span>
+        <span aria-current="page">{cat.nombre}</span>
+      </nav>
+
+      <ul class="product-grid" role="list">
+        {items.map((item) => {
+          const slug = toSlug(item.nombre);
+          const href = `/categoria/${cat.id}/${slug}`;
+          return (
+            <li>
+              <a href={href} class="product-card">
+                <span class="product-icon">{item.icono}</span>
+                <div class="product-info">
+                  <strong class="product-name">{item.nombre}</strong>
+                  <span class="product-meta">
+                    {item.cantidad} {item.formato}
+                  </span>
+                </div>
+                <span class="product-cta">Ver precios →</span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div class="other-cats">
+        <h2>Otras categorías</h2>
+        <ul class="other-cats-list" role="list">
+          {CATEGORIES.filter(c => c.id !== cat.id).map((c) => (
+            <li>
+              <a href={`/categoria/${c.id}`}>{c.icono} {c.nombre}</a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>© {new Date().getFullYear()} Mercado Lista · Precios consultados en tiempo real</p>
+    </footer>
+
+    <style>
+      .cat-page { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+      .breadcrumb { display: flex; gap: 0.5rem; align-items: center; font-size: 0.875rem; color: #666; margin-bottom: 2rem; flex-wrap: wrap; }
+      .breadcrumb a { color: #0e6a45; text-decoration: none; }
+      .breadcrumb a:hover { text-decoration: underline; }
+
+      .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; list-style: none; margin: 0 0 3rem; padding: 0; }
+      .product-card { display: flex; align-items: center; gap: 1rem; padding: 1.1rem 1.25rem; border: 1.5px solid #e2e8f0; border-radius: 12px; text-decoration: none; color: inherit; transition: border-color 0.15s, box-shadow 0.15s; }
+      .product-card:hover { border-color: #0e6a45; box-shadow: 0 2px 12px rgba(14,106,69,0.12); }
+      .product-icon { font-size: 1.75rem; flex-shrink: 0; }
+      .product-info { flex: 1; display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+      .product-name { font-size: 0.95rem; font-weight: 600; line-height: 1.3; }
+      .product-meta { font-size: 0.78rem; color: #888; }
+      .product-cta { font-size: 0.8rem; color: #0e6a45; white-space: nowrap; font-weight: 500; }
+
+      .other-cats { margin-top: 1rem; padding-top: 2rem; border-top: 1px solid #f0f0f0; }
+      .other-cats h2 { font-size: 1.1rem; margin-bottom: 1rem; }
+      .other-cats-list { display: flex; flex-wrap: wrap; gap: 0.6rem; list-style: none; padding: 0; margin: 0; }
+      .other-cats-list a { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.9rem; border: 1px solid #e2e8f0; border-radius: 999px; font-size: 0.85rem; text-decoration: none; color: inherit; transition: background 0.15s; }
+      .other-cats-list a:hover { background: #f0faf5; border-color: #0e6a45; color: #0e6a45; }
+
+      .site-footer { text-align: center; padding: 2rem 1rem; color: #999; font-size: 0.8rem; border-top: 1px solid #f0f0f0; }
+    </style>
+  </body>
+</html>

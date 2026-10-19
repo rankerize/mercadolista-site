@@ -2,6 +2,7 @@
 import '../styles/styles.css';
 import ShareModal from '../components/ShareModal.astro';
 import AddToListModal from '../components/AddToListModal.astro';
+import CookieBanner from '../components/CookieBanner.astro';
 ---
 
 <!doctype html>
@@ -144,6 +145,7 @@ import AddToListModal from '../components/AddToListModal.astro';
                 <button type="button" id="saved-share" class="ghost" style="color: #0e6a45; font-weight: 500;" hidden>📲 Compartir</button>
                 <button type="button" id="saved-delete" class="ghost" hidden>Borrar</button>
               </div>
+              <div id="list-collab-banner" style="margin-top: 0.5rem;" hidden></div>
             </div>
             <p id="account-status" class="account-status" role="status"></p>
           </div>
@@ -185,7 +187,19 @@ import AddToListModal from '../components/AddToListModal.astro';
         Precios de Bogotá cuando la tienda los publica para esa zona. Pueden cambiar según la sede y las promociones.
         Confirma el valor antes de pagar.
       </p>
+      <div class="legal-footer-links" style="margin-top: 1.25rem;">
+        <a href="/">Comparador</a>
+        <span>·</span>
+        <a href="/privacidad">Política de Privacidad</a>
+        <span>·</span>
+        <a href="/terminos">Términos y Condiciones</a>
+        <span>·</span>
+        <a href="mailto:soporte@mercadolista.com">Contacto</a>
+      </div>
+      <p style="font-size: 0.8rem; color: var(--muted); margin-top: 0.5rem; text-align: center;">© 2026 Mercado Lista · Todos los derechos reservados.</p>
     </footer>
+
+    <CookieBanner />
 
     <script src="../scripts/app.ts"></script>
   </body>

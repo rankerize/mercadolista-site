@@ -30,6 +30,14 @@ export interface ListItemData {
   formato: 'gramos' | 'mililitros' | 'unidades';
   cantidad: number;
   comprado?: boolean;
+  addedBy?: string;
+  addedById?: string;
+}
+
+export interface CollaboratorInfo {
+  uid: string;
+  name: string;
+  email?: string;
 }
 
 export interface SavedList {
@@ -41,6 +49,7 @@ export interface SavedList {
   ownerName?: string;
   ownerEmail?: string;
   collaboratorIds?: string[];
+  collaborators?: CollaboratorInfo[];
   sharedWithEmails?: string[];
   isOwner?: boolean;
   createdAt?: any;
@@ -90,6 +99,7 @@ export async function getListById(listId: string): Promise<SavedList | null> {
       ownerName: data.ownerName || 'Usuario',
       ownerEmail: data.ownerEmail || '',
       collaboratorIds: data.collaboratorIds || [],
+      collaborators: data.collaborators || [],
       sharedWithEmails: data.sharedWithEmails || [],
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
@@ -119,6 +129,7 @@ export async function getUserLists(userId: string, userEmail?: string | null): P
         ownerName: data.ownerName || 'Tú',
         ownerEmail: data.ownerEmail,
         collaboratorIds: data.collaboratorIds || [],
+        collaborators: data.collaborators || [],
         sharedWithEmails: data.sharedWithEmails || [],
         isOwner: true,
         createdAt: data.createdAt,
@@ -145,6 +156,7 @@ export async function getUserLists(userId: string, userEmail?: string | null): P
           ownerName: data.ownerName || 'Pareja / Familiar',
           ownerEmail: data.ownerEmail,
           collaboratorIds: data.collaboratorIds || [],
+          collaborators: data.collaborators || [],
           sharedWithEmails: data.sharedWithEmails || [],
           isOwner: false,
           createdAt: data.createdAt,
@@ -174,6 +186,7 @@ export async function getUserLists(userId: string, userEmail?: string | null): P
             ownerName: data.ownerName || 'Pareja / Familiar',
             ownerEmail: data.ownerEmail,
             collaboratorIds: data.collaboratorIds || [],
+            collaborators: data.collaborators || [],
             sharedWithEmails: data.sharedWithEmails || [],
             isOwner: false,
             createdAt: data.createdAt,
@@ -202,6 +215,7 @@ export async function getUserLists(userId: string, userEmail?: string | null): P
           ownerName: 'Tú',
           ownerEmail: userEmail || '',
           collaboratorIds: [userId],
+          collaborators: [{ uid: userId, name: 'Tú', email: userEmail || '' }],
           sharedWithEmails: [],
           isOwner: true,
           createdAt: data.createdAt,
@@ -235,27 +249,56 @@ export async function saveUserList(
   userProfile?: { displayName?: string | null; email?: string | null }
 ): Promise<SavedList> {
   const listsRef = collection(db, LISTS_COLLECTION);
+  const myName = userProfile?.displayName || userProfile?.email?.split('@')[0] || 'Tú';
+  const myEmail = userProfile?.email || '';
+  const userCollab: CollaboratorInfo = {
+    uid: userId,
+    name: myName,
+    email: myEmail,
+  };
+
+  const sanitizedItems: ListItemData[] = listData.items.map((item) => {
+    const clean: ListItemData = {
+      nombre: item.nombre || '',
+      marca: item.marca || 'TODAS',
+      formato: item.formato || 'unidades',
+      cantidad: Number(item.cantidad) || 1,
+      comprado: Boolean(item.comprado),
+    };
+    if (item.addedBy) clean.addedBy = item.addedBy;
+    if (item.addedById) clean.addedById = item.addedById;
+    return clean;
+  });
+
+  const cleanListData = {
+    ...listData,
+    items: sanitizedItems,
+  };
 
   if (listId) {
     const docRef = doc(db, LISTS_COLLECTION, listId);
-    await updateDoc(docRef, {
-      ...listData,
+    const updatePayload: Record<string, any> = {
+      ...cleanListData,
       collaboratorIds: arrayUnion(userId),
+      collaborators: arrayUnion(userCollab),
       updatedAt: serverTimestamp(),
-    });
+    };
+    await updateDoc(docRef, updatePayload);
     return {
       id: listId,
-      ...listData,
+      ...cleanListData,
       ownerId: userId,
+      collaborators: [userCollab],
       isOwner: true,
     };
   } else {
     const payload = {
-      ...listData,
+      ...cleanListData,
       ownerId: userId,
-      ownerName: userProfile?.displayName || userProfile?.email || 'Usuario',
-      ownerEmail: userProfile?.email || '',
+      ownerName: myName,
+      ownerEmail: myEmail,
       collaboratorIds: [userId],
+      collaborators: [userCollab],
       sharedWithEmails: [],
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -272,8 +315,14 @@ export async function saveUserList(
 export async function joinSharedList(listId: string, user: User): Promise<boolean> {
   try {
     const docRef = doc(db, LISTS_COLLECTION, listId);
+    const collabInfo: CollaboratorInfo = {
+      uid: user.uid,
+      name: user.displayName || user.email?.split('@')[0] || 'Pareja / Familiar',
+      email: user.email || '',
+    };
     const updates: Record<string, any> = {
       collaboratorIds: arrayUnion(user.uid),
+      collaborators: arrayUnion(collabInfo),
     };
     if (user.email) {
       updates.sharedWithEmails = arrayUnion(user.email.toLowerCase().trim());
@@ -326,6 +375,7 @@ export function subscribeList(listId: string, callback: (list: SavedList | null)
         ownerName: data.ownerName || 'Usuario',
         ownerEmail: data.ownerEmail || '',
         collaboratorIds: data.collaboratorIds || [],
+        collaborators: data.collaborators || [],
         sharedWithEmails: data.sharedWithEmails || [],
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
@@ -388,6 +438,7 @@ export function subscribeUserLists(
             ownerName: data.ownerName || 'Tú',
             ownerEmail: data.ownerEmail,
             collaboratorIds: data.collaboratorIds || [],
+            collaborators: data.collaborators || [],
             sharedWithEmails: data.sharedWithEmails || [],
             isOwner: true,
             createdAt: data.createdAt,
@@ -422,6 +473,7 @@ export function subscribeUserLists(
               ownerName: data.ownerName || 'Pareja / Familiar',
               ownerEmail: data.ownerEmail,
               collaboratorIds: data.collaboratorIds || [],
+              collaborators: data.collaborators || [],
               sharedWithEmails: data.sharedWithEmails || [],
               isOwner: false,
               createdAt: data.createdAt,

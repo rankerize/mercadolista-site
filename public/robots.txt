@@ -2,6 +2,10 @@ User-agent: *
 Allow: /
 Disallow: /api/
 
+# Google AdSense Crawler
+User-agent: Mediapartners-Google
+Allow: /
+
 # LLM & AI Agents
 User-agent: GPTBot
 Allow: /
