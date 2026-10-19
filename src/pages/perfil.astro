@@ -1,5 +1,6 @@
 ---
 import '../styles/styles.css';
+import ShareModal from '../components/ShareModal.astro';
 ---
 
 <!doctype html>
@@ -88,6 +89,8 @@ import '../styles/styles.css';
         <p id="lists-status" class="status" role="status"></p>
         <div id="lists-grid" class="profile-lists-grid"></div>
       </section>
+
+      <ShareModal />
     </main>
 
     <footer>
@@ -101,9 +104,9 @@ import '../styles/styles.css';
         subscribeAuth,
         getUserLists,
         deleteUserList,
-        shareListWithEmail,
         type SavedList,
       } from '../lib/firebaseAuth';
+      import { initShareModal } from '../scripts/shareModal';
 
       const authGate = document.querySelector<HTMLElement>('#auth-gate')!;
       const userProfile = document.querySelector<HTMLElement>('#user-profile')!;

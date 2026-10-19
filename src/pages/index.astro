@@ -1,5 +1,6 @@
 ---
 import '../styles/styles.css';
+import ShareModal from '../components/ShareModal.astro';
 ---
 
 <!doctype html>
@@ -7,6 +8,7 @@ import '../styles/styles.css';
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="google-site-verification" content="IY3hmno8L66fxtrNuqP9wJifpSpyeVbV6MtYlwmhVAk" />
     <title>Mercado Lista · Comparador de precios en Colombia</title>
     <meta name="description" content="Compara precios en tiempo real entre tiendas de Colombia (Éxito, Carulla, Jumbo, Olímpica, D1, Alkosto, Falabella) e internacionales (Amazon, eBay, AliExpress). Ahorra en tu mercado." />
     <link rel="canonical" href="https://mercadolista.com/" />
@@ -146,6 +148,7 @@ import '../styles/styles.css';
 
       <p id="status" class="status" role="status"></p>
       <section id="results" class="results" hidden></section>
+      <ShareModal />
     </main>
 
     <footer>

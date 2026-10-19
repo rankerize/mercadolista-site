@@ -1,7 +1,7 @@
-import { f as createComponent, k as renderHead, l as renderScript, r as renderTemplate } from '../chunks/astro/server_Bi19r0ob.mjs';
+import { f as createComponent, k as renderHead, l as renderComponent, n as renderScript, r as renderTemplate } from '../chunks/astro/server_DncXONAL.mjs';
 import 'piccolore';
-import 'clsx';
 /* empty css                                 */
+import { $ as $$ShareModal } from '../chunks/ShareModal_LcUXWbPe.mjs';
 export { renderers } from '../renderers.mjs';
 
 const $$Perfil = createComponent(async ($$result, $$props, $$slots) => {
@@ -11,7 +11,7 @@ Inicia sesión para ver y administrar tus listas de compras guardadas.
 Iniciar sesión con Google
 </button> </section> <!-- Estado Autenticado --> <section id="user-profile" class="profile-card" hidden> <div class="profile-header"> <div class="profile-user-info"> <h2 id="user-display-name">Usuario</h2> <p id="user-email">correo@ejemplo.com</p> </div> <button type="button" id="profile-logout-btn" class="logout-btn" style="padding: 0.5rem 1rem; border: 1px solid var(--line);">
 Cerrar sesión
-</button> </div> </section> <!-- Listas Guardadas --> <section id="lists-section" hidden> <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;"> <h2 style="margin: 0; font-size: 1.4rem;">Mis Listas Guardadas</h2> <a href="/?tab=list" class="btn-primary">+ Nueva lista</a> </div> <p id="lists-status" class="status" role="status"></p> <div id="lists-grid" class="profile-lists-grid"></div> </section> </main> <footer> <p id="footnote">Comparador de precios · Tus datos están protegidos y sincronizados con Firebase.</p> </footer> ${renderScript($$result, "/Users/cesarandresjimenezarci/Documents/Clientes/Comparador de precios/src/pages/perfil.astro?astro&type=script&index=0&lang.ts")} </body> </html>`;
+</button> </div> </section> <!-- Listas Guardadas --> <section id="lists-section" hidden> <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;"> <h2 style="margin: 0; font-size: 1.4rem;">Mis Listas Guardadas</h2> <a href="/?tab=list" class="btn-primary">+ Nueva lista</a> </div> <p id="lists-status" class="status" role="status"></p> <div id="lists-grid" class="profile-lists-grid"></div> </section> ${renderComponent($$result, "ShareModal", $$ShareModal, {})} </main> <footer> <p id="footnote">Comparador de precios · Tus datos están protegidos y sincronizados con Firebase.</p> </footer> ${renderScript($$result, "/Users/cesarandresjimenezarci/Documents/Clientes/Comparador de precios/src/pages/perfil.astro?astro&type=script&index=0&lang.ts")} </body> </html>`;
 }, "/Users/cesarandresjimenezarci/Documents/Clientes/Comparador de precios/src/pages/perfil.astro", void 0);
 
 const $$file = "/Users/cesarandresjimenezarci/Documents/Clientes/Comparador de precios/src/pages/perfil.astro";
