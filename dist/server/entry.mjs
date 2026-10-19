@@ -1,6 +1,6 @@
 import { renderers } from './renderers.mjs';
 import { c as createExports, s as serverEntrypointModule } from './chunks/_@astrojs-ssr-adapter_BnDoTepS.mjs';
-import { manifest } from './manifest_Dji78FMa.mjs';
+import { manifest } from './manifest_CNg7SFSy.mjs';
 
 const serverIslandMap = new Map();;
 
@@ -36,7 +36,7 @@ const _args = {
     "mode": "standalone",
     "client": "file:///Users/cesarandresjimenezarci/Documents/Clientes/Comparador%20de%20precios/dist/client/",
     "server": "file:///Users/cesarandresjimenezarci/Documents/Clientes/Comparador%20de%20precios/dist/server/",
-    "host": "127.0.0.1",
+    "host": "0.0.0.0",
     "port": 8765,
     "assets": "_astro",
     "experimentalStaticHeaders": false

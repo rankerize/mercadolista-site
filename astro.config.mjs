@@ -8,7 +8,7 @@ export default defineConfig({
     mode: 'standalone',
   }),
   server: {
-    port: 8765,
-    host: '127.0.0.1',
+    port: Number(process.env.PORT) || 8765,
+    host: process.env.HOST || '0.0.0.0',
   },
 });
