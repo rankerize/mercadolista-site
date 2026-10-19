@@ -65,6 +65,8 @@ describe('Catalogs and Reports', () => {
       name: 'Leche entera Colanta 1100 ml',
       brand: 'Colanta',
       price: 4500,
+      list_price: null,
+      image: null,
       url: 'https://www.jumbocolombia.com/leche/p',
       ean: '7702129001052',
       categories: ['Mercado', 'Lacteos'],

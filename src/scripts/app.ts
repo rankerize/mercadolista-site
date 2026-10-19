@@ -5,6 +5,8 @@ import {
   getUserLists,
   saveUserList,
   deleteUserList,
+  getListById,
+  joinSharedList,
   type SavedList,
 } from '../lib/firebaseAuth';
 
@@ -33,6 +35,7 @@ const accountLogout = document.querySelector<HTMLButtonElement>('#account-logout
 const savedSelect = document.querySelector<HTMLSelectElement>('#saved-select')!;
 const savedName = document.querySelector<HTMLInputElement>('#saved-name')!;
 const savedSave = document.querySelector<HTMLButtonElement>('#saved-save')!;
+const savedShare = document.querySelector<HTMLButtonElement>('#saved-share')!;
 const savedDelete = document.querySelector<HTMLButtonElement>('#saved-delete')!;
 
 const headerLoginBtn = document.querySelector<HTMLButtonElement>('#header-login-btn')!;
@@ -735,12 +738,15 @@ function renderSavedDropdown(selectedId = '') {
   const current = savedLists.find((s) => s.id === savedSelect.value);
   savedName.value = current ? current.nombre : '';
   savedDelete.hidden = !current;
+  savedShare.hidden = !current;
 }
+
+let currentUserObj: any = null;
 
 async function refreshSavedLists(selectedId = '') {
   if (!currentUserId) return;
   try {
-    savedLists = await getUserLists(currentUserId);
+    savedLists = await getUserLists(currentUserId, currentUserObj?.email);
     renderSavedDropdown(selectedId);
   } catch (err: any) {
     accountStatus.textContent = 'Error al cargar listas guardadas.';
@@ -748,6 +754,7 @@ async function refreshSavedLists(selectedId = '') {
 }
 
 function handleAuthState(user: any) {
+  currentUserObj = user;
   if (user) {
     currentUserId = user.uid;
     // Header
@@ -802,7 +809,8 @@ async function saveCurrentList() {
     const saved = await saveUserList(
       currentUserId,
       { nombre, ciudad: citySelect.value || 'bogota', items },
-      id || undefined
+      id || undefined,
+      currentUserObj ? { displayName: currentUserObj.displayName, email: currentUserObj.email } : undefined
     );
     await refreshSavedLists(saved.id);
     accountStatus.textContent = `Guardé «${saved.nombre}» en tu cuenta.`;
@@ -887,11 +895,27 @@ savedSelect.addEventListener('change', () => {
   status.textContent = '';
 });
 
+savedShare.addEventListener('click', () => {
+  const current = savedLists.find((s) => s.id === savedSelect.value);
+  if (!current) return;
+  const shareUrl = `${window.location.origin}/?listaId=${current.id}`;
+  const phone = window.prompt(
+    'Ingresa el número de WhatsApp con código de país (ej. 573001234567) o déjalo en blanco para abrir WhatsApp y elegir el chat:',
+    ''
+  );
+  if (phone === null) return;
+  const msg = `🛒 ¡Hola! Te comparto nuestra lista de compras «${current.nombre}» para comparar precios y editarla juntos:\n${shareUrl}`;
+  const target = phone.trim()
+    ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone.replace(/[^0-9]/g, ''))}&text=${encodeURIComponent(msg)}`
+    : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+  window.open(target, '_blank');
+});
+
 savedDelete.addEventListener('click', async () => {
   const current = savedLists.find((s) => s.id === savedSelect.value);
   if (!current || !currentUserId || !window.confirm(`¿Borrar la lista «${current.nombre}»?`)) return;
   try {
-    await deleteUserList(currentUserId, current.id);
+    await deleteUserList(currentUserId, current.id, current.isOwner ?? true);
     await refreshSavedLists();
     accountStatus.textContent = `Borré «${current.nombre}».`;
   } catch (err: any) {
@@ -942,12 +966,34 @@ async function loadCities() {
 
 // Initial boot
 const urlParams = new URLSearchParams(window.location.search);
+const sharedListId = urlParams.get('listaId');
 const initialTab = urlParams.get('tab') as ModeKey | null;
-if (initialTab && initialTab in MODES) {
+
+if (sharedListId) {
+  mode = 'list';
+  getListById(sharedListId).then(async (sharedList) => {
+    if (sharedList) {
+      setRows(sharedList.items);
+      if (sharedList.ciudad) applyCity(sharedList.ciudad);
+      savedName.value = sharedList.nombre;
+      accountStatus.textContent = `📋 Cargaste la lista «${sharedList.nombre}» compartida por ${sharedList.ownerName || 'tu pareja'}.`;
+      if (currentUserObj) {
+        await joinSharedList(sharedList.id, currentUserObj);
+        await refreshSavedLists(sharedList.id);
+      }
+    }
+  });
+} else if (initialTab && initialTab in MODES) {
   mode = initialTab;
 }
 
 loadList();
 setMode(mode);
 loadCities();
-subscribeAuth(handleAuthState);
+subscribeAuth(async (user) => {
+  handleAuthState(user);
+  if (user && sharedListId) {
+    await joinSharedList(sharedListId, user);
+    await refreshSavedLists(sharedListId);
+  }
+});

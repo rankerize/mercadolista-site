@@ -94,6 +94,7 @@ import '../styles/styles.css';
         subscribeAuth,
         getUserLists,
         deleteUserList,
+        shareListWithEmail,
         type SavedList,
       } from '../lib/firebaseAuth';
 
@@ -108,6 +109,7 @@ import '../styles/styles.css';
       const listsStatus = document.querySelector<HTMLElement>('#lists-status')!;
 
       let currentUid: string | null = null;
+      let currentUserEmail: string | null = null;
 
       function renderLists(lists: SavedList[]) {
         listsGrid.replaceChildren();
@@ -131,9 +133,13 @@ import '../styles/styles.css';
             .map((i) => `${i.nombre} (${i.cantidad} ${i.formato})`)
             .join(', ');
           const extraCount = list.items.length > 4 ? ` y ${list.items.length - 4} más…` : '';
+          const sharedBadge = !list.isOwner
+            ? `<span style="display: inline-block; font-size: 0.72rem; color: #0e6a45; background: #e7f6ee; padding: 0.15rem 0.45rem; border-radius: 4px; margin-bottom: 0.35rem; font-weight: 500;">👥 Compartida por ${list.ownerName || 'tu pareja'}</span>`
+            : '';
 
           card.innerHTML = `
             <div>
+              ${sharedBadge}
               <div class="saved-list-header">
                 <h3 class="saved-list-title">${list.nombre}</h3>
                 <span class="saved-list-city">${list.ciudad || 'Bogotá'}</span>
@@ -143,12 +149,18 @@ import '../styles/styles.css';
                 ${itemsText}${extraCount}
               </p>
             </div>
-            <div class="saved-list-actions">
+            <div class="saved-list-actions" style="flex-wrap: wrap; gap: 0.4rem;">
               <button type="button" class="btn-primary compare-btn">
                 Comparar precios
               </button>
+              <button type="button" class="btn-primary whatsapp-btn" style="background: #128c7e;" title="Compartir a WhatsApp de tu pareja">
+                📲 WhatsApp
+              </button>
+              <button type="button" class="btn-primary email-btn" style="background: #4a5568;" title="Compartir por correo de Google">
+                ✉️ Correo
+              </button>
               <button type="button" class="btn-danger-ghost delete-btn">
-                Borrar
+                ${list.isOwner ? 'Borrar' : 'Desvincularme'}
               </button>
             </div>
           `;
@@ -159,15 +171,46 @@ import '../styles/styles.css';
             if (list.ciudad) {
               localStorage.setItem('comparador-ciudad', list.ciudad);
             }
-            window.location.href = '/?tab=list';
+            window.location.href = `/?tab=list&listaId=${list.id}`;
+          });
+
+          // Botón WhatsApp
+          card.querySelector('.whatsapp-btn')!.addEventListener('click', () => {
+            const shareUrl = `${window.location.origin}/?listaId=${list.id}`;
+            const phone = window.prompt(
+              'Ingresa el número de WhatsApp con código de país (ej. 573001234567) o déjalo vacío para elegir el chat en WhatsApp:',
+              ''
+            );
+            if (phone === null) return;
+            const msg = `🛒 ¡Hola! Te comparto nuestra lista de compras «${list.nombre}» para comparar precios y editarla juntos:\n${shareUrl}`;
+            const target = phone.trim()
+              ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone.replace(/[^0-9]/g, ''))}&text=${encodeURIComponent(msg)}`
+              : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+            window.open(target, '_blank');
+          });
+
+          // Botón Compartir por Correo
+          card.querySelector('.email-btn')!.addEventListener('click', async () => {
+            const email = window.prompt(
+              `Ingresa el correo de Google de tu pareja para compartirle «${list.nombre}»:`,
+              ''
+            );
+            if (!email || !email.includes('@')) return;
+            try {
+              await shareListWithEmail(list.id, email);
+              alert(`¡Listo! Se compartió la lista con ${email}. Podrá verla y editarla en su perfil.`);
+            } catch (err: any) {
+              alert(err.message || 'Error al compartir la lista.');
+            }
           });
 
           // Botón Eliminar
           card.querySelector('.delete-btn')!.addEventListener('click', async () => {
-            if (!currentUid || !window.confirm(`¿Deseas eliminar la lista «${list.nombre}»?`)) return;
+            const accion = list.isOwner ? 'eliminar' : 'desvincularte de';
+            if (!currentUid || !window.confirm(`¿Deseas ${accion} la lista «${list.nombre}»?`)) return;
             try {
-              await deleteUserList(currentUid, list.id);
-              loadLists(currentUid);
+              await deleteUserList(currentUid, list.id, list.isOwner);
+              loadLists(currentUid, currentUserEmail);
             } catch (err: any) {
               alert(err.message || 'Error al eliminar la lista');
             }
@@ -177,10 +220,10 @@ import '../styles/styles.css';
         });
       }
 
-      async function loadLists(uid: string) {
+      async function loadLists(uid: string, email?: string | null) {
         listsStatus.textContent = 'Cargando tus listas…';
         try {
-          const lists = await getUserLists(uid);
+          const lists = await getUserLists(uid, email);
           listsStatus.textContent = '';
           renderLists(lists);
         } catch (err: any) {
@@ -204,6 +247,7 @@ import '../styles/styles.css';
       subscribeAuth((user) => {
         if (user) {
           currentUid = user.uid;
+          currentUserEmail = user.email || null;
           authGate.hidden = true;
           userProfile.hidden = false;
           listsSection.hidden = false;
@@ -211,9 +255,10 @@ import '../styles/styles.css';
           userDisplayName.textContent = user.displayName || 'Usuario';
           userEmail.textContent = user.email || '';
 
-          loadLists(user.uid);
+          loadLists(user.uid, currentUserEmail);
         } else {
           currentUid = null;
+          currentUserEmail = null;
           authGate.hidden = false;
           userProfile.hidden = true;
           listsSection.hidden = true;

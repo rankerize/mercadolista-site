@@ -24,14 +24,20 @@ Este documento contiene la arquitectura, convenciones y decisiones de diseño cl
 - **Proyecto**: `mercadologo` (conectado al Firebase CLI y consola oficial).
 - **Servicios utilizados**:
   1. **Firebase Authentication**: Inicio de sesión federado con Google Sign-In (`signInWithPopup`). El proveedor de Google ya está habilitado en la consola de Firebase.
-  2. **Cloud Firestore**: Persistencia y sincronización de las listas de compras de los usuarios en la colección `users/{uid}/lists`.
+  2. **Cloud Firestore**: Persistencia y sincronización de las listas de compras en la colección `shared_lists`.
+  3. **Listas Colaborativas (WhatsApp y Correo)**:
+     - Cualquier lista se puede compartir por **WhatsApp** (con número directo o eligiendo el chat) o por **correo de Google**.
+     - Genera un enlace: `/?listaId=ID`.
+     - Cuando la pareja abre ese enlace desde WhatsApp, la app carga la lista automáticamente y, al iniciar sesión, **vincula su UID a la lista como colaborador (`collaboratorIds`)**.
+     - Ambos pueden verla en su `/perfil`, editarla, cotizarla y guardarla en tiempo real.
 - **Archivos de integración**:
   - [`src/lib/firebase.ts`](file:///Users/cesarandresjimenezarci/Documents/Clientes/Comparador%20de%20precios/src/lib/firebase.ts): Inicialización del SDK cliente de Firebase con las credenciales públicas de la Web App `mercadologo`.
-  - [`src/lib/firebaseAuth.ts`](file:///Users/cesarandresjimenezarci/Documents/Clientes/Comparador%20de%20precios/src/lib/firebaseAuth.ts): Métodos utilitarios: `loginWithGoogle()`, `logoutUser()`, `subscribeAuth()`, `getUserLists()`, `saveUserList()`, `deleteUserList()`.
+  - [`src/lib/firebaseAuth.ts`](file:///Users/cesarandresjimenezarci/Documents/Clientes/Comparador%20de%20precios/src/lib/firebaseAuth.ts): Métodos utilitarios: `loginWithGoogle()`, `logoutUser()`, `subscribeAuth()`, `getUserLists()`, `saveUserList()`, `deleteUserList()`, `getListById()`, `joinSharedList()`, `shareListWithEmail()`.
 
-### UX de Autenticación
-- Existe un botón de **«Iniciar sesión»** con Google en el header superior derecho (`.top-bar`) accesible desde todas las pestañas.
-- En la pestaña **«Lista»**, hay un botón contextual para invitar a guardar o cargar listas con la cuenta de Google.
+### UX de Autenticación y Perfil
+- Existe un botón de **«Iniciar sesión»** con Google en el header superior derecho (`.top-bar`) accesible desde todas las pestañas. Al iniciar sesión, muestra `👤 [Nombre]` como enlace directo a `/perfil`.
+- Página `/perfil`: Vista de gestión donde se listan todas las listas propias y compartidas, con botones para cotizar, borrar o compartir por WhatsApp/Correo.
+- En la pestaña **«Lista»**, hay un botón contextual para invitar a guardar o cargar listas con la cuenta de Google, y un botón **«📲 Compartir»**.
 - Si el usuario no inicia sesión, el comparador sigue funcionando al 100% de manera anónima y almacena la lista actual en `localStorage`.
 
 ---
