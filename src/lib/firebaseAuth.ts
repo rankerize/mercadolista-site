@@ -53,6 +53,9 @@ export interface SavedList {
   collaborators?: CollaboratorInfo[];
   sharedWithEmails?: string[];
   isOwner?: boolean;
+  tipo?: 'mercado' | 'receta';
+  porciones?: number;
+  descripcion?: string;
   createdAt?: any;
   updatedAt?: any;
 }
@@ -116,6 +119,9 @@ export async function getListById(listId: string): Promise<SavedList | null> {
       collaboratorIds: data.collaboratorIds || [],
       collaborators: data.collaborators || [],
       sharedWithEmails: data.sharedWithEmails || [],
+      tipo: (data.tipo as 'mercado' | 'receta') || 'mercado',
+      porciones: data.porciones ? Number(data.porciones) : undefined,
+      descripcion: data.descripcion || undefined,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
     };
@@ -147,6 +153,9 @@ export async function getUserLists(userId: string, userEmail?: string | null): P
         collaborators: data.collaborators || [],
         sharedWithEmails: data.sharedWithEmails || [],
         isOwner: true,
+        tipo: (data.tipo as 'mercado' | 'receta') || 'mercado',
+        porciones: data.porciones ? Number(data.porciones) : undefined,
+        descripcion: data.descripcion || undefined,
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
       });
@@ -174,6 +183,9 @@ export async function getUserLists(userId: string, userEmail?: string | null): P
           collaborators: data.collaborators || [],
           sharedWithEmails: data.sharedWithEmails || [],
           isOwner: false,
+          tipo: (data.tipo as 'mercado' | 'receta') || 'mercado',
+          porciones: data.porciones ? Number(data.porciones) : undefined,
+          descripcion: data.descripcion || undefined,
           createdAt: data.createdAt,
           updatedAt: data.updatedAt,
         });
@@ -204,6 +216,9 @@ export async function getUserLists(userId: string, userEmail?: string | null): P
             collaborators: data.collaborators || [],
             sharedWithEmails: data.sharedWithEmails || [],
             isOwner: false,
+            tipo: (data.tipo as 'mercado' | 'receta') || 'mercado',
+            porciones: data.porciones ? Number(data.porciones) : undefined,
+            descripcion: data.descripcion || undefined,
             createdAt: data.createdAt,
             updatedAt: data.updatedAt,
           });
@@ -233,6 +248,7 @@ export async function getUserLists(userId: string, userEmail?: string | null): P
           collaborators: [{ uid: userId, name: 'Tú', email: userEmail || '' }],
           sharedWithEmails: [],
           isOwner: true,
+          tipo: 'mercado',
           createdAt: data.createdAt,
           updatedAt: data.updatedAt,
         });
@@ -259,6 +275,9 @@ export async function saveUserList(
     nombre: string;
     ciudad: string;
     items: ListItemData[];
+    tipo?: 'mercado' | 'receta';
+    porciones?: number;
+    descripcion?: string;
   },
   listId?: string,
   userProfile?: { displayName?: string | null; email?: string | null }
@@ -285,10 +304,15 @@ export async function saveUserList(
     return clean;
   });
 
-  const cleanListData = {
-    ...listData,
+  const tipo = listData.tipo || 'mercado';
+  const cleanListData: any = {
+    nombre: listData.nombre,
+    ciudad: listData.ciudad,
+    tipo,
     items: sanitizedItems,
   };
+  if (listData.porciones) cleanListData.porciones = Number(listData.porciones);
+  if (listData.descripcion) cleanListData.descripcion = listData.descripcion;
 
   if (listId) {
     const docRef = doc(db, LISTS_COLLECTION, listId);
@@ -392,6 +416,9 @@ export function subscribeList(listId: string, callback: (list: SavedList | null)
         collaboratorIds: data.collaboratorIds || [],
         collaborators: data.collaborators || [],
         sharedWithEmails: data.sharedWithEmails || [],
+        tipo: (data.tipo as 'mercado' | 'receta') || 'mercado',
+        porciones: data.porciones ? Number(data.porciones) : undefined,
+        descripcion: data.descripcion || undefined,
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
       });
@@ -456,6 +483,9 @@ export function subscribeUserLists(
             collaborators: data.collaborators || [],
             sharedWithEmails: data.sharedWithEmails || [],
             isOwner: true,
+            tipo: (data.tipo as 'mercado' | 'receta') || 'mercado',
+            porciones: data.porciones ? Number(data.porciones) : undefined,
+            descripcion: data.descripcion || undefined,
             createdAt: data.createdAt,
             updatedAt: data.updatedAt,
           });
@@ -491,6 +521,9 @@ export function subscribeUserLists(
               collaborators: data.collaborators || [],
               sharedWithEmails: data.sharedWithEmails || [],
               isOwner: false,
+              tipo: (data.tipo as 'mercado' | 'receta') || 'mercado',
+              porciones: data.porciones ? Number(data.porciones) : undefined,
+              descripcion: data.descripcion || undefined,
               createdAt: data.createdAt,
               updatedAt: data.updatedAt,
             });

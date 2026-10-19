@@ -2,6 +2,7 @@
 import '../../styles/styles.css';
 import { CATEGORIES, getItemsByCategory } from '../../lib/catalog';
 import { getCategoryBySlug, toSlug } from '../../lib/slugs';
+import Nav from '../../components/Nav.astro';
 import GoogleAnalytics from '../../components/GoogleAnalytics.astro';
 
 const { categoria } = Astro.params;
@@ -46,10 +47,8 @@ const canonicalUrl = `${BASE}/categoria/${cat.id}`;
     })} />
   </head>
   <body>
+    <Nav />
     <header class="top">
-      <div class="top-bar">
-        <a href="/" class="eyebrow">Mercado Lista</a>
-      </div>
       <h1>{cat.icono} Precios {cat.nombre} en Colombia hoy</h1>
       <p class="lead">
         {items.length} productos · Precios consultados en tiempo real en Éxito, D1, Jumbo, Carulla y más.

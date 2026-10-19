@@ -1,0 +1,283 @@
+---
+import '../../styles/styles.css';
+import { CATEGORIES } from '../../lib/catalog';
+import { getTaxNode, getTaxChildren, getBreadcrumb } from '../../lib/taxonomy';
+import { searchStores } from '../../lib/providers';
+import { buildReport } from '../../lib/ranking';
+import { findCity } from '../../lib/cities';
+import { cop } from '../../lib/normalize';
+import Nav from '../../components/Nav.astro';
+import GoogleAnalytics from '../../components/GoogleAnalytics.astro';
+
+const { slug } = Astro.params;
+const segments = (slug ?? '').split('/').filter(Boolean);
+
+// Redirigir si el slug está vacío o es sólo L1/L2 (manejados por rutas específicas)
+if (segments.length < 2) {
+  return Astro.redirect('/categoria', 302);
+}
+
+const catId   = segments[0];
+const taxPath = segments.join('/');
+
+const cat = CATEGORIES.find((c) => c.id === catId);
+if (!cat) return Astro.redirect('/categoria', 302);
+
+const node = getTaxNode(taxPath);
+if (!node) return Astro.redirect(`/categoria/${catId}`, 302);
+
+const children = getTaxChildren(taxPath);
+const isLeaf   = children.length === 0;
+
+const BASE         = 'https://mercadolista.com';
+const canonicalUrl = `${BASE}/categoria/${taxPath}`;
+const city         = findCity('bogota');
+
+// Precios en tiempo real sólo en nodos hoja (o cuando tienen query asignado)
+let report: Record<string, any> | null = null;
+let errorMsg: string | null = null;
+
+if (isLeaf || segments.length >= 3) {
+  try {
+    const outcomes = await searchStores(node.query, city);
+    report = buildReport(node.query, outcomes);
+  } catch {
+    errorMsg = 'No pudimos consultar los precios en este momento. Intenta de nuevo en unos segundos.';
+  }
+}
+
+const verdict  = report?.verdict ?? null;
+const offers: any[] = report?.offers ?? [];
+const topOffers = offers.slice(0, 8);
+
+// Breadcrumb items
+const crumbData = getBreadcrumb(segments, BASE);
+
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: crumbData.map((c, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    name: c.name,
+    item: c.item,
+  })),
+};
+
+const schemaOffers = topOffers.map((o) => ({
+  '@type': 'Offer',
+  price: o.price.toFixed(0),
+  priceCurrency: 'COP',
+  availability: 'https://schema.org/InStock',
+  seller: { '@type': 'Organization', name: o.store_name },
+  url: o.url,
+}));
+
+const productSchema = isLeaf ? {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: node.nombre,
+  description: node.metaDesc,
+  ...(verdict?.image ? { image: verdict.image } : {}),
+  offers: schemaOffers.length > 0 ? schemaOffers : undefined,
+} : null;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <GoogleAnalytics />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{node.titleSeo}</title>
+    <meta name="description" content={node.metaDesc} />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta property="og:title" content={node.titleSeo} />
+    <meta property="og:description" content={verdict
+      ? `${verdict.headline} · ${cop(verdict.price)} en ${verdict.store_name}`
+      : node.metaDesc} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:type" content="website" />
+    {verdict?.image && <meta property="og:image" content={verdict.image} />}
+    <meta name="theme-color" content="#0e6a45" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+    {productSchema && <script type="application/ld+json" set:html={JSON.stringify(productSchema)} />}
+  </head>
+  <body>
+    <Nav />
+
+    <header class="top">
+      <h1>{node.h1}</h1>
+      <p class="lead">
+        {isLeaf
+          ? `Comparación en tiempo real · ${city.name}`
+          : `${children.length} subcategorías · ${cat.nombre}`}
+      </p>
+    </header>
+
+    <main class="tax-page">
+      <!-- Breadcrumb -->
+      <nav class="breadcrumb" aria-label="Navegación">
+        {crumbData.map((c, i) => (
+          <>
+            {i > 0 && <span aria-hidden="true">›</span>}
+            {i < crumbData.length - 1
+              ? <a href={c.item.replace(BASE, '')}>{c.name}</a>
+              : <span aria-current="page">{c.name}</span>}
+          </>
+        ))}
+      </nav>
+
+      {errorMsg && <div class="error-banner" role="alert">{errorMsg}</div>}
+
+      {/* Nodo con hijos → mostrar subcategorías */}
+      {!isLeaf && children.length > 0 && (
+        <section class="children-section" aria-label={`Subcategorías de ${node.nombre}`}>
+          <ul class="children-grid" role="list">
+            {children.map(({ path, node: child }) => (
+              <li>
+                <a href={`/categoria/${path}`} class="child-card">
+                  <span class="child-nombre">{child.nombre}</span>
+                  <span class="child-cta">Ver precios →</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Veredicto ganador */}
+      {verdict && (
+        <section class="verdict-box" aria-label="Veredicto">
+          <div class="verdict-winner">
+            {verdict.image && (
+              <img src={verdict.image} alt={verdict.name} class="verdict-img" width="80" height="80" loading="eager" />
+            )}
+            <div class="verdict-text">
+              <p class="verdict-headline">{verdict.headline}</p>
+              <p class="verdict-price">
+                <strong>{cop(verdict.price)}</strong>
+                <span class="verdict-store">en {verdict.store_name}</span>
+              </p>
+              {verdict.detail && <p class="verdict-detail">{verdict.detail}</p>}
+              {verdict.payment_note && <p class="verdict-payment">💳 {verdict.payment_note}</p>}
+            </div>
+          </div>
+          <a href={verdict.url} target="_blank" rel="noopener noreferrer" class="btn-buy">
+            Ver en {verdict.store_name} →
+          </a>
+        </section>
+      )}
+
+      {/* Lista de tiendas */}
+      {topOffers.length > 0 && (
+        <section class="offers-section" aria-label="Precios por tienda">
+          <h2>Precios por tienda</h2>
+          <ul class="offers-list" role="list">
+            {topOffers.map((o, i) => (
+              <li class={`offer-row ${i === 0 ? 'offer-row--winner' : ''}`}>
+                <div class="offer-row-left">
+                  {o.image && <img src={o.image} alt={o.name} class="offer-thumb" width="48" height="48" loading="lazy" />}
+                  <div class="offer-row-info">
+                    <span class="offer-store">{o.store_name}</span>
+                    <span class="offer-name">{o.name}</span>
+                    {o.unit_price && <span class="offer-unit">{cop(o.unit_price)} / {o.unit_label}</span>}
+                  </div>
+                </div>
+                <div class="offer-row-right">
+                  <span class="offer-price">{cop(o.price)}</span>
+                  {o.list_price && o.list_price > o.price && <span class="offer-list-price">{cop(o.list_price)}</span>}
+                  <a href={o.url} target="_blank" rel="noopener noreferrer" class="offer-link">Ver →</a>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {topOffers.length === 0 && !errorMsg && isLeaf && (
+        <div class="no-results">
+          <p>No encontramos resultados para <strong>{node.nombre}</strong> en este momento.</p>
+          <a href={`/categoria/${catId}`} class="btn-home">Ver más en {cat.nombre} →</a>
+        </div>
+      )}
+
+      <div class="cta-home">
+        <p>¿Quieres comparar otro producto o armar tu lista del mercado?</p>
+        <a href="/" class="btn-home">Ir al comparador →</a>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>© {new Date().getFullYear()} Mercado Lista · Precios consultados en tiempo real en Bogotá</p>
+    </footer>
+
+    <style>
+      .tax-page { max-width: 860px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+
+      .breadcrumb { display: flex; gap: 0.4rem; align-items: center; font-size: 0.875rem; color: #666; margin-bottom: 1.75rem; flex-wrap: wrap; }
+      .breadcrumb a { color: #0e6a45; text-decoration: none; }
+      .breadcrumb a:hover { text-decoration: underline; }
+
+      .error-banner { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; color: #856404; }
+
+      /* Subcategorías */
+      .children-grid { list-style: none; padding: 0; margin: 0 0 2.5rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem; }
+      .child-card { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border: 1.5px solid #e2e8f0; border-radius: 12px; text-decoration: none; color: inherit; transition: border-color 0.15s, box-shadow 0.15s; }
+      .child-card:hover { border-color: #0e6a45; box-shadow: 0 2px 12px rgba(14,106,69,0.12); }
+      .child-nombre { font-size: 0.95rem; font-weight: 600; }
+      .child-cta { font-size: 0.8rem; color: #0e6a45; font-weight: 500; }
+
+      /* Veredicto */
+      .verdict-box { background: #f0faf5; border: 2px solid #0e6a45; border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; }
+      .verdict-winner { display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 1rem; }
+      .verdict-img { width: 80px; height: 80px; object-fit: contain; border-radius: 8px; background: #fff; flex-shrink: 0; }
+      .verdict-text { flex: 1; }
+      .verdict-headline { font-size: 1.1rem; font-weight: 600; color: #0e6a45; margin: 0 0 0.4rem; }
+      .verdict-price { display: flex; align-items: baseline; gap: 0.5rem; margin: 0 0 0.5rem; }
+      .verdict-price strong { font-size: 1.75rem; color: #0e6a45; }
+      .verdict-store { font-size: 0.9rem; color: #555; }
+      .verdict-detail { font-size: 0.875rem; color: #444; margin: 0 0 0.5rem; line-height: 1.5; }
+      .verdict-payment { font-size: 0.85rem; color: #555; background: #fff; border-radius: 8px; padding: 0.5rem 0.75rem; margin: 0.5rem 0 0; }
+      .btn-buy { display: inline-flex; align-items: center; gap: 0.4rem; background: #0e6a45; color: #fff; padding: 0.65rem 1.4rem; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: background 0.15s; }
+      .btn-buy:hover { background: #0a5236; }
+
+      /* Ofertas */
+      .offers-section h2 { font-size: 1.1rem; margin-bottom: 1rem; }
+      .offers-list { list-style: none; padding: 0; margin: 0 0 2.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
+      .offer-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.9rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 12px; transition: border-color 0.15s; }
+      .offer-row:hover { border-color: #0e6a45; }
+      .offer-row--winner { border-color: #0e6a45; background: #f9fefc; }
+      .offer-row-left { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0; }
+      .offer-thumb { width: 48px; height: 48px; object-fit: contain; border-radius: 8px; background: #f8f8f8; flex-shrink: 0; }
+      .offer-row-info { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+      .offer-store { font-weight: 600; font-size: 0.9rem; }
+      .offer-name { font-size: 0.8rem; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .offer-unit { font-size: 0.75rem; color: #888; }
+      .offer-row-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem; flex-shrink: 0; }
+      .offer-price { font-size: 1.1rem; font-weight: 700; color: #111; }
+      .offer-list-price { font-size: 0.8rem; color: #aaa; text-decoration: line-through; }
+      .offer-link { font-size: 0.8rem; color: #0e6a45; text-decoration: none; font-weight: 500; }
+      .offer-link:hover { text-decoration: underline; }
+
+      .no-results { text-align: center; padding: 3rem 1rem; color: #666; }
+      .cta-home { background: #f8f9fa; border-radius: 12px; padding: 1.5rem; text-align: center; }
+      .cta-home p { color: #555; margin-bottom: 1rem; }
+      .btn-home { display: inline-flex; background: #0e6a45; color: #fff; padding: 0.65rem 1.4rem; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 0.95rem; }
+      .btn-home:hover { background: #0a5236; }
+      .site-footer { text-align: center; padding: 2rem 1rem; color: #999; font-size: 0.8rem; border-top: 1px solid #f0f0f0; }
+
+      @media (max-width: 480px) {
+        .verdict-winner { flex-direction: column; }
+        .verdict-img { width: 60px; height: 60px; }
+        .verdict-price strong { font-size: 1.4rem; }
+        .offer-thumb { display: none; }
+      }
+    </style>
+  </body>
+</html>

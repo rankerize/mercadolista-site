@@ -38,7 +38,11 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
   <body>
     <header class="top">
       <div class="top-bar">
-        <a href="/" class="eyebrow" style="text-decoration: none;">← Volver al comparador</a>
+        <a href="/" class="brand-header" title="Mercado Lista · Inicio">
+          <img src="/logo.png" alt="Mercado Lista" class="brand-logo-img" width="34" height="34" />
+          <span class="brand-name">Mercado Lista</span>
+        </a>
+        <a href="/" style="text-decoration: none; font-size: 0.85rem; color: var(--pine); font-weight: 500;">← Volver al comparador</a>
       </div>
       <h1>Mi Perfil</h1>
       <p class="lead">Administra tu cuenta y tus listas de compras guardadas en la nube.</p>
@@ -107,9 +111,18 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
 
       <!-- Vista 1: Listas Guardadas -->
       <section id="lists-section" hidden>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
           <h2 style="margin: 0; font-size: 1.4rem;">Mis Listas</h2>
-          <a href="/?tab=list" class="btn-primary">+ Nueva lista</a>
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <a href="/asistente" class="btn-primary" style="background: linear-gradient(135deg, #0e6a45, #15803d);">🧑‍🍳 Crear con Asistente IA</a>
+            <a href="/?tab=list" class="btn-primary">+ Nueva lista vacía</a>
+          </div>
+        </div>
+
+        <div class="list-filter-bar" id="list-filter-bar">
+          <button type="button" class="list-filter-chip is-active" data-filter="all">Todas (<span id="count-all">0</span>)</button>
+          <button type="button" class="list-filter-chip" data-filter="mercado">🛒 Mercados (<span id="count-mercado">0</span>)</button>
+          <button type="button" class="list-filter-chip" data-filter="receta">🍳 Recetas (<span id="count-receta">0</span>)</button>
         </div>
 
         <p id="lists-status" class="status" role="status"></p>

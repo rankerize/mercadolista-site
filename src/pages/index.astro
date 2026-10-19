@@ -20,7 +20,9 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
     <meta property="og:description" content="Compara precios en tiempo real entre supermercados y tecnología en Colombia. Encuentra el mejor precio por producto, por unidad o para tu lista completa." />
     <meta property="og:url" content="https://mercadolista.com/" />
     <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://mercadolista.com/logo.png" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://mercadolista.com/logo.png" />
     <meta name="theme-color" content="#0e6a45" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -41,7 +43,10 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
   <body>
     <header class="top">
       <div class="top-bar">
-        <span class="eyebrow">Mercado Lista</span>
+        <a href="/" class="brand-header" title="Mercado Lista · Inicio">
+          <img src="/logo.png" alt="Mercado Lista" class="brand-logo-img" width="36" height="36" />
+          <span class="brand-name">Mercado Lista</span>
+        </a>
         <div class="top-bar-actions">
           <button type="button" id="header-cart-btn" class="header-cart-btn" title="Ir a mi lista de compras">
             <span>🛒 Lista</span>

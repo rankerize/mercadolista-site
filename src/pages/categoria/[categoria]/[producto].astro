@@ -6,6 +6,7 @@ import { searchStores } from '../../../lib/providers';
 import { buildReport } from '../../../lib/ranking';
 import { findCity } from '../../../lib/cities';
 import { cop } from '../../../lib/normalize';
+import Nav from '../../../components/Nav.astro';
 import GoogleAnalytics from '../../../components/GoogleAnalytics.astro';
 
 const { categoria, producto } = Astro.params;
@@ -95,10 +96,8 @@ const breadcrumbSchema = {
     <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
   </head>
   <body>
+    <Nav />
     <header class="top">
-      <div class="top-bar">
-        <a href="/" class="eyebrow">Mercado Lista</a>
-      </div>
       <h1>{item.icono} Precio {item.nombre} hoy en Colombia</h1>
       <p class="lead">Comparación en tiempo real · {city.name}</p>
     </header>
