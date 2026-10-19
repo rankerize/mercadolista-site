@@ -248,3 +248,14 @@ export function copExact(amount: number): string {
   const parts = amount.toFixed(2).split('.');
   return `$ ${parts[0]},${parts[1]}`;
 }
+
+export function escapeHtml(str: string): string {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
