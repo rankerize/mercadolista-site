@@ -119,3 +119,67 @@ describe('API Security and Rate Limiting', () => {
     expect(third.resetSeconds).toBeGreaterThan(0);
   });
 });
+
+describe('AI Shopping Assistant & Recipe Engine', () => {
+  it('parses pasta boloñesa and scales ingredients correctly for 2 and 4 persons', async () => {
+    const { POST } = await import('../src/pages/api/asistente');
+
+    // Test 1: 2 personas
+    const req2 = new Request('https://mercadolista.com/api/asistente', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-forwarded-for': '127.0.0.1',
+      },
+      body: JSON.stringify({ prompt: 'Quiero hacer una pasta boloñesa para 2 personas', personas: 2 }),
+    });
+
+    const res2 = await POST({ request: req2 } as any);
+    expect(res2.status).toBe(200);
+    const data2 = await res2.json();
+    expect(data2.porciones).toBe(2);
+    expect(data2.receta).toContain('Boloñesa');
+    expect(data2.ingredientes.length).toBeGreaterThanOrEqual(4);
+
+    const pasta2 = data2.ingredientes.find((i: any) => i.nombre.toLowerCase().includes('pasta') || i.nombre.toLowerCase().includes('espagueti'));
+    const carne2 = data2.ingredientes.find((i: any) => i.nombre.toLowerCase().includes('carne'));
+    expect(pasta2).toBeDefined();
+    expect(carne2).toBeDefined();
+
+    // Test 2: 4 personas (debe escalar la cantidad al doble)
+    const req4 = new Request('https://mercadolista.com/api/asistente', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-forwarded-for': '127.0.0.2',
+      },
+      body: JSON.stringify({ prompt: 'Pasta boloñesa para 4 personas', personas: 4 }),
+    });
+
+    const res4 = await POST({ request: req4 } as any);
+    expect(res4.status).toBe(200);
+    const data4 = await res4.json();
+    expect(data4.porciones).toBe(4);
+
+    const pasta4 = data4.ingredientes.find((i: any) => i.nombre.toLowerCase().includes('pasta') || i.nombre.toLowerCase().includes('espagueti'));
+    const carne4 = data4.ingredientes.find((i: any) => i.nombre.toLowerCase().includes('carne'));
+    expect(pasta4.cantidad).toBe(pasta2.cantidad * 2);
+    expect(carne4.cantidad).toBe(carne2.cantidad * 2);
+  });
+
+  it('validates minimum prompt length', async () => {
+    const { POST } = await import('../src/pages/api/asistente');
+
+    const reqEmpty = new Request('https://mercadolista.com/api/asistente', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-forwarded-for': '127.0.0.3',
+      },
+      body: JSON.stringify({ prompt: ' ' }),
+    });
+
+    const resEmpty = await POST({ request: reqEmpty } as any);
+    expect(resEmpty.status).toBe(422);
+  });
+});

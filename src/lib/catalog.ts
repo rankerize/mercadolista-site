@@ -164,3 +164,13 @@ export function searchCatalog(query: string, maxResults = 7): CatalogItem[] {
 export function getItemsByCategory(categoriaId: string): CatalogItem[] {
   return CATALOG_ITEMS.filter((item) => item.categoria === categoriaId);
 }
+
+export function searchCategories(query: string, maxResults = 3): CategoryInfo[] {
+  const cleanQ = normalizeStr(query);
+  if (!cleanQ || cleanQ.length < 2) return [];
+  return CATEGORIES.filter((c) => {
+    const normName = normalizeStr(c.nombre);
+    return normName.includes(cleanQ) || c.id.includes(cleanQ);
+  }).slice(0, maxResults);
+}
+

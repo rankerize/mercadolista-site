@@ -22,4 +22,4 @@ function cityCatalog() {
   return CITIES.map((c) => ({ id: c.id, name: c.name }));
 }
 
-export { cityCatalog as c, findCity as f };
+export { CITIES as C, cityCatalog as c, findCity as f };

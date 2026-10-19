@@ -1,0 +1,519 @@
+---
+import '../styles/styles.css';
+import Nav from '../components/Nav.astro';
+import GoogleAnalytics from '../components/GoogleAnalytics.astro';
+import { CITIES } from '../lib/cities';
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <GoogleAnalytics />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Asistente de Compras & Recetas con IA · Mercado Lista</title>
+    <meta
+      name="description"
+      content="Pídele al asesor de compras de Mercado Lista cualquier comida o receta (ej. pasta boloñesa para 2 personas) y obtén la lista exacta de ingredientes con las mejores ofertas en supermercados colombianos."
+    />
+    <link rel="canonical" href="https://mercadolista.com/asistente" />
+    <meta property="og:title" content="Asistente de Compras & Recetas con IA · Mercado Lista" />
+    <meta
+      property="og:description"
+      content="Arma tu menú o receta y cotiza automáticamente en D1, Éxito, Jumbo, Carulla y Olímpica con las porciones ideales."
+    />
+    <meta property="og:url" content="https://mercadolista.com/asistente" />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#0e6a45" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Mercado Lista" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=Outfit:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <Nav />
+    <header class="top">
+      <div class="top-bar">
+        <a href="/" class="brand-header" title="Mercado Lista · Inicio">
+          <img src="/logo.png" alt="Mercado Lista" class="brand-logo-img" width="34" height="34" />
+          <span class="brand-name">Mercado Lista</span>
+        </a>
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+          <a href="/perfil" class="btn-primary" style="background: transparent; color: var(--pine); border: 1px solid var(--line); font-size: 0.85rem; padding: 0.35rem 0.75rem;">
+            👤 Mis Listas / Perfil
+          </a>
+          <a href="/" style="text-decoration: none; font-size: 0.85rem; color: var(--pine); font-weight: 500;">
+            ← Volver al comparador
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="assistant-container">
+      <section class="assistant-hero">
+        <div class="assistant-hero-badge">✨ Asesor Inteligente de Compras & Recetas</div>
+        <h1>¿Qué quieres cocinar hoy?</h1>
+        <p>
+          Dile al asistente qué plato deseas preparar o qué necesitas comprar y para cuántas personas. Te armará los ingredientes con porciones exactas y cotizará al instante en qué supermercado de Colombia te sale más barato.
+        </p>
+      </section>
+
+      <section class="assistant-box">
+        <form id="assistant-form" class="assistant-prompt-row">
+          <label for="assistant-input" style="font-weight: 600; font-size: 0.95rem; color: var(--ink);">
+            Describe tu comida, receta o necesidad:
+          </label>
+          <textarea
+            id="assistant-input"
+            class="assistant-textarea"
+            placeholder="Ej. Quiero hacer una pasta boloñesa para 2 personas con una ensalada fresca…"
+            required
+            rows="3"
+          ></textarea>
+
+          <div class="assistant-controls-row">
+            <div class="assistant-controls-left">
+              <label class="assistant-select-label" for="assistant-city">
+                <span>🏙️ Ciudad:</span>
+                <select id="assistant-city" class="assistant-select">
+                  {CITIES.map((c) => (
+                    <option value={c.id} selected={c.id === 'bogota'}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label class="assistant-select-label" for="assistant-people">
+                <span>👥 Comensales:</span>
+                <select id="assistant-people" class="assistant-select">
+                  <option value="1">1 persona</option>
+                  <option value="2" selected>2 personas</option>
+                  <option value="3">3 personas</option>
+                  <option value="4">4 personas</option>
+                  <option value="5">5 personas</option>
+                  <option value="6">6 personas</option>
+                  <option value="8">8 personas</option>
+                  <option value="10">10 personas</option>
+                </select>
+              </label>
+            </div>
+
+            <button type="submit" id="btn-submit-assistant" class="btn-assistant-ask">
+              <span>✨ Armar lista y cotizar</span>
+            </button>
+          </div>
+
+          <div class="assistant-chips-wrap">
+            <span class="assistant-chips-label">O prueba una de estas ideas rápidas:</span>
+            <div class="assistant-chips-list">
+              <button type="button" class="assistant-chip-btn" data-prompt="Quiero hacer una pasta boloñesa para 2 personas" data-people="2">
+                🍝 Pasta boloñesa (2 pers.)
+              </button>
+              <button type="button" class="assistant-chip-btn" data-prompt="Noche de tacos caseros para 4 personas" data-people="4">
+                🌮 Noche de tacos (4 pers.)
+              </button>
+              <button type="button" class="assistant-chip-btn" data-prompt="Asado de domingo con carne, costilla, chorizo y papas para 6 personas" data-people="6">
+                🥩 Asado colombiano (6 pers.)
+              </button>
+              <button type="button" class="assistant-chip-btn" data-prompt="Ajiaco santafereño típico para 4 personas" data-people="4">
+                🍲 Ajiaco santafereño (4 pers.)
+              </button>
+              <button type="button" class="assistant-chip-btn" data-prompt="Arroz con pollo criollo para 4 personas" data-people="4">
+                🍗 Arroz con pollo (4 pers.)
+              </button>
+              <button type="button" class="assistant-chip-btn" data-prompt="Hamburguesas caseras con tocineta y queso para 2 personas" data-people="2">
+                🍔 Hamburguesas caseras (2 pers.)
+              </button>
+              <button type="button" class="assistant-chip-btn" data-prompt="Desayuno fit y saludable con huevos, aguacate y avena para 2 personas" data-people="2">
+                🥑 Desayuno fit (2 pers.)
+              </button>
+              <button type="button" class="assistant-chip-btn" data-prompt="Lentejas caseras con arroz y plátano para 2 personas" data-people="2">
+                🥣 Lentejas con arroz (2 pers.)
+              </button>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <!-- Estado de carga / feedback -->
+      <div id="assistant-status" class="status" role="status" style="text-align: center; margin: 1.5rem 0;"></div>
+
+      <!-- Resultados del Asistente -->
+      <section id="assistant-results" hidden></section>
+    </main>
+
+    <script>
+      import { cop, escapeHtml } from '../lib/normalize';
+      import { subscribeAuth, saveUserList, type SavedList, type ListItemData } from '../lib/firebaseAuth';
+
+      const form = document.querySelector<HTMLFormElement>('#assistant-form')!;
+      const input = document.querySelector<HTMLTextAreaElement>('#assistant-input')!;
+      const selectCity = document.querySelector<HTMLSelectElement>('#assistant-city')!;
+      const selectPeople = document.querySelector<HTMLSelectElement>('#assistant-people')!;
+      const btnSubmit = document.querySelector<HTMLButtonElement>('#btn-submit-assistant')!;
+      const statusEl = document.querySelector<HTMLElement>('#assistant-status')!;
+      const resultsEl = document.querySelector<HTMLElement>('#assistant-results')!;
+      const chipButtons = document.querySelectorAll<HTMLButtonElement>('.assistant-chip-btn');
+
+      let currentUid: string | null = null;
+      let currentUserEmail: string | null = null;
+      let currentUserName: string | null = null;
+      let currentRecipeData: any = null;
+      let lastQuotedReport: any = null;
+
+      // Autenticación reactiva
+      subscribeAuth((user) => {
+        if (user) {
+          currentUid = user.uid;
+          currentUserEmail = user.email || null;
+          currentUserName = user.displayName || (user.email ? user.email.split('@')[0] : 'Tú');
+        } else {
+          currentUid = null;
+          currentUserEmail = null;
+          currentUserName = null;
+        }
+      });
+
+      // Quick suggestion chips
+      chipButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const prompt = btn.dataset.prompt || '';
+          const people = btn.dataset.people || '2';
+          input.value = prompt;
+          selectPeople.value = people;
+          form.dispatchEvent(new Event('submit', { cancelable: true }));
+        });
+      });
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const prompt = input.value.trim();
+        if (!prompt) return;
+
+        const personas = parseInt(selectPeople.value, 10) || 2;
+        const ciudad = selectCity.value || 'bogota';
+
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = `<span>⏳ Consultando al asistente…</span>`;
+        statusEl.innerHTML = `<p style="color: var(--pine); font-weight: 500;">🧑‍🍳 Analizando receta y calculando porciones para ${personas} personas…</p>`;
+        resultsEl.hidden = true;
+        resultsEl.replaceChildren();
+
+        try {
+          // 1. Obtener la receta desglosada del Asistente
+          const assistantRes = await fetch('/api/asistente', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, personas, ciudad }),
+          });
+
+          if (!assistantRes.ok) {
+            const errData = await assistantRes.json().catch(() => ({}));
+            throw new Error(errData.detail || 'No pudimos procesar tu solicitud');
+          }
+
+          const recipe = await assistantRes.json();
+          currentRecipeData = recipe;
+
+          statusEl.innerHTML = `<p style="color: var(--pine); font-weight: 500;">🛒 Cotizando ${recipe.ingredientes.length} ingredientes en supermercados de ${selectCity.selectedOptions[0]?.textContent || ciudad}…</p>`;
+
+          // 2. Cotizar la lista completa en los supermercados vía /api/lista
+          const quotePayload = {
+            ciudad,
+            items: recipe.ingredientes.map((ing: any) => ({
+              nombre: ing.nombre,
+              cantidad: ing.cantidad,
+              formato: ing.formato,
+              marca: 'todas',
+            })),
+          };
+
+          const quoteRes = await fetch('/api/lista', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(quotePayload),
+          });
+
+          let quoteReport: any = null;
+          if (quoteRes.ok) {
+            quoteReport = await quoteRes.json();
+            lastQuotedReport = quoteReport;
+          }
+
+          statusEl.textContent = '';
+          renderAssistantResults(recipe, quoteReport, ciudad);
+        } catch (err: any) {
+          console.error('Error al consultar asistente:', err);
+          statusEl.innerHTML = `<p style="color: #c53030;">⚠️ ${escapeHtml(err.message || 'Error al consultar el asistente')}</p>`;
+        } finally {
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = `<span>✨ Armar lista y cotizar</span>`;
+        }
+      });
+
+      function renderAssistantResults(recipe: any, quoteReport: any, ciudad: string) {
+        resultsEl.replaceChildren();
+        resultsEl.hidden = false;
+
+        const card = document.createElement('article');
+        card.className = 'recipe-card';
+
+        const originBadge = recipe.origen === 'gemini'
+          ? `<span style="display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.72rem; color: #1e40af; background: #dbeafe; padding: 0.2rem 0.5rem; border-radius: 999px; font-weight: 600;">✨ Generado con IA Gemini</span>`
+          : `<span style="display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.72rem; color: #065f46; background: #d1fae5; padding: 0.2rem 0.5rem; border-radius: 999px; font-weight: 600;">📚 Catálogo Maestro Colombiano</span>`;
+
+        // Filas de ingredientes
+        const ingredientsRows = recipe.ingredientes.map((ing: any, idx: number) => {
+          const matchedItem = quoteReport?.items ? quoteReport.items[idx] : null;
+          let priceTag = '';
+          if (matchedItem && matchedItem.winner) {
+            priceTag = `<span style="font-weight: 600; color: #0e6a45; font-size: 0.88rem;">${cop(matchedItem.winner.total || matchedItem.winner.price)} <small style="font-weight: 400; color: var(--muted);">(${escapeHtml(matchedItem.winner.store_name)})</small></span>`;
+          } else {
+            priceTag = `<span style="font-size: 0.8rem; color: var(--muted);">Cotizando…</span>`;
+          }
+
+          return `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0; border-bottom: 1px solid var(--line); font-size: 0.95rem;">
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <span style="font-weight: 600; color: #0e6a45; min-width: 80px;">${Number(ing.cantidad)} ${escapeHtml(ing.formato)}</span>
+                <div>
+                  <strong style="color: var(--ink);">${escapeHtml(ing.nombre)}</strong>
+                  ${ing.notas ? `<span style="color: var(--muted); font-size: 0.82rem; margin-left: 0.4rem;">(${escapeHtml(ing.notas)})</span>` : ''}
+                </div>
+              </div>
+              <div>${priceTag}</div>
+            </div>
+          `;
+        }).join('');
+
+        // Veredicto de compra
+        let verdictHtml = '';
+        if (quoteReport && quoteReport.found > 0) {
+          const singleStore = quoteReport.best_single_store;
+          let singleStoreNote = '';
+          if (singleStore && quoteReport.found === quoteReport.count) {
+            const diff = singleStore.total - quoteReport.total;
+            singleStoreNote = diff > 0.5
+              ? `<p style="font-size: 0.85rem; color: #475569; margin: 0.35rem 0 0;">💡 En una sola tienda: <strong>${escapeHtml(singleStore.store_name)}</strong> por ${cop(singleStore.total)} (${cop(diff)} más que comprando mixto).</p>`
+              : `<p style="font-size: 0.85rem; color: #475569; margin: 0.35rem 0 0;">💡 En una sola tienda: <strong>${escapeHtml(singleStore.store_name)}</strong> por ${cop(singleStore.total)}.</p>`;
+          }
+
+          verdictHtml = `
+            <div style="margin-top: 1.5rem; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 1.25rem;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.5rem;">
+                <span style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; color: #166534; letter-spacing: 0.04em;">Veredicto de Ahorro</span>
+                <span style="font-size: 1.35rem; font-weight: 800; color: #0e6a45;">Total: ${cop(quoteReport.total)}</span>
+              </div>
+              <p style="margin: 0.35rem 0 0; font-size: 0.95rem; color: #15803d;">
+                Encontrados <strong>${quoteReport.found} de ${quoteReport.count}</strong> ingredientes al precio más bajo en supermercados de ${escapeHtml(ciudad)}.
+              </p>
+              ${singleStoreNote}
+            </div>
+          `;
+        }
+
+        const tipHtml = recipe.consejo
+          ? `<div class="recipe-tip">💡 <strong>Consejo del chef:</strong> ${escapeHtml(recipe.consejo)}</div>`
+          : '';
+
+        card.innerHTML = `
+          <div class="recipe-header">
+            <div>
+              <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.45rem; flex-wrap: wrap;">
+                <span class="badge-tipo-receta">🍳 Receta · ${recipe.porciones} personas</span>
+                ${originBadge}
+              </div>
+              <h2 class="recipe-title">${escapeHtml(recipe.receta)}</h2>
+              <p class="recipe-desc">${escapeHtml(recipe.descripcion)}</p>
+            </div>
+          </div>
+
+          ${tipHtml}
+
+          <div style="margin-top: 1.25rem;">
+            <h3 style="font-size: 1.05rem; font-weight: 600; margin: 0 0 0.5rem; color: var(--ink);">
+              🛒 Ingredientes para ${recipe.porciones} personas:
+            </h3>
+            <div style="background: #fafaf9; border: 1px solid var(--line); border-radius: 10px; padding: 0.5rem 1rem;">
+              ${ingredientsRows}
+            </div>
+          </div>
+
+          ${verdictHtml}
+
+          <div class="recipe-actions">
+            <button type="button" id="btn-save-as-recipe" class="btn-primary" style="background: linear-gradient(135deg, #0e6a45, #15803d);">
+              💾 Guardar en Mis Recetas
+            </button>
+            <button type="button" id="btn-open-shopping-mode" class="btn-primary" style="background: #0e6a45;">
+              🛒 Abrir en Modo Compra
+            </button>
+            <button type="button" id="btn-whatsapp-recipe" class="btn-primary" style="background: #128c7e;">
+              📲 Enviar a WhatsApp
+            </button>
+            <button type="button" id="btn-edit-in-comparator" class="btn-secondary" style="background: transparent; color: var(--ink); border: 1px solid var(--line);">
+              ✏️ Editar en Comparador
+            </button>
+          </div>
+          <div id="save-status-msg" style="margin-top: 0.75rem; font-size: 0.88rem; font-weight: 500;"></div>
+        `;
+
+        resultsEl.append(card);
+
+        // Helper para convertir los ingredientes a ListItemData
+        const listItems: ListItemData[] = recipe.ingredientes.map((ing: any) => ({
+          nombre: ing.nombre,
+          cantidad: ing.cantidad,
+          formato: ing.formato,
+          marca: 'todas',
+          comprado: false,
+          addedBy: currentUserName || 'Tú',
+          addedById: currentUid || 'local',
+          addedAt: new Date().toISOString(),
+        }));
+
+        // Botón 1: Guardar como Receta
+        const btnSave = card.querySelector<HTMLButtonElement>('#btn-save-as-recipe')!;
+        const statusMsg = card.querySelector<HTMLElement>('#save-status-msg')!;
+
+        btnSave.addEventListener('click', async () => {
+          if (!currentUid) {
+            // Guardar localmente y sugerir iniciar sesión
+            localStorage.setItem('comparador-lista', JSON.stringify(listItems));
+            localStorage.setItem('comparador-ciudad', ciudad);
+            const goLogin = window.confirm(
+              'Para guardar esta receta en tu cuenta y compartirla en vivo con tu pareja, inicia sesión con Google. ¿Deseas ir a iniciar sesión ahora?'
+            );
+            if (goLogin) {
+              window.location.href = '/perfil';
+            } else {
+              statusMsg.innerHTML = '<span style="color: #0e6a45;">¡Receta guardada en tu navegador! Puedes verla en el comparador.</span>';
+            }
+            return;
+          }
+
+          btnSave.disabled = true;
+          btnSave.textContent = 'Guardando receta…';
+          try {
+            const listId = await saveUserList(
+              currentUid,
+              recipe.receta,
+              listItems,
+              null,
+              currentUserEmail,
+              ciudad,
+              {
+                tipo: 'receta',
+                porciones: recipe.porciones,
+                descripcion: recipe.descripcion,
+              }
+            );
+
+            statusMsg.innerHTML = `
+              <span style="color: #15803d;">
+                ✅ ¡Receta guardada con éxito en tu perfil!
+                <a href="/perfil" style="color: #0e6a45; font-weight: 600; text-decoration: underline; margin-left: 0.4rem;">Ver en Mis Listas →</a>
+              </span>
+            `;
+            btnSave.textContent = '✅ Guardada';
+          } catch (err: any) {
+            console.error('Error al guardar receta:', err);
+            statusMsg.innerHTML = `<span style="color: #c53030;">Error al guardar: ${escapeHtml(err.message)}</span>`;
+            btnSave.disabled = false;
+            btnSave.textContent = '💾 Guardar en Mis Recetas';
+          }
+        });
+
+        // Botón 2: Abrir en Modo Compra
+        const btnShop = card.querySelector<HTMLButtonElement>('#btn-open-shopping-mode')!;
+        btnShop.addEventListener('click', async () => {
+          localStorage.setItem('comparador-lista', JSON.stringify(listItems));
+          localStorage.setItem('comparador-ciudad', ciudad);
+
+          if (currentUid) {
+            try {
+              const listId = await saveUserList(
+                currentUid,
+                recipe.receta,
+                listItems,
+                null,
+                currentUserEmail,
+                ciudad,
+                {
+                  tipo: 'receta',
+                  porciones: recipe.porciones,
+                  descripcion: recipe.descripcion,
+                }
+              );
+              window.location.href = `/perfil?listaId=${listId}&modo=compra`;
+              return;
+            } catch (e) {
+              console.warn('Fallback a modo local:', e);
+            }
+          }
+          window.location.href = '/perfil?modo=compra';
+        });
+
+        // Botón 3: Enviar a WhatsApp
+        const btnWa = card.querySelector<HTMLButtonElement>('#btn-whatsapp-recipe')!;
+        btnWa.addEventListener('click', () => {
+          let text = `🍳 *Receta: ${recipe.receta}*\n`;
+          text += `👥 Para: ${recipe.porciones} personas\n`;
+          if (recipe.descripcion) text += `📝 ${recipe.descripcion}\n\n`;
+
+          text += `🛒 *Ingredientes necesarios:*\n`;
+          recipe.ingredientes.forEach((ing: any) => {
+            text += `◻ ${ing.nombre} (${Number(ing.cantidad)} ${ing.formato})\n`;
+          });
+
+          if (quoteReport && quoteReport.total) {
+            text += `\n💰 *Total estimado en supermercados:* ${cop(quoteReport.total)}\n`;
+          }
+
+          if (recipe.consejo) {
+            text += `\n💡 *Tip del chef:* ${recipe.consejo}\n`;
+          }
+
+          text += `\n🔗 *Cotiza y tacha en vivo con Mercado Lista:*\n${window.location.origin}/asistente`;
+
+          window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+        });
+
+        // Botón 4: Editar en comparador
+        const btnEdit = card.querySelector<HTMLButtonElement>('#btn-edit-in-comparator')!;
+        btnEdit.addEventListener('click', () => {
+          localStorage.setItem('comparador-lista', JSON.stringify(listItems));
+          localStorage.setItem('comparador-ciudad', ciudad);
+          window.location.href = '/?tab=list';
+        });
+
+        // Smooth scroll al resultado
+        resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      // Cargar consulta desde URL si viene de widget o enlace directo
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlPrompt = urlParams.get('prompt') || urlParams.get('q');
+      const urlPeople = urlParams.get('personas') || urlParams.get('people');
+      if (urlPrompt) {
+        input.value = urlPrompt;
+        if (urlPeople) selectPeople.value = urlPeople;
+        setTimeout(() => {
+          form.dispatchEvent(new Event('submit', { cancelable: true }));
+        }, 120);
+      }
+    </script>
+  </body>
+</html>

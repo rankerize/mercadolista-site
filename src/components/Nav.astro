@@ -11,6 +11,16 @@ const pathname = Astro.url.pathname;
     </a>
 
     <ul class="ml-nav__desktop" role="list">
+      <li>
+        <a
+          href="/asistente"
+          class:list={['ml-nav__link', { 'ml-nav__link--on': pathname === '/asistente' }]}
+          style="color: #0e6a45; font-weight: 600; background: #e7f6ee;"
+        >
+          <span aria-hidden="true">🧑‍🍳</span>
+          <span>Asistente IA</span>
+        </a>
+      </li>
       {CATEGORIES.map((c) => (
         <li>
           <a
@@ -39,6 +49,16 @@ const pathname = Astro.url.pathname;
 
   <div class="ml-nav__mobile" id="ml-nav-mobile" hidden>
     <ul role="list">
+      <li style="grid-column: 1 / -1;">
+        <a
+          href="/asistente"
+          class:list={['ml-nav__mob-link', { 'ml-nav__mob-link--on': pathname === '/asistente' }]}
+          style="background: #e7f6ee; color: #0e6a45; font-weight: 600;"
+        >
+          <span class="ml-nav__mob-ico" aria-hidden="true">🧑‍🍳</span>
+          <span>Asistente de Compras & Recetas IA</span>
+        </a>
+      </li>
       {CATEGORIES.map((c) => (
         <li>
           <a

@@ -7,6 +7,7 @@ import { buildReport } from '../../../lib/ranking';
 import { findCity } from '../../../lib/cities';
 import { cop } from '../../../lib/normalize';
 import Nav from '../../../components/Nav.astro';
+import AddToListModal from '../../../components/AddToListModal.astro';
 import GoogleAnalytics from '../../../components/GoogleAnalytics.astro';
 
 const { categoria, producto } = Astro.params;
@@ -98,7 +99,8 @@ const breadcrumbSchema = {
   <body>
     <Nav />
     <header class="top">
-      <h1>{item.icono} Precio {item.nombre} hoy en Colombia</h1>
+      <h1>{item.icono} {item.nombre}</h1>
+      <h2 class="page-subtitle">Precio {item.nombre} hoy en Colombia</h2>
       <p class="lead">Comparación en tiempo real · {city.name}</p>
     </header>
 
@@ -135,9 +137,21 @@ const breadcrumbSchema = {
               )}
             </div>
           </div>
-          <a href={verdict.url} target="_blank" rel="noopener noreferrer" class="btn-buy">
-            Ver en {verdict.store_name} →
-          </a>
+          <div class="verdict-actions">
+            <a href={verdict.url} target="_blank" rel="noopener noreferrer" class="btn-buy">
+              Ver en {verdict.store_name} →
+            </a>
+            <button
+              type="button"
+              class="btn-add-list"
+              data-name={verdict.name}
+              data-store={verdict.store_name}
+              data-price={verdict.price}
+              data-image={verdict.image ?? ''}
+            >
+              ➕ Agregar a lista
+            </button>
+          </div>
         </section>
       )}
 
@@ -165,6 +179,14 @@ const breadcrumbSchema = {
                     <span class="offer-list-price">{cop(o.list_price)}</span>
                   )}
                   <a href={o.url} target="_blank" rel="noopener noreferrer" class="offer-link">Ver →</a>
+                  <button
+                    type="button"
+                    class="btn-add-list-sm"
+                    data-name={o.name}
+                    data-store={o.store_name}
+                    data-price={o.price}
+                    data-image={o.image ?? ''}
+                  >➕</button>
                 </div>
               </li>
             ))}
@@ -201,9 +223,26 @@ const breadcrumbSchema = {
       </div>
     </main>
 
+    <AddToListModal />
+
     <footer class="site-footer">
       <p>© {new Date().getFullYear()} Mercado Lista · Precios consultados en tiempo real en Bogotá</p>
     </footer>
+
+    <script>
+      import { openCatAddModal } from '../../../scripts/catAddToList';
+      document.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLElement>('.btn-add-list, .btn-add-list-sm');
+        if (!btn) return;
+        e.preventDefault();
+        openCatAddModal({
+          name:       btn.dataset.name  ?? '',
+          store_name: btn.dataset.store ?? '',
+          price:      btn.dataset.price ? Number(btn.dataset.price) : undefined,
+          image:      btn.dataset.image || undefined,
+        });
+      });
+    </script>
 
     <style>
       .prod-page { max-width: 800px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
@@ -246,6 +285,11 @@ const breadcrumbSchema = {
       .offer-link { font-size: 0.8rem; color: #0e6a45; text-decoration: none; font-weight: 500; }
       .offer-link:hover { text-decoration: underline; }
 
+      .verdict-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+      .btn-add-list { display: inline-flex; align-items: center; gap: 0.4rem; background: #fff; color: #0e6a45; border: 1.5px solid #0e6a45; padding: 0.65rem 1.2rem; border-radius: 999px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: background 0.15s; }
+      .btn-add-list:hover { background: #e7f6ee; }
+      .btn-add-list-sm { background: none; border: none; cursor: pointer; font-size: 0.95rem; padding: 0 0.1rem; opacity: 0.65; transition: opacity 0.12s; }
+      .btn-add-list-sm:hover { opacity: 1; }
       .no-results { text-align: center; padding: 3rem 1rem; color: #666; }
 
       /* Siblings */

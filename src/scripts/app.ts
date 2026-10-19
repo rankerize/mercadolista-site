@@ -16,9 +16,17 @@ import { initShareModal } from './shareModal';
 import {
   CATEGORIES,
   searchCatalog,
+  searchCategories,
   getItemsByCategory,
   type CatalogItem,
 } from '../lib/catalog';
+import {
+  toSlug,
+  findCategoryMatch,
+  findProductMatch,
+  getProductUrl,
+  getCategoryUrl,
+} from '../lib/slugs';
 import { escapeHtml } from '../lib/normalize';
 
 const form = document.querySelector<HTMLFormElement>('#search-form')!;
@@ -1150,13 +1158,23 @@ function setupCategoryExplorer() {
             saveListLocal();
             updateAddRow();
           } else {
-            queryInput.value = it.nombre;
-            search(it.nombre);
+            window.location.href = getProductUrl(it);
           }
         });
 
         categoryQuickItems.append(btn);
       });
+
+      // Botón para ver toda la categoría completa
+      const catLink = document.createElement('a');
+      catLink.className = 'quick-item-btn quick-item-cat-link';
+      catLink.href = getCategoryUrl(cat.id);
+      catLink.innerHTML = `<strong>Ver toda la categoría ${escapeHtml(cat.nombre)} →</strong>`;
+      catLink.style.background = '#e7f6ee';
+      catLink.style.color = '#0e6a45';
+      catLink.style.borderColor = '#0e6a45';
+      catLink.style.textDecoration = 'none';
+      categoryQuickItems.append(catLink);
 
       categoryQuickItems.hidden = false;
     });
@@ -1182,8 +1200,9 @@ function setupQueryAutocomplete() {
       return;
     }
 
-    const matches = searchCatalog(q);
-    if (!matches.length) {
+    const catMatches = searchCategories(q, 2);
+    const matches = searchCatalog(q, 6);
+    if (!catMatches.length && !matches.length) {
       closeDropdown();
       return;
     }
@@ -1191,10 +1210,33 @@ function setupQueryAutocomplete() {
     queryAutocomplete.replaceChildren();
     selectedIndex = -1;
 
-    matches.forEach((m, idx) => {
+    let itemIndex = 0;
+
+    // 1. Sugerencias de categorías completas
+    catMatches.forEach((cat) => {
+      const catEl = document.createElement('div');
+      catEl.className = 'autocomplete-item autocomplete-item-category';
+      catEl.dataset.index = String(itemIndex++);
+      catEl.innerHTML = `
+        <div class="autocomplete-item-left">
+          <span class="autocomplete-item-icon">${cat.icono}</span>
+          <span class="autocomplete-item-text"><strong>${escapeHtml(cat.nombre)}</strong> <em style="font-size: 0.8rem; color: var(--muted);">(Ver categoría)</em></span>
+        </div>
+        <span class="autocomplete-item-cat" style="background: #e7f6ee; color: #0e6a45; font-weight: 600;">Categoría →</span>
+      `;
+      catEl.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        closeDropdown();
+        window.location.href = getCategoryUrl(cat.id);
+      });
+      queryAutocomplete.append(catEl);
+    });
+
+    // 2. Sugerencias de productos del catálogo
+    matches.forEach((m) => {
       const itemEl = document.createElement('div');
       itemEl.className = 'autocomplete-item';
-      itemEl.dataset.index = String(idx);
+      itemEl.dataset.index = String(itemIndex++);
       const catInfo = CATEGORIES.find((c) => c.id === m.categoria);
       itemEl.innerHTML = `
         <div class="autocomplete-item-left">
@@ -1205,9 +1247,13 @@ function setupQueryAutocomplete() {
       `;
       itemEl.addEventListener('mousedown', (e) => {
         e.preventDefault();
-        queryInput.value = m.nombre;
         closeDropdown();
-        search(m.nombre);
+        if (mode === 'local') {
+          window.location.href = getProductUrl(m);
+        } else {
+          queryInput.value = m.nombre;
+          search(m.nombre);
+        }
       });
       queryAutocomplete.append(itemEl);
     });

@@ -49,7 +49,8 @@ const canonicalUrl = `${BASE}/categoria/${cat.id}`;
   <body>
     <Nav />
     <header class="top">
-      <h1>{cat.icono} Precios {cat.nombre} en Colombia hoy</h1>
+      <h1>{cat.icono} {cat.nombre}</h1>
+      <h2 class="page-subtitle">Precios {cat.nombre} en Colombia hoy</h2>
       <p class="lead">
         {items.length} productos · Precios consultados en tiempo real en Éxito, D1, Jumbo, Carulla y más.
       </p>

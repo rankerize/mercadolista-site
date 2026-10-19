@@ -1,7 +1,9 @@
 ---
 import '../styles/styles.css';
+import Nav from '../components/Nav.astro';
 import ShareModal from '../components/ShareModal.astro';
 import GoogleAnalytics from '../components/GoogleAnalytics.astro';
+import AssistantChatWidget from '../components/AssistantChatWidget.astro';
 ---
 
 <!doctype html>
@@ -36,13 +38,19 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
     />
   </head>
   <body>
+    <Nav />
     <header class="top">
       <div class="top-bar">
         <a href="/" class="brand-header" title="Mercado Lista · Inicio">
           <img src="/logo.png" alt="Mercado Lista" class="brand-logo-img" width="34" height="34" />
           <span class="brand-name">Mercado Lista</span>
         </a>
-        <a href="/" style="text-decoration: none; font-size: 0.85rem; color: var(--pine); font-weight: 500;">← Volver al comparador</a>
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+          <a href="/asistente" style="text-decoration: none; font-size: 0.85rem; color: #0e6a45; font-weight: 600; background: #e7f6ee; padding: 0.3rem 0.65rem; border-radius: 999px; border: 1px solid #a7f3d0;" title="Asistente de compras y recetas con IA">
+            🧑‍🍳 Asistente IA
+          </a>
+          <a href="/" style="text-decoration: none; font-size: 0.85rem; color: var(--pine); font-weight: 500;">← Volver al comparador</a>
+        </div>
       </div>
       <h1>Mi Perfil</h1>
       <p class="lead">Administra tu cuenta y tus listas de compras guardadas en la nube.</p>
@@ -276,6 +284,7 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
       </section>
 
       <ShareModal />
+      <AssistantChatWidget />
     </main>
 
     <footer>
@@ -373,20 +382,52 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
       tabBtnShopping.addEventListener('click', () => setProfileTab('shopping'));
       tabBtnData.addEventListener('click', () => setProfileTab('data'));
 
+      let currentListFilter: 'all' | 'mercado' | 'receta' = 'all';
+
+      // Configurar chips de filtro (Todas, Mercados, Recetas)
+      const filterChips = document.querySelectorAll<HTMLButtonElement>('.list-filter-chip');
+      filterChips.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          filterChips.forEach((b) => b.classList.remove('is-active'));
+          btn.classList.add('is-active');
+          currentListFilter = (btn.dataset.filter || 'all') as any;
+          renderLists(cachedLists);
+        });
+      });
+
       function renderLists(lists: SavedList[]) {
         listsGrid.replaceChildren();
 
-        if (lists.length === 0) {
+        const countAllEl = document.querySelector('#count-all');
+        const countMercadoEl = document.querySelector('#count-mercado');
+        const countRecetaEl = document.querySelector('#count-receta');
+        if (countAllEl) countAllEl.textContent = String(cachedLists.length);
+        if (countMercadoEl) countMercadoEl.textContent = String(cachedLists.filter((l) => (l.tipo || 'mercado') === 'mercado').length);
+        if (countRecetaEl) countRecetaEl.textContent = String(cachedLists.filter((l) => l.tipo === 'receta').length);
+
+        const displayLists = lists.filter((l) => {
+          if (currentListFilter === 'all') return true;
+          if (currentListFilter === 'receta') return l.tipo === 'receta';
+          return (l.tipo || 'mercado') === 'mercado';
+        });
+
+        if (displayLists.length === 0) {
+          const emptyMsg = cachedLists.length === 0
+            ? 'Aún no tienes listas guardadas.'
+            : 'No tienes listas en esta categoría.';
           listsGrid.innerHTML = `
             <div class="panel" style="grid-column: 1 / -1; text-align: center; padding: 2rem;">
-              <p style="margin: 0 0 1rem; color: var(--muted);">Aún no tienes listas guardadas.</p>
-              <a href="/?tab=list" class="btn-primary" style="display: inline-flex;">Crear mi primera lista</a>
+              <p style="margin: 0 0 1rem; color: var(--muted);">${emptyMsg}</p>
+              <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                <a href="/asistente" class="btn-primary" style="background: linear-gradient(135deg, #0e6a45, #15803d);">🧑‍🍳 Crear Receta con IA</a>
+                <a href="/?tab=list" class="btn-primary">Crear lista de mercado</a>
+              </div>
             </div>
           `;
           return;
         }
 
-        lists.forEach((list) => {
+        displayLists.forEach((list) => {
           const card = document.createElement('article');
           card.className = 'saved-list-card';
 
@@ -439,13 +480,25 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
             ? `<span style="display: inline-block; font-size: 0.72rem; color: #0e6a45; background: #e7f6ee; padding: 0.15rem 0.45rem; border-radius: 4px; margin-left: 0.35rem; font-weight: 600;">✓ ${boughtCount}/${list.items.length} en carrito</span>`
             : '';
 
+          const tipoBadge = list.tipo === 'receta'
+            ? `<span class="badge-tipo-receta">🍳 Receta${list.porciones ? ` · ${list.porciones} pers.` : ''}</span>`
+            : `<span class="badge-tipo-mercado">🛒 Mercado</span>`;
+
+          const descHtml = list.descripcion
+            ? `<p style="font-size: 0.85rem; color: #475569; margin: 0.25rem 0 0.45rem; line-height: 1.35; font-style: italic;">${escapeHtml(list.descripcion)}</p>`
+            : '';
+
           card.innerHTML = `
             <div>
-              ${collabBadge}
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.35rem;">
+                ${collabBadge}
+                ${tipoBadge}
+              </div>
               <div class="saved-list-header">
                 <h3 class="saved-list-title">${escapeHtml(list.nombre)}</h3>
                 <span class="saved-list-city">${escapeHtml(list.ciudad || 'Bogotá')}</span>
               </div>
+              ${descHtml}
               <p class="saved-list-items-preview">
                 <strong>${list.items.length} producto${list.items.length === 1 ? '' : 's'}:</strong>${boughtBadge}<br />
                 ${itemsText}${extraCount}
@@ -516,7 +569,8 @@ import GoogleAnalytics from '../components/GoogleAnalytics.astro';
         cachedLists.forEach((l) => {
           const opt = document.createElement('option');
           opt.value = l.id;
-          opt.textContent = `${l.nombre} (${l.items.length} productos)`;
+          const prefix = l.tipo === 'receta' ? '🍳 ' : '🛒 ';
+          opt.textContent = `${prefix}${l.nombre} (${l.items.length} productos)`;
           shoppingListSelect.append(opt);
         });
 

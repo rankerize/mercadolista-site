@@ -1,4 +1,4 @@
-import { c as cityCatalog } from '../../chunks/cities_Bh7Qi1an.mjs';
+import { c as cityCatalog } from '../../chunks/cities_DyPidRWt.mjs';
 export { renderers } from '../../renderers.mjs';
 
 const GET = async () => {

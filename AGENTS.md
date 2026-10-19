@@ -62,10 +62,17 @@ Este documento contiene la arquitectura, convenciones y decisiones de diseño cl
      - En el banner de lista compartida: Banner inteligente `#list-collab-banner` que indica con quién está compartida la lista (`👥 Compartida con: Andrea`, `👥 Lista compartida de César`, o `🔒 Lista privada`).
      - En `/perfil`: Las tarjetas de listas muestran el badge `👥 Compartida con: [Nombres]` y en la vista previa qué productos agregó cada quién (`(por ti)` o `(por Andrea)`).
      - En «🛒 Modo Compra»: Cada producto muestra la insignia destacada `👤 Tú` o `👤 [Nombre]` para saber quién lo pidió en el momento de tomarlo en el pasillo.
-  10. **Seguridad, XSS y Rate Limiting**:
+   10. **Seguridad, XSS y Rate Limiting**:
      - **Escape HTML contra XSS (`escapeHtml` en `src/lib/normalize.ts`)**: Todo texto ingresado por el usuario o sincronizado desde Firestore (nombres de listas, productos, colaboradores) se escapa antes de renderizarse.
-     - **Rate Limiting en Endpoints SSR (`src/lib/rateLimit.ts`)**: Los endpoints `/api/lista`, `/api/buscar`, `/api/unidad`, y `/api/internacional` tienen control de tasa por IP en memoria con limpieza automática cada 5 minutos. Protege el servidor Node.js y previene baneos de IP de los supermercados (VTEX, Akamai, Cloudflare). Retorna HTTP 429 con cabecera `Retry-After`.
+     - **Rate Limiting en Endpoints SSR (`src/lib/rateLimit.ts`)**: Los endpoints `/api/lista`, `/api/buscar`, `/api/unidad`, `/api/internacional`, y `/api/asistente` tienen control de tasa por IP en memoria con limpieza automática cada 5 minutos. Protege el servidor Node.js y previene baneos de IP de los supermercados (VTEX, Akamai, Cloudflare). Retorna HTTP 429 con cabecera `Retry-After`.
      - **Reglas de Seguridad de Firestore (`firestore.rules`)**: Archivo en la raíz con reglas estrictas: solo el creador puede borrar su lista; solo creador y colaboradores pueden leer y modificar productos.
+  11. **Clasificación de Listas (`mercado` vs `receta`)**:
+     - Las listas guardadas admiten `tipo: 'mercado' | 'receta'`, `porciones?: number` y `descripcion?: string`.
+     - En `/perfil`: Filtro por chips `[Todas]` · `[🛒 Mercados]` · `[🍳 Recetas]` con insignias visuales (`badge-tipo-receta` y `badge-tipo-mercado`).
+  12. **Asistente de Compras & Recetas con IA (`/asistente` y Widget Flotante `AssistantChatWidget.astro`)**:
+     - **URL `/asistente`**: Asesor conversacional de compras que traduce solicitudes culinarias (e.g. «Quiero hacer pasta boloñesa para 2 personas») en ingredientes con porciones exactas, cotiza en vivo contra `/api/lista` (D1, Éxito, Jumbo, etc.) y permite guardar como receta o exportar a WhatsApp.
+     - **Widget Flotante Inferior Derecho (`src/components/AssistantChatWidget.astro`)**: Botón flotante animado en la esquina inferior derecha presente en toda la app (excepto en `/asistente`). Abre un mini-chat de asistencia con preguntas frecuentes y buscador que redirige automáticamente a `/asistente?prompt=...`.
+     - **Endpoint `/api/asistente`**: Motor híbrido con integración de Google Gemini Flash y catálogo culinario inteligente colombiano local como respaldo de alta resiliencia.
 - **Archivos de integración**:
   - [`src/lib/firebase.ts`](file:///Users/cesarandresjimenezarci/Documents/Clientes/Comparador%20de%20precios/src/lib/firebase.ts): Inicialización del SDK cliente de Firebase con las credenciales públicas de la Web App `mercadologo`.
   - [`src/lib/firebaseAuth.ts`](file:///Users/cesarandresjimenezarci/Documents/Clientes/Comparador%20de%20precios/src/lib/firebaseAuth.ts): Métodos utilitarios: `loginWithGoogle()`, `logoutUser()`, `subscribeAuth()`, `getUserLists()`, `saveUserList()`, `deleteUserList()`, `getListById()`, `joinSharedList()`, `shareListWithEmail()`, `subscribeList()`, `toggleItemBought()`, `getUserProfile()`, `saveUserProfile()`.

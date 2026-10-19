@@ -1,8 +1,3 @@
-import { e as createAstro, f as createComponent, m as maybeRenderHead, h as addAttribute, r as renderTemplate, o as renderScript } from './astro/server_DcdaLVgT.mjs';
-import 'piccolore';
-import 'clsx';
-/* empty css                          */
-
 const CATEGORIES = [
   { id: "lacteos", nombre: "Lácteos y Huevos", icono: "🥛" },
   { id: "despensa", nombre: "Despensa y Granos", icono: "🌾" },
@@ -98,12 +93,4 @@ function getItemsByCategory(categoriaId) {
   return CATALOG_ITEMS.filter((item) => item.categoria === categoriaId);
 }
 
-const $$Astro = createAstro("https://mercadolista.com");
-const $$Nav = createComponent(($$result, $$props, $$slots) => {
-  const Astro2 = $$result.createAstro($$Astro, $$props, $$slots);
-  Astro2.self = $$Nav;
-  const pathname = Astro2.url.pathname;
-  return renderTemplate`${maybeRenderHead()}<nav class="ml-nav" aria-label="Navegación principal" data-astro-cid-dmqpwcec> <div class="ml-nav__inner" data-astro-cid-dmqpwcec> <a href="/" class="ml-nav__brand" data-astro-cid-dmqpwcec> <img src="/logo.png" alt="Mercado Lista" width="26" height="26" style="border-radius: 6px; vertical-align: middle; margin-right: 0.45rem; display: inline-block;" data-astro-cid-dmqpwcec> <span data-astro-cid-dmqpwcec>Mercado Lista</span> </a> <ul class="ml-nav__desktop" role="list" data-astro-cid-dmqpwcec> ${CATEGORIES.map((c) => renderTemplate`<li data-astro-cid-dmqpwcec> <a${addAttribute(`/categoria/${c.id}`, "href")}${addAttribute(["ml-nav__link", { "ml-nav__link--on": pathname.startsWith(`/categoria/${c.id}`) }], "class:list")} data-astro-cid-dmqpwcec> <span aria-hidden="true" data-astro-cid-dmqpwcec>${c.icono}</span> <span data-astro-cid-dmqpwcec>${c.nombre.split(" ")[0]}</span> </a> </li>`)} </ul> <button class="ml-nav__toggle" id="ml-nav-toggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="ml-nav-mobile" data-astro-cid-dmqpwcec> <span class="ml-nav__bar" data-astro-cid-dmqpwcec></span> <span class="ml-nav__bar" data-astro-cid-dmqpwcec></span> <span class="ml-nav__bar" data-astro-cid-dmqpwcec></span> </button> </div> <div class="ml-nav__mobile" id="ml-nav-mobile" hidden data-astro-cid-dmqpwcec> <ul role="list" data-astro-cid-dmqpwcec> ${CATEGORIES.map((c) => renderTemplate`<li data-astro-cid-dmqpwcec> <a${addAttribute(`/categoria/${c.id}`, "href")}${addAttribute(["ml-nav__mob-link", { "ml-nav__mob-link--on": pathname.startsWith(`/categoria/${c.id}`) }], "class:list")} data-astro-cid-dmqpwcec> <span class="ml-nav__mob-ico" aria-hidden="true" data-astro-cid-dmqpwcec>${c.icono}</span> <span data-astro-cid-dmqpwcec>${c.nombre}</span> </a> </li>`)} </ul> </div> </nav> ${renderScript($$result, "/Users/cesarandresjimenezarci/Documents/Clientes/Comparador de precios/src/components/Nav.astro?astro&type=script&index=0&lang.ts")} `;
-}, "/Users/cesarandresjimenezarci/Documents/Clientes/Comparador de precios/src/components/Nav.astro", void 0);
-
-export { $$Nav as $, CATEGORIES as C, CATALOG_ITEMS as a, getItemsByCategory as g };
+export { CATEGORIES as C, CATALOG_ITEMS as a, getItemsByCategory as g };

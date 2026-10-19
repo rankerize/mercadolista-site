@@ -1,7 +1,7 @@
-import { f as createComponent, k as renderComponent, l as renderHead, r as renderTemplate } from '../chunks/astro/server_DcdaLVgT.mjs';
+import { f as createComponent, k as renderComponent, l as renderHead, r as renderTemplate } from '../chunks/astro/server_zl8i4EZZ.mjs';
 import 'piccolore';
-/* empty css                                  */
-import { $ as $$GoogleAnalytics } from '../chunks/GoogleAnalytics_B7o8Um_0.mjs';
+/* empty css                                     */
+import { $ as $$GoogleAnalytics } from '../chunks/GoogleAnalytics_CyJJegFW.mjs';
 export { renderers } from '../renderers.mjs';
 
 const $$Privacidad = createComponent(($$result, $$props, $$slots) => {
