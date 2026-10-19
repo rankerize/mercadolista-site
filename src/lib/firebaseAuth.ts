@@ -180,8 +180,35 @@ export async function getUserLists(userId: string, userEmail?: string | null): P
         }
       });
     } catch (err) {
-      console.error('Error fetching shared email lists:', err);
+      console.warn('Error fetching shared lists by email:', err);
     }
+  }
+
+  // 4. Fallback: Listas de la subcolección anterior users/{userId}/lists
+  try {
+    const legacyRef = collection(db, 'users', userId, 'lists');
+    const snapLegacy = await getDocs(legacyRef);
+    snapLegacy.forEach((d) => {
+      if (!listsMap.has(d.id)) {
+        const data = d.data();
+        listsMap.set(d.id, {
+          id: d.id,
+          nombre: data.nombre || 'Sin título',
+          ciudad: data.ciudad || 'bogota',
+          items: data.items || [],
+          ownerId: userId,
+          ownerName: 'Tú',
+          ownerEmail: userEmail || '',
+          collaboratorIds: [userId],
+          sharedWithEmails: [],
+          isOwner: true,
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+        });
+      }
+    });
+  } catch (err) {
+    console.warn('Fallback users/lists check:', err);
   }
 
   const result = Array.from(listsMap.values());

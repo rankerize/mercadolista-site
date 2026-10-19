@@ -1,0 +1,46 @@
+# Mercado Lista
+
+> Comparador de precios en tiempo real para compras en Colombia (supermercados, tecnología y hogar) y tiendas internacionales (Amazon, eBay, AliExpress).
+
+Mercado Lista (https://mercadolista.com) es una plataforma web inteligente diseñada para encontrar el precio más bajo en productos individuales y canastas completas de mercado en Colombia.
+
+## Tiendas Monitoreadas en Tiempo Real
+
+### Supermercados y Consumo Masivo
+- **Éxito**: Catálogo completo de supermercado y promociones con Tarjeta Éxito / Tuya.
+- **Carulla**: Productos frescos, licores y ofertas con Tarjeta Carulla / Mastercard.
+- **Jumbo (Cencosud)**: Descuentos regulares y precios especiales con Tarjeta Cencosud.
+- **Olímpica**: Precios locales y promociones con Tarjeta Olímpica.
+- **D1**: Precios bajos en marcas propias y productos de canasta familiar.
+
+### Tecnología y Hogar
+- **Alkosto**: Ofertas en electrodomésticos, cómputo y tecnología con Tarjeta Alkosto.
+- **Ktronix**: Especialistas en tecnología y telefonía.
+- **Falabella**: Precios normales, ofertas web y precios exclusivos con Tarjeta CMR Falabella.
+- **Easy**: Hogar, construcción y remodelación con Tarjeta Cencosud.
+
+### Tiendas Internacionales con Envío a Colombia
+- **Amazon**: Precios convertidos a pesos colombianos (COP), cálculo de flete o verificación de envío internacional gratuito según el monto mínimo.
+- **AliExpress**: Precios en COP con opciones de envío para Colombia.
+- **eBay**: Precios convertidos a COP con cálculo de gastos de envío y tarifas de importación.
+
+## Modos de Comparación
+
+1. **Colombia (Búsqueda directa)**: Compara un producto entre todas las tiendas locales en la ciudad seleccionada. Identifica productos idénticos mediante código de barras (EAN) o relevancia semántica de tokens.
+2. **Unidad (Precio por Unidad de Medida)**: Normaliza y compara el costo por gramo ($/g), mililitro ($/ml) o unidad ($/u) para saber qué presentación o empaque sale más económico.
+3. **Lista (Canasta de Mercado)**: Permite armar una lista de hasta 15 productos y calcula en qué comercio conviene comprar la lista completa o producto por producto.
+4. **Internacional**: Compara precios de importación entre Amazon, AliExpress y eBay contra tiendas locales.
+
+## Ciudades Disponibles
+Bogotá, Medellín, Cali, Barranquilla, Cartagena, Bucaramanga, Pereira, Manizales, Cúcuta, Ibagué, Santa Marta, Villavicencio.
+
+## Listas Colaborativas
+Permite crear y guardar listas compartidas mediante autenticación con Google y Firebase Firestore. Las listas se pueden compartir directamente por WhatsApp o correo electrónico mediante el enlace `https://mercadolista.com/?listaId=ID`.
+
+## Endpoints de API Públicos
+- `GET /api/buscar?q={query}&ciudad={ciudad}`: Búsqueda en tiendas locales colombianas.
+- `GET /api/unidad?q={query}&ciudad={ciudad}`: Comparación por gramo, mililitro o unidad.
+- `POST /api/lista`: Cotización y optimización de listas de mercado múltiples.
+- `GET /api/internacional?q={query}`: Búsqueda en Amazon, AliExpress y eBay.
+- `GET /api/ciudades`: Catálogo de ciudades y códigos de región.
+- `GET /api/tiendas`: Listado de comercios soportados.
