@@ -1,7 +1,7 @@
 import { f as createComponent, k as renderComponent, l as renderHead, h as addAttribute, r as renderTemplate, n as renderScript } from '../chunks/astro/server_zl8i4EZZ.mjs';
 import 'piccolore';
 /* empty css                                     */
-import { $ as $$Nav } from '../chunks/Nav_C7Siogsq.mjs';
+import { $ as $$Nav } from '../chunks/Nav_BM2WoU8Y.mjs';
 import { $ as $$GoogleAnalytics } from '../chunks/GoogleAnalytics_CyJJegFW.mjs';
 import { C as CITIES } from '../chunks/cities_DyPidRWt.mjs';
 export { renderers } from '../renderers.mjs';

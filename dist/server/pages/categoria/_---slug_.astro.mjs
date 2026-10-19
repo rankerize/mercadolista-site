@@ -1,7 +1,7 @@
 import { e as createAstro, f as createComponent, r as renderTemplate, n as renderScript, k as renderComponent, h as addAttribute, o as Fragment, l as renderHead, u as unescapeHTML } from '../../chunks/astro/server_zl8i4EZZ.mjs';
 import 'piccolore';
 /* empty css                                        */
-import { C as CATEGORIES, $ as $$Nav } from '../../chunks/Nav_C7Siogsq.mjs';
+import { C as CATEGORIES, $ as $$Nav } from '../../chunks/Nav_BM2WoU8Y.mjs';
 import { s as searchStores } from '../../chunks/index_qWqYRXjv.mjs';
 import { b as buildReport } from '../../chunks/ranking_5o1QqFy4.mjs';
 import { f as findCity } from '../../chunks/cities_DyPidRWt.mjs';

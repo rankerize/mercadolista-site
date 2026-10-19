@@ -1,4 +1,4 @@
-import { C as CATEGORIES, a as CATALOG_ITEMS } from './Nav_C7Siogsq.mjs';
+import { C as CATEGORIES, a as CATALOG_ITEMS } from './Nav_BM2WoU8Y.mjs';
 
 function toSlug(text) {
   return text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-");

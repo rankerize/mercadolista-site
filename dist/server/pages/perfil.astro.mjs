@@ -1,7 +1,7 @@
 import { f as createComponent, k as renderComponent, l as renderHead, n as renderScript, r as renderTemplate } from '../chunks/astro/server_zl8i4EZZ.mjs';
 import 'piccolore';
 /* empty css                                     */
-import { $ as $$Nav } from '../chunks/Nav_C7Siogsq.mjs';
+import { $ as $$Nav } from '../chunks/Nav_BM2WoU8Y.mjs';
 import { $ as $$ShareModal, a as $$AssistantChatWidget } from '../chunks/AssistantChatWidget_CIaZemX3.mjs';
 import { $ as $$GoogleAnalytics } from '../chunks/GoogleAnalytics_CyJJegFW.mjs';
 export { renderers } from '../renderers.mjs';
