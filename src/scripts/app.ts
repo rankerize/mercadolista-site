@@ -1608,7 +1608,26 @@ form.addEventListener('submit', (event) => {
     return;
   }
   const query = queryInput.value.trim();
-  if (query.length >= 2) search(query);
+  if (query.length < 2) return;
+
+  if (mode === 'local') {
+    // 1. Si coincide con una categoría completa -> ir a /categoria/[categoria]
+    const matchedCat = findCategoryMatch(query);
+    if (matchedCat) {
+      window.location.href = getCategoryUrl(matchedCat.id);
+      return;
+    }
+
+    // 2. Si coincide con un producto del catálogo -> ir a /categoria/[categoria]/[producto]
+    const matchedProd = findProductMatch(query);
+    if (matchedProd) {
+      window.location.href = getProductUrl(matchedProd);
+      return;
+    }
+  }
+
+  // 3. Búsqueda en tiempo real en la app si no es categoría fija
+  search(query);
 });
 
 addRow.addEventListener('click', () => {
@@ -2061,6 +2080,23 @@ loadCities();
 initAddToListModalListeners();
 setupCategoryExplorer();
 setupQueryAutocomplete();
+
+const qParam = urlParams.get('q');
+if (qParam && qParam.trim().length >= 2) {
+  const cleanQ = qParam.trim();
+  const matchedCat = findCategoryMatch(cleanQ);
+  if (matchedCat) {
+    window.location.replace(getCategoryUrl(matchedCat.id));
+  } else {
+    const matchedProd = findProductMatch(cleanQ);
+    if (matchedProd) {
+      window.location.replace(getProductUrl(matchedProd));
+    } else {
+      queryInput.value = cleanQ;
+      search(cleanQ);
+    }
+  }
+}
 
 headerCartBtn?.addEventListener('click', () => {
   setMode('list');

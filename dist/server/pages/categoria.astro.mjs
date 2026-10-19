@@ -1,8 +1,7 @@
 import { f as createComponent, r as renderTemplate, h as addAttribute, k as renderComponent, l as renderHead, u as unescapeHTML } from '../chunks/astro/server_zl8i4EZZ.mjs';
 import 'piccolore';
 /* empty css                                     */
-import { C as CATEGORIES, g as getItemsByCategory } from '../chunks/catalog_BCGwfOxn.mjs';
-import { $ as $$Nav } from '../chunks/Nav_qc2d3Wkg.mjs';
+import { C as CATEGORIES, g as getItemsByCategory, $ as $$Nav } from '../chunks/Nav_C7Siogsq.mjs';
 import { $ as $$GoogleAnalytics } from '../chunks/GoogleAnalytics_CyJJegFW.mjs';
 /* empty css                                 */
 export { renderers } from '../renderers.mjs';

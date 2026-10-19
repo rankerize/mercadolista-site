@@ -1,13 +1,12 @@
 import { e as createAstro, f as createComponent, r as renderTemplate, n as renderScript, k as renderComponent, h as addAttribute, l as renderHead, u as unescapeHTML } from '../../../chunks/astro/server_zl8i4EZZ.mjs';
 import 'piccolore';
 /* empty css                                           */
-import { g as getCategoryBySlug, a as getItemBySlug, t as toSlug } from '../../../chunks/slugs_DWvBBt5L.mjs';
-import { g as getItemsByCategory } from '../../../chunks/catalog_BCGwfOxn.mjs';
+import { g as getCategoryBySlug, a as getItemBySlug, t as toSlug } from '../../../chunks/slugs_BZvKXJ3f.mjs';
+import { g as getItemsByCategory, $ as $$Nav } from '../../../chunks/Nav_C7Siogsq.mjs';
 import { s as searchStores } from '../../../chunks/index_qWqYRXjv.mjs';
 import { b as buildReport } from '../../../chunks/ranking_5o1QqFy4.mjs';
 import { f as findCity } from '../../../chunks/cities_DyPidRWt.mjs';
 import { c as cop } from '../../../chunks/normalize_BklFQcMY.mjs';
-import { $ as $$Nav } from '../../../chunks/Nav_qc2d3Wkg.mjs';
 import { $ as $$AddToListModal } from '../../../chunks/AddToListModal_BrWp5P3E.mjs';
 import { $ as $$GoogleAnalytics } from '../../../chunks/GoogleAnalytics_CyJJegFW.mjs';
 /* empty css                                            */

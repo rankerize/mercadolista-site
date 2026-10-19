@@ -1,6 +1,7 @@
 ---
 import '../styles/styles.css';
 import { CATEGORIES } from '../lib/catalog';
+import Nav from '../components/Nav.astro';
 import ShareModal from '../components/ShareModal.astro';
 import AddToListModal from '../components/AddToListModal.astro';
 import CookieBanner from '../components/CookieBanner.astro';
@@ -43,12 +44,10 @@ import AssistantChatWidget from '../components/AssistantChatWidget.astro';
     />
   </head>
   <body>
+    <Nav />
+
     <header class="top">
       <div class="top-bar">
-        <a href="/" class="brand-header" title="Mercado Lista · Inicio">
-          <img src="/logo.png" alt="Mercado Lista" class="brand-logo-img" width="36" height="36" />
-          <span class="brand-name">Mercado Lista</span>
-        </a>
         <div class="top-bar-actions">
           <a href="/asistente" class="header-cart-btn" style="text-decoration: none; background: #e7f6ee; color: #0e6a45; border: 1px solid #a7f3d0;" title="Asistente de compras y recetas con IA">
             <span>🧑‍🍳 Asistente IA</span>
@@ -74,15 +73,6 @@ import AssistantChatWidget from '../components/AssistantChatWidget.astro';
           </div>
         </div>
       </div>
-
-      <nav class="home-cats" aria-label="Categorías">
-        {CATEGORIES.map((c) => (
-          <a href={`/categoria/${c.id}`} class="home-cat-chip">
-            <span aria-hidden="true">{c.icono}</span>
-            <span>{c.nombre.split(' ')[0]}</span>
-          </a>
-        ))}
-      </nav>
 
       <h1>¿Dónde conviene comprarlo?</h1>
       <p class="lead" id="lead">

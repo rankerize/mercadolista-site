@@ -12,6 +12,14 @@ import { findCity } from '../src/lib/cities';
 import { storeCatalog } from '../src/lib/providers';
 import { buildReport } from '../src/lib/ranking';
 import { buildUnitReport } from '../src/lib/units';
+import { searchCategories, CATEGORIES } from '../src/lib/catalog';
+import {
+  toSlug,
+  findCategoryMatch,
+  findProductMatch,
+  getProductUrl,
+  getCategoryUrl,
+} from '../src/lib/slugs';
 import type { Offer, StoreOutcome } from '../src/lib/types';
 
 describe('Comparador Core Normalization Tests', () => {
@@ -181,5 +189,65 @@ describe('AI Shopping Assistant & Recipe Engine', () => {
 
     const resEmpty = await POST({ request: reqEmpty } as any);
     expect(resEmpty.status).toBe(422);
+  });
+});
+
+describe('Category, Slugs and Search Redirection Routing', () => {
+  it('converts titles to SEO slugs correctly', () => {
+    expect(toSlug('Lácteos & Huevos!')).toBe('lacteos-huevos');
+    expect(toSlug('Café / Panadería')).toBe('cafe-panaderia');
+    expect(toSlug('Leche Entera 1.3L')).toBe('leche-entera-13l');
+  });
+
+  it('matches category queries by id, name or components', () => {
+    const lacteosById = findCategoryMatch('lacteos');
+    expect(lacteosById?.id).toBe('lacteos');
+
+    const lacteosByName = findCategoryMatch('Lácteos');
+    expect(lacteosByName?.id).toBe('lacteos');
+
+    const lacteosByComponent = findCategoryMatch('huevos');
+    expect(lacteosByComponent?.id).toBe('lacteos');
+
+    const frutasByComponent = findCategoryMatch('verduras');
+    expect(frutasByComponent?.id).toBe('frutas');
+
+    expect(findCategoryMatch('algo-inexistente-12345')).toBeUndefined();
+  });
+
+  it('matches exact catalog products by query', () => {
+    const leche = findProductMatch('leche entera');
+    expect(leche).toBeDefined();
+    expect(leche?.categoria).toBe('lacteos');
+
+    const arroz = findProductMatch('Arroz blanco');
+    expect(arroz).toBeDefined();
+    expect(arroz?.categoria).toBe('despensa');
+
+    expect(findProductMatch('televisor lg oled 77')).toBeUndefined();
+  });
+
+  it('searches categories with fuzzy/prefix matching', () => {
+    const results = searchCategories('lact', 3);
+    expect(results.some((c) => c.id === 'lacteos')).toBe(true);
+
+    const frutas = searchCategories('verduras', 3);
+    expect(frutas.some((c) => c.id === 'frutas')).toBe(true);
+
+    expect(searchCategories('xyznotfound').length).toBe(0);
+  });
+
+  it('generates valid SEO URLs for categories and products', () => {
+    expect(getCategoryUrl('lacteos')).toBe('/categoria/lacteos');
+    expect(getCategoryUrl('aseo')).toBe('/categoria/aseo');
+
+    const sampleProduct = {
+      nombre: 'Leche Entera',
+      categoria: 'lacteos',
+      unidadSugerida: 'mililitros' as const,
+      cantidadSugerida: 1000,
+      icono: '🥛',
+    };
+    expect(getProductUrl(sampleProduct)).toBe('/categoria/lacteos/leche-entera');
   });
 });

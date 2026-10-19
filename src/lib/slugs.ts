@@ -24,10 +24,24 @@ export function getItemBySlug(categoriaSlug: string, productoSlug: string): Cata
 export function findCategoryMatch(query: string): CategoryInfo | undefined {
   const qSlug = toSlug(query);
   if (!qSlug) return undefined;
-  return CATEGORIES.find((c) => {
+
+  const byName = CATEGORIES.find((c) => {
     const cSlug = toSlug(c.nombre);
-    return c.id === qSlug || cSlug === qSlug || c.palabrasClave.some((kw) => toSlug(kw) === qSlug);
+    if (c.id === qSlug || cSlug === qSlug) return true;
+    const parts = c.nombre
+      .toLowerCase()
+      .split(/[\s,y/]+/)
+      .map(toSlug)
+      .filter((w) => w.length >= 3);
+    return parts.includes(qSlug) || cSlug.includes(qSlug);
   });
+  if (byName) return byName;
+
+  const item = CATALOG_ITEMS.find((it) => it.keywords.some((kw) => toSlug(kw) === qSlug));
+  if (item) {
+    return CATEGORIES.find((c) => c.id === item.categoria);
+  }
+  return undefined;
 }
 
 export function findProductMatch(query: string): CatalogItem | undefined {
