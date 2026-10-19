@@ -93,4 +93,4 @@ function getItemsByCategory(categoriaId) {
   return CATALOG_ITEMS.filter((item) => item.categoria === categoriaId);
 }
 
-export { CATEGORIES as C, getItemsByCategory as g };
+export { CATEGORIES as C, CATALOG_ITEMS as a, getItemsByCategory as g };

@@ -1,0 +1,275 @@
+---
+import '../../../styles/styles.css';
+import { getCategoryBySlug, getItemBySlug, toSlug } from '../../../lib/slugs';
+import { getItemsByCategory } from '../../../lib/catalog';
+import { searchStores } from '../../../lib/providers';
+import { buildReport } from '../../../lib/ranking';
+import { findCity } from '../../../lib/cities';
+import { cop } from '../../../lib/normalize';
+import GoogleAnalytics from '../../../components/GoogleAnalytics.astro';
+
+const { categoria, producto } = Astro.params;
+const cat = getCategoryBySlug(categoria!);
+const item = getItemBySlug(categoria!, producto!);
+
+if (!cat || !item) {
+  return Astro.redirect(`/categoria/${categoria ?? ''}`, 302);
+}
+
+const BASE = 'https://mercadolista.com';
+const canonicalUrl = `${BASE}/categoria/${cat.id}/${toSlug(item.nombre)}`;
+
+// Buscar precios en tiempo real
+const city = findCity('bogota');
+let report: Record<string, any> | null = null;
+let errorMsg: string | null = null;
+
+try {
+  const outcomes = await searchStores(item.nombre, city);
+  report = buildReport(item.nombre, outcomes);
+} catch (e: any) {
+  errorMsg = 'No pudimos consultar los precios en este momento. Intenta de nuevo en unos segundos.';
+}
+
+const verdict = report?.verdict ?? null;
+const offers: any[] = report?.offers ?? [];
+const topOffers = offers.slice(0, 8);
+
+// Otros productos de la misma categoría
+const siblings = getItemsByCategory(cat.id)
+  .filter((s) => s.nombre !== item.nombre)
+  .slice(0, 6);
+
+// Schema markup
+const schemaOffers = topOffers.map((o) => ({
+  '@type': 'Offer',
+  price: o.price.toFixed(0),
+  priceCurrency: 'COP',
+  availability: 'https://schema.org/InStock',
+  seller: { '@type': 'Organization', name: o.store_name },
+  url: o.url,
+}));
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: item.nombre,
+  description: `Precio de ${item.nombre} en supermercados de Colombia. Comparación en tiempo real entre Éxito, D1, Jumbo, Carulla, Olímpica y más.`,
+  ...(verdict?.image ? { image: verdict.image } : {}),
+  offers: schemaOffers.length > 0 ? schemaOffers : undefined,
+};
+
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Inicio', item: BASE },
+    { '@type': 'ListItem', position: 2, name: 'Categorías', item: `${BASE}/categoria` },
+    { '@type': 'ListItem', position: 3, name: cat.nombre, item: `${BASE}/categoria/${cat.id}` },
+    { '@type': 'ListItem', position: 4, name: item.nombre, item: canonicalUrl },
+  ],
+};
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <GoogleAnalytics />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Precio {item.nombre} hoy en Colombia · Mercado Lista</title>
+    <meta name="description" content={`¿Dónde comprar ${item.nombre} más barato? Compara el precio en Éxito, D1, Jumbo, Carulla y más supermercados de Colombia. Actualizado hoy.`} />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta property="og:title" content={`Precio ${item.nombre} hoy en Colombia`} />
+    <meta property="og:description" content={verdict ? `${verdict.headline} · ${cop(verdict.price)} en ${verdict.store_name}` : `Compara el precio de ${item.nombre} en supermercados colombianos.`} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:type" content="website" />
+    {verdict?.image && <meta property="og:image" content={verdict.image} />}
+    <meta name="theme-color" content="#0e6a45" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="application/ld+json" set:html={JSON.stringify(schema)} />
+    <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+  </head>
+  <body>
+    <header class="top">
+      <div class="top-bar">
+        <a href="/" class="eyebrow">Mercado Lista</a>
+      </div>
+      <h1>{item.icono} Precio {item.nombre} hoy en Colombia</h1>
+      <p class="lead">Comparación en tiempo real · {city.name}</p>
+    </header>
+
+    <main class="prod-page">
+      <nav class="breadcrumb" aria-label="Navegación">
+        <a href="/">Inicio</a>
+        <span aria-hidden="true">›</span>
+        <a href="/categoria">Categorías</a>
+        <span aria-hidden="true">›</span>
+        <a href={`/categoria/${cat.id}`}>{cat.nombre}</a>
+        <span aria-hidden="true">›</span>
+        <span aria-current="page">{item.nombre}</span>
+      </nav>
+
+      {errorMsg && (
+        <div class="error-banner" role="alert">{errorMsg}</div>
+      )}
+
+      {verdict && (
+        <section class="verdict-box" aria-label="Veredicto">
+          <div class="verdict-winner">
+            {verdict.image && (
+              <img src={verdict.image} alt={verdict.name} class="verdict-img" width="80" height="80" loading="eager" />
+            )}
+            <div class="verdict-text">
+              <p class="verdict-headline">{verdict.headline}</p>
+              <p class="verdict-price">
+                <strong>{cop(verdict.price)}</strong>
+                <span class="verdict-store">en {verdict.store_name}</span>
+              </p>
+              {verdict.detail && <p class="verdict-detail">{verdict.detail}</p>}
+              {verdict.payment_note && (
+                <p class="verdict-payment">💳 {verdict.payment_note}</p>
+              )}
+            </div>
+          </div>
+          <a href={verdict.url} target="_blank" rel="noopener noreferrer" class="btn-buy">
+            Ver en {verdict.store_name} →
+          </a>
+        </section>
+      )}
+
+      {topOffers.length > 0 && (
+        <section class="offers-section" aria-label="Precios por tienda">
+          <h2>Precios por tienda</h2>
+          <ul class="offers-list" role="list">
+            {topOffers.map((o, i) => (
+              <li class={`offer-row ${i === 0 ? 'offer-row--winner' : ''}`}>
+                <div class="offer-row-left">
+                  {o.image && (
+                    <img src={o.image} alt={o.name} class="offer-thumb" width="48" height="48" loading="lazy" />
+                  )}
+                  <div class="offer-row-info">
+                    <span class="offer-store">{o.store_name}</span>
+                    <span class="offer-name">{o.name}</span>
+                    {o.unit_price && (
+                      <span class="offer-unit">{cop(o.unit_price)} / {o.unit_label}</span>
+                    )}
+                  </div>
+                </div>
+                <div class="offer-row-right">
+                  <span class="offer-price">{cop(o.price)}</span>
+                  {o.list_price && o.list_price > o.price && (
+                    <span class="offer-list-price">{cop(o.list_price)}</span>
+                  )}
+                  <a href={o.url} target="_blank" rel="noopener noreferrer" class="offer-link">Ver →</a>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {topOffers.length === 0 && !errorMsg && (
+        <div class="no-results">
+          <p>No encontramos resultados para <strong>{item.nombre}</strong> en este momento.</p>
+          <a href="/" class="btn-home">Buscar en la app →</a>
+        </div>
+      )}
+
+      {siblings.length > 0 && (
+        <section class="siblings-section" aria-label={`Más productos de ${cat.nombre}`}>
+          <h2>Más productos de {cat.nombre}</h2>
+          <ul class="siblings-list" role="list">
+            {siblings.map((s) => (
+              <li>
+                <a href={`/categoria/${cat.id}/${toSlug(s.nombre)}`} class="sibling-card">
+                  <span>{s.icono}</span>
+                  <span>{s.nombre}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <div class="cta-home">
+        <p>¿Quieres comparar un producto diferente o armar tu lista del mercado?</p>
+        <a href="/" class="btn-home">Ir al comparador →</a>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>© {new Date().getFullYear()} Mercado Lista · Precios consultados en tiempo real en Bogotá</p>
+    </footer>
+
+    <style>
+      .prod-page { max-width: 800px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+
+      .breadcrumb { display: flex; gap: 0.5rem; align-items: center; font-size: 0.875rem; color: #666; margin-bottom: 2rem; flex-wrap: wrap; }
+      .breadcrumb a { color: #0e6a45; text-decoration: none; }
+      .breadcrumb a:hover { text-decoration: underline; }
+
+      .error-banner { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; color: #856404; }
+
+      /* Veredicto */
+      .verdict-box { background: #f0faf5; border: 2px solid #0e6a45; border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; }
+      .verdict-winner { display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 1rem; }
+      .verdict-img { width: 80px; height: 80px; object-fit: contain; border-radius: 8px; background: #fff; flex-shrink: 0; }
+      .verdict-text { flex: 1; }
+      .verdict-headline { font-size: 1.1rem; font-weight: 600; color: #0e6a45; margin: 0 0 0.4rem; }
+      .verdict-price { display: flex; align-items: baseline; gap: 0.5rem; margin: 0 0 0.5rem; }
+      .verdict-price strong { font-size: 1.75rem; color: #0e6a45; }
+      .verdict-store { font-size: 0.9rem; color: #555; }
+      .verdict-detail { font-size: 0.875rem; color: #444; margin: 0 0 0.5rem; line-height: 1.5; }
+      .verdict-payment { font-size: 0.85rem; color: #555; background: #fff; border-radius: 8px; padding: 0.5rem 0.75rem; margin: 0.5rem 0 0; }
+      .btn-buy { display: inline-flex; align-items: center; gap: 0.4rem; background: #0e6a45; color: #fff; padding: 0.65rem 1.4rem; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: background 0.15s; }
+      .btn-buy:hover { background: #0a5236; }
+
+      /* Lista de ofertas */
+      .offers-section h2 { font-size: 1.1rem; margin-bottom: 1rem; }
+      .offers-list { list-style: none; padding: 0; margin: 0 0 2.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
+      .offer-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.9rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 12px; transition: border-color 0.15s; }
+      .offer-row:hover { border-color: #0e6a45; }
+      .offer-row--winner { border-color: #0e6a45; background: #f9fefc; }
+      .offer-row-left { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0; }
+      .offer-thumb { width: 48px; height: 48px; object-fit: contain; border-radius: 8px; background: #f8f8f8; flex-shrink: 0; }
+      .offer-row-info { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+      .offer-store { font-weight: 600; font-size: 0.9rem; }
+      .offer-name { font-size: 0.8rem; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .offer-unit { font-size: 0.75rem; color: #888; }
+      .offer-row-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem; flex-shrink: 0; }
+      .offer-price { font-size: 1.1rem; font-weight: 700; color: #111; }
+      .offer-list-price { font-size: 0.8rem; color: #aaa; text-decoration: line-through; }
+      .offer-link { font-size: 0.8rem; color: #0e6a45; text-decoration: none; font-weight: 500; }
+      .offer-link:hover { text-decoration: underline; }
+
+      .no-results { text-align: center; padding: 3rem 1rem; color: #666; }
+
+      /* Siblings */
+      .siblings-section { margin-bottom: 2.5rem; }
+      .siblings-section h2 { font-size: 1.1rem; margin-bottom: 1rem; }
+      .siblings-list { display: flex; flex-wrap: wrap; gap: 0.6rem; list-style: none; padding: 0; margin: 0; }
+      .sibling-card { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.9rem; border: 1px solid #e2e8f0; border-radius: 999px; font-size: 0.85rem; text-decoration: none; color: inherit; transition: background 0.15s; }
+      .sibling-card:hover { background: #f0faf5; border-color: #0e6a45; color: #0e6a45; }
+
+      /* CTA */
+      .cta-home { background: #f8f9fa; border-radius: 12px; padding: 1.5rem; text-align: center; }
+      .cta-home p { color: #555; margin-bottom: 1rem; }
+      .btn-home { display: inline-flex; background: #0e6a45; color: #fff; padding: 0.65rem 1.4rem; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 0.95rem; }
+      .btn-home:hover { background: #0a5236; }
+
+      .site-footer { text-align: center; padding: 2rem 1rem; color: #999; font-size: 0.8rem; border-top: 1px solid #f0f0f0; }
+
+      @media (max-width: 480px) {
+        .verdict-winner { flex-direction: column; }
+        .verdict-img { width: 60px; height: 60px; }
+        .verdict-price strong { font-size: 1.4rem; }
+        .offer-thumb { display: none; }
+      }
+    </style>
+  </body>
+</html>

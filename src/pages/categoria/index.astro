@@ -2,6 +2,7 @@
 import '../../styles/styles.css';
 import { CATEGORIES, getItemsByCategory } from '../../lib/catalog';
 import { toSlug } from '../../lib/slugs';
+import GoogleAnalytics from '../../components/GoogleAnalytics.astro';
 
 const BASE = 'https://mercadolista.com';
 ---
@@ -9,6 +10,7 @@ const BASE = 'https://mercadolista.com';
 <!doctype html>
 <html lang="es">
   <head>
+    <GoogleAnalytics />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Categorías de productos · Mercado Lista</title>
