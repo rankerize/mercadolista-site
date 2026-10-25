@@ -1,3 +1,5 @@
+import { normalize, tokenMatches, tokens } from './normalize';
+
 export interface CatalogItem {
   nombre: string;
   categoria: string;
@@ -172,5 +174,49 @@ export function searchCategories(query: string, maxResults = 3): CategoryInfo[] 
     const normName = normalizeStr(c.nombre);
     return normName.includes(cleanQ) || c.id.includes(cleanQ);
   }).slice(0, maxResults);
+}
+
+const GENERIC_TERMS = new Set([
+  'blanco', 'blanca', 'rojo', 'roja', 'extra', 'comun', 'fresco', 'fresca',
+  'facial', 'liquido', 'polvo', 'agua', 'negro', 'negra', 'verde', 'maduro',
+  'entero', 'entera', 'light', 'tajado', 'tajada', 'molido', 'molida',
+  'smart', 'pulgadas',
+]);
+
+const categoryTermCache = new Map<string, string[]>();
+
+function termsForCategory(categoryId: string): string[] {
+  const cached = categoryTermCache.get(categoryId);
+  if (cached) return cached;
+
+  const words = new Set<string>();
+  for (const item of CATALOG_ITEMS) {
+    if (item.categoria !== categoryId) continue;
+    const nameTokens = tokens(item.nombre);
+    if (nameTokens[0] && !GENERIC_TERMS.has(nameTokens[0])) words.add(nameTokens[0]);
+    for (const keyword of item.keywords) {
+      for (const term of tokens(keyword)) {
+        if (term.length >= 4 && !GENERIC_TERMS.has(term)) words.add(term);
+      }
+    }
+  }
+
+  const terms = [...words];
+  categoryTermCache.set(categoryId, terms);
+  return terms;
+}
+
+export function offerMatchesCategory(
+  name: string,
+  brand: string | null,
+  categories: string[],
+  categoryId: string,
+): boolean {
+  const terms = termsForCategory(categoryId);
+  if (terms.length === 0) return false;
+  const blob = `${name} ${brand || ''} ${categories.join(' ')}`;
+  const productTokens = new Set(tokens(blob));
+  const productText = normalize(blob);
+  return terms.some((term) => tokenMatches(term, productTokens, productText));
 }
 

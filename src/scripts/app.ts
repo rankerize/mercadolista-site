@@ -38,6 +38,25 @@ const categoryChipsScroll = document.querySelector<HTMLElement>('#category-chips
 const categoryQuickItems = document.querySelector<HTMLElement>('#category-quick-items')!;
 const citySelect = document.querySelector<HTMLSelectElement>('#city')!;
 const cityRow = document.querySelector<HTMLElement>('#city-row')!;
+const unitFilters = document.querySelector<HTMLElement>('#unit-filters')!;
+const unitBasis = document.querySelector<HTMLSelectElement>('#unit-basis')!;
+const unitMin = document.querySelector<HTMLInputElement>('#unit-min')!;
+const unitMinLabel = document.querySelector<HTMLElement>('#unit-min-label')!;
+const unitCategory = document.querySelector<HTMLSelectElement>('#unit-category')!;
+
+const UNIT_MIN_LABEL: Record<string, string> = {
+  mililitros: 'Mínimo en mililitros',
+  gramos: 'Mínimo en gramos',
+  unidades: 'Mínimo en unidades',
+};
+
+function syncUnitMin() {
+  const basis = unitBasis.value;
+  const open = basis !== 'todas';
+  unitMin.disabled = !open;
+  unitMinLabel.textContent = open ? UNIT_MIN_LABEL[basis] || 'Cantidad mínima' : 'Cantidad mínima';
+  unitMin.placeholder = open ? 'Ej. 900' : 'Elige una unidad';
+}
 const submit = document.querySelector<HTMLButtonElement>('#submit')!;
 const status = document.querySelector<HTMLElement>('#status')!;
 const results = document.querySelector<HTMLElement>('#results')!;
@@ -214,7 +233,7 @@ const MODES = {
     endpoint: '/api/unidad',
     status: 'Buscando en Éxito, Jumbo, Carulla, Olímpica, D1, Alkosto, Ktronix, Falabella y Easy para {ciudad}…',
     placeholder: 'Ej. huevos, leche, arroz, aceite',
-    lead: 'Compara el precio de cada unidad. Si el producto se vende por peso, muestra el gramo; si se vende por volumen, el mililitro.',
+    lead: 'Elige la unidad, un mínimo y la categoría. Con 900 mililitros entran esa presentación y las más grandes.',
     footnote: 'La unidad sale de la cantidad escrita en el nombre. El gramo y el mililitro salen del peso o del volumen. La ciudad es {ciudad}. Confirma el tamaño en la tienda antes de pagar.',
     examples: [
       ['huevos', 'Huevos'],
@@ -505,9 +524,12 @@ function renderUnit(report: any) {
   results.hidden = false;
   results.append(cityNote(report));
   if (!report.verdict) {
-    results.append(el('section', 'panel', 'No encontré productos con cantidad, peso o volumen para comparar.'));
+    results.append(el('section', 'panel', report.empty_detail || 'No encontré productos con cantidad, peso o volumen para comparar.'));
     renderStores(report.stores);
     return;
+  }
+  if (report.filter_label) {
+    results.append(el('p', 'note', `Filtro: ${report.filter_label}.`));
   }
   const verdict = report.verdict;
   const card = el('article', 'verdict');
@@ -940,6 +962,8 @@ function setMode(next: ModeKey) {
   queryInput.placeholder = config.placeholder;
   lead.textContent = config.lead;
   cityRow.hidden = mode === 'intl';
+  unitFilters.hidden = mode !== 'unit';
+  if (mode === 'unit') syncUnitMin();
   const isList = mode === 'list';
   singleSearch.hidden = isList;
   listEditor.hidden = !isList;
@@ -965,7 +989,14 @@ async function search(query: string) {
   results.hidden = true;
   try {
     const cityQuery = mode === 'intl' ? '' : `&ciudad=${encodeURIComponent(citySelect.value || 'bogota')}`;
-    const response = await fetch(`${config.endpoint}?q=${encodeURIComponent(query)}${cityQuery}`);
+    const minRaw = unitMin.value.trim().replace(',', '.');
+    const minQuery = mode === 'unit' && unitBasis.value !== 'todas' && minRaw
+      ? `&minimo=${encodeURIComponent(minRaw)}`
+      : '';
+    const unitQuery = mode === 'unit'
+      ? `&unidad=${encodeURIComponent(unitBasis.value || 'todas')}&categoria=${encodeURIComponent(unitCategory.value || 'todas')}${minQuery}`
+      : '';
+    const response = await fetch(`${config.endpoint}?q=${encodeURIComponent(query)}${cityQuery}${unitQuery}`);
     if (!response.ok) {
       throw new Error('No pude completar la búsqueda');
     }
@@ -2075,6 +2106,7 @@ if (sharedListId) {
 
 loadList();
 updateHeaderCartCount();
+unitBasis.addEventListener('change', syncUnitMin);
 setMode(mode);
 loadCities();
 initAddToListModalListeners();

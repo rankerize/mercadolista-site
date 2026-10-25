@@ -1,4 +1,5 @@
 import type { Offer, StoreOutcome } from './types';
+import { CATEGORIES, offerMatchesCategory } from './catalog';
 import {
   categoryMatches,
   cop,
@@ -12,6 +13,17 @@ import { dedupe, paymentNote } from './ranking';
 const BASIS_RANK: Record<string, number> = { unidad: 0, gramo: 1, mililitro: 2 };
 const BASIS_NOUN: Record<string, string> = { unidad: 'unidad', gramo: 'gramo', mililitro: 'mililitro' };
 const BASIS_PLURAL: Record<string, string> = { unidad: 'unidades', gramo: 'gramos', mililitro: 'mililitros' };
+const FORMAT_TO_BASIS: Record<string, string> = {
+  gramos: 'gramo',
+  mililitros: 'mililitro',
+  unidades: 'unidad',
+};
+
+export interface UnitFilters {
+  basis?: 'todas' | 'gramos' | 'mililitros' | 'unidades';
+  categoryId?: string;
+  minQuantity?: number | null;
+}
 
 export function quantityText(quantity: number, basis: string): string {
   let shown: string;
@@ -124,10 +136,23 @@ function detail(winner: Offer, measure: MeasuredOfferData, others: [Offer, Measu
   return text;
 }
 
-export function buildUnitReport(query: string, outcomes: StoreOutcome[]): Record<string, any> {
+function categoryName(categoryId: string | null): string | null {
+  if (!categoryId) return null;
+  return CATEGORIES.find((category) => category.id === categoryId)?.nombre || null;
+}
+
+export function buildUnitReport(
+  query: string,
+  outcomes: StoreOutcome[],
+  filters: UnitFilters = {},
+): Record<string, any> {
   const allOffers = outcomes.flatMap((outcome) => outcome.offers);
   const collected = dedupe(allOffers);
   const threshold = requiredMatchRatio(query);
+  const categoryId = filters.categoryId && filters.categoryId !== 'todas' ? filters.categoryId : null;
+  const requestedBasis = filters.basis && filters.basis !== 'todas' ? FORMAT_TO_BASIS[filters.basis] : null;
+  const minQuantity = requestedBasis && filters.minQuantity && filters.minQuantity > 0 ? filters.minQuantity : null;
+  const selectedCategory = categoryName(categoryId);
 
   const scored: [Offer, number, boolean][] = collected.map((offer) => [
     offer,
@@ -154,12 +179,36 @@ export function buildUnitReport(query: string, outcomes: StoreOutcome[]): Record
     measured.push([offer, score, categoryHit, m]);
   }
 
+  let pool = measured;
+  if (categoryId) {
+    pool = pool.filter(([offer]) =>
+      offerMatchesCategory(offer.name, offer.brand, offer.categories, categoryId),
+    );
+  }
+
   let verdict: Record<string, any> | null = null;
   let shown: [Offer, number, MeasuredOfferData][] = [];
+  let emptyDetail: string | null = null;
+  const basis = pool.length > 0 ? requestedBasis || chooseBasis(pool) : requestedBasis;
+  const sameBasis = basis ? pool.filter((item) => item[3].basis === basis) : [];
+  let comparable = sameBasis;
+  if (minQuantity != null && requestedBasis) {
+    comparable = sameBasis.filter((item) => item[3].quantity + 0.05 >= minQuantity);
+  }
 
-  if (measured.length > 0) {
-    const basis = chooseBasis(measured);
-    const comparable = measured.filter((item) => item[3].basis === basis);
+  if (pool.length === 0 && categoryId && measured.length > 0) {
+    emptyDetail = `Ningún producto de esta búsqueda encaja en ${selectedCategory}.`;
+  } else if (comparable.length === 0 && minQuantity != null && requestedBasis && sameBasis.length > 0) {
+    const minimum = quantityText(minQuantity, requestedBasis);
+    emptyDetail = selectedCategory
+      ? `Ningún producto de ${selectedCategory} trae ${minimum} o más.`
+      : `Ningún producto de esta búsqueda trae ${minimum} o más.`;
+  } else if (comparable.length === 0 && requestedBasis && pool.length > 0) {
+    const plural = BASIS_PLURAL[requestedBasis] || requestedBasis;
+    emptyDetail = selectedCategory
+      ? `Ningún producto de ${selectedCategory} se compara en ${plural}.`
+      : `Ningún producto de esta búsqueda se compara en ${plural}.`;
+  } else if (comparable.length > 0 && basis) {
     comparable.sort((a, b) => {
       if (a[3].amount !== b[3].amount) {
         return a[3].amount - b[3].amount;
@@ -206,11 +255,22 @@ export function buildUnitReport(query: string, outcomes: StoreOutcome[]): Record
     shown = comparable.map((item) => [item[0], item[1], item[3]]);
   }
 
+  const filterParts = [
+    minQuantity != null && requestedBasis
+      ? `desde ${quantityText(minQuantity, requestedBasis)}`
+      : requestedBasis
+        ? BASIS_PLURAL[requestedBasis]
+        : null,
+    selectedCategory,
+  ].filter(Boolean);
+
   return {
     query,
     relaxed,
     basis: verdict ? verdict.unit_label : null,
     unmeasured,
+    empty_detail: emptyDetail,
+    filter_label: filterParts.length > 0 ? filterParts.join(' · ') : null,
     verdict,
     offers: shown.map(([offer, score, m]) => offerPayload(offer, score, m)),
     stores: outcomes.map((outcome) => ({

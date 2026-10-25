@@ -47,7 +47,10 @@ import AssistantChatWidget from '../components/AssistantChatWidget.astro';
     <Nav />
 
     <header class="top">
-      <h1>¿Dónde conviene comprarlo?</h1>
+      <h1 class="hero-title">
+        <img src="/logo-canasta.png" alt="" width="436" height="398" />
+        <span>¿Dónde conviene comprarlo?</span>
+      </h1>
       <p class="lead" id="lead">
         Compara el precio publicado en tiendas de Colombia y te dice en cuál está el más bajo.
       </p>
@@ -75,6 +78,40 @@ import AssistantChatWidget from '../components/AssistantChatWidget.astro';
           <select id="city" name="ciudad">
             <option value="bogota" selected>Bogotá</option>
           </select>
+        </div>
+
+        <div id="unit-filters" class="unit-filters" hidden>
+          <div>
+            <label for="unit-basis">Unidad</label>
+            <select id="unit-basis" name="unidad">
+              <option value="todas" selected>Todas</option>
+              <option value="mililitros">Mililitros</option>
+              <option value="gramos">Gramos</option>
+              <option value="unidades">Unidades</option>
+            </select>
+          </div>
+          <div>
+            <label for="unit-min" id="unit-min-label">Cantidad mínima</label>
+            <input
+              id="unit-min"
+              name="minimo"
+              type="number"
+              inputmode="decimal"
+              min="0"
+              step="any"
+              placeholder="Elige una unidad"
+              disabled
+            />
+          </div>
+          <div>
+            <label for="unit-category">Categoría</label>
+            <select id="unit-category" name="categoria">
+              <option value="todas" selected>Todas</option>
+              {CATEGORIES.map((category) => (
+                <option value={category.id}>{category.icono} {category.nombre}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div id="single-search">

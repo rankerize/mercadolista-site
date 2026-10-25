@@ -545,6 +545,22 @@ h1 {
   line-height: 1.05;
 }
 
+h1.hero-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+}
+
+h1.hero-title img {
+  width: auto;
+  height: 1em;
+  flex: 0 0 auto;
+}
+
+h1.hero-title span {
+  min-width: 0;
+}
+
 .lead {
   max-width: 38rem;
   color: var(--muted);
@@ -594,6 +610,33 @@ h1 {
 }
 
 .city-row { margin-bottom: 0.85rem; }
+
+.unit-filters {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr 1.3fr;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.unit-filters[hidden] { display: none; }
+
+.unit-filters select,
+.unit-filters input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 0.9rem;
+  min-height: 3rem;
+  padding: 0.85rem 1rem;
+  font: inherit;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+
+.unit-filters input:disabled {
+  background: #f6f3ee;
+  color: var(--muted);
+}
 
 .city-row select {
   width: 100%;
@@ -1044,6 +1087,7 @@ html { scroll-behavior: smooth; }
   .account-fields.saved-lists,
   .account-fields.is-login { grid-template-columns: 1fr; }
   .tab { width: 100%; padding-inline: 0.35rem; text-align: center; font-size: 0.92rem; }
+  .unit-filters { grid-template-columns: 1fr; }
   .search-row { flex-direction: column; }
   #submit { min-height: 3rem; }
   .verdict, .offer { grid-template-columns: 1fr; }

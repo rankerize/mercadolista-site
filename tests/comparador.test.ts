@@ -99,6 +99,56 @@ describe('Catalogs and Reports', () => {
     expect(report.verdict.store_name).toBe('Jumbo');
     expect(report.verdict.price).toBe(4500);
   });
+
+  it('filters unit comparison by measure and category', () => {
+    const milk: Offer = {
+      store_id: 'jumbo',
+      store_name: 'Jumbo',
+      name: 'Leche entera Colanta 1100 ml',
+      brand: 'Colanta',
+      price: 4500,
+      list_price: null,
+      image: null,
+      url: 'https://www.jumbocolombia.com/leche/p',
+      ean: null,
+      categories: ['Lacteos'],
+    };
+    const rice: Offer = {
+      store_id: 'exito',
+      store_name: 'Éxito',
+      name: 'Arroz Roa 1000g',
+      brand: 'Roa',
+      price: 4200,
+      list_price: null,
+      image: null,
+      url: 'https://www.exito.com/arroz/p',
+      ean: null,
+      categories: ['Despensa'],
+    };
+    const outcomes: StoreOutcome[] = [
+      { store_id: 'jumbo', store_name: 'Jumbo', kind: 'supermercado', offers: [milk] },
+      { store_id: 'exito', store_name: 'Éxito', kind: 'supermercado', offers: [rice] },
+    ];
+
+    const byMl = buildUnitReport('leche arroz', outcomes, { basis: 'mililitros', categoryId: 'todas' });
+    expect(byMl.verdict?.name).toContain('Leche');
+    expect(byMl.offers.every((offer: { name: string }) => offer.name.includes('Leche'))).toBe(true);
+
+    const byCategory = buildUnitReport('leche arroz', outcomes, { basis: 'todas', categoryId: 'despensa' });
+    expect(byCategory.verdict?.name).toContain('Arroz');
+
+    const none = buildUnitReport('leche', [outcomes[0]], { basis: 'gramos', categoryId: 'lacteos' });
+    expect(none.verdict).toBeNull();
+    expect(none.empty_detail).toMatch(/gramos/i);
+
+    const largeEnough = buildUnitReport('leche', [outcomes[0]], { basis: 'mililitros', minQuantity: 900 });
+    expect(largeEnough.verdict?.name).toContain('Leche');
+    expect(largeEnough.filter_label).toMatch(/900 mililitros/);
+
+    const tooBig = buildUnitReport('leche', [outcomes[0]], { basis: 'mililitros', minQuantity: 2000 });
+    expect(tooBig.verdict).toBeNull();
+    expect(tooBig.empty_detail).toMatch(/2000 mililitros o más/);
+  });
 });
 
 describe('API Security and Rate Limiting', () => {
