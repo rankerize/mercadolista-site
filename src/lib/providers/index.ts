@@ -9,7 +9,7 @@ export type StoreDef =
   | ({ type: 'falabella' } & FalabellaStoreConfig);
 
 export const STORES: readonly StoreDef[] = [
-  { type: 'vtex', id: 'exito', name: 'Éxito', kind: 'supermercado', site: 'https://www.exito.com', api_root: 'https://www.exito.com/io' },
+  { type: 'vtex', id: 'exito', name: 'Éxito', kind: 'supermercado', site: 'https://www.exito.com', api_root: 'https://exitocol.vtexcommercestable.com.br', region_root: 'https://exitocol.vtexcommercestable.com.br' },
   { type: 'vtex', id: 'carulla', name: 'Carulla', kind: 'supermercado', site: 'https://www.carulla.com', api_root: 'https://www.carulla.com/io' },
   { type: 'vtex', id: 'jumbo', name: 'Jumbo', kind: 'supermercado', site: 'https://www.jumbocolombia.com', api_root: 'https://www.jumbocolombia.com' },
   { type: 'vtex', id: 'olimpica', name: 'Olímpica', kind: 'supermercado', site: 'https://www.olimpica.com', api_root: 'https://www.olimpica.com' },

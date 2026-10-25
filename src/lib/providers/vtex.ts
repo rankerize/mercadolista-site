@@ -8,6 +8,7 @@ export interface VtexStoreConfig {
   kind: string;
   site: string;
   api_root: string;
+  region_root?: string;
 }
 
 const REGION_TTL = 6 * 60 * 60 * 1000;
@@ -40,7 +41,7 @@ export async function getRegionId(store: VtexStoreConfig, city: City): Promise<s
     return cached.regionId;
   }
 
-  const url = `${store.site}/api/checkout/pub/regions?country=COL&postalCode=${city.postal_code}`;
+  const url = `${store.region_root || store.site}/api/checkout/pub/regions?country=COL&postalCode=${city.postal_code}`;
   const res = await fetch(url, {
     headers: {
       'Accept': 'application/json',
@@ -84,10 +85,22 @@ function sellerPrice(seller: any): [number, number | null] | null {
 }
 
 function absoluteUrl(site: string, link?: string | null, linkText?: string | null): string {
-  if (link && link.startsWith('http')) return link;
-  if (link && link.startsWith('/')) return `${site.replace(/\/$/, '')}${link}`;
-  if (linkText) return `${site.replace(/\/$/, '')}/${linkText}/p`;
-  return site;
+  const publicSite = site.replace(/\/$/, '');
+  if (link && link.startsWith('http')) {
+    try {
+      const parsed = new URL(link);
+      if (parsed.hostname.endsWith('.vtexcommercestable.com.br')) {
+        const expected = new URL(publicSite);
+        return `${expected.origin}${parsed.pathname}${parsed.search}`;
+      }
+    } catch {
+      return link;
+    }
+    return link;
+  }
+  if (link && link.startsWith('/')) return `${publicSite}${link}`;
+  if (linkText) return `${publicSite}/${linkText}/p`;
+  return publicSite;
 }
 
 export function parseVtex(payload: unknown, store: VtexStoreConfig, limit = 8): Offer[] {
