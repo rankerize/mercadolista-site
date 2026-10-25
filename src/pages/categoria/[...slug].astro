@@ -2,6 +2,13 @@
 import '../../styles/styles.css';
 import { CATEGORIES } from '../../lib/catalog';
 import { getTaxNode, getTaxChildren, getBreadcrumb } from '../../lib/taxonomy';
+import { getItemBySlug } from '../../lib/slugs';
+import {
+  getCollectionNode,
+  getHuinchaNavigation,
+  getCollectionSeo,
+  getCollectionBreadcrumbItems,
+} from '../../lib/collectionTaxonomy';
 import { searchStores } from '../../lib/providers';
 import { buildReport } from '../../lib/ranking';
 import { findCity } from '../../lib/cities';
@@ -9,11 +16,32 @@ import { cop } from '../../lib/normalize';
 import Nav from '../../components/Nav.astro';
 import AddToListModal from '../../components/AddToListModal.astro';
 import GoogleAnalytics from '../../components/GoogleAnalytics.astro';
+import CategoryHuincha, { type HuinchaItem } from '../../components/CategoryHuincha.astro';
+import CategorySeoFaq from '../../components/CategorySeoFaq.astro';
 
 const { slug } = Astro.params;
-const segments = (slug ?? '').split('/').filter(Boolean);
+let segments = (slug ?? '').split('/').filter(Boolean);
 
-// Redirigir si el slug está vacío o es sólo L1/L2 (manejados por rutas específicas)
+// Aliases amigables directos para tecnología y celulares
+const ALIAS_PREFIXES: Record<string, string> = {
+  'celulares': 'tecnologia/telefonia/celulares-y-telefonos',
+  'celulares-y-telefonos': 'tecnologia/telefonia/celulares-y-telefonos',
+  'smartphones': 'tecnologia/telefonia/celulares-y-telefonos/smartphones',
+  'televisores': 'tecnologia/televisores-y-video',
+  'laptops': 'tecnologia/computadores',
+  'portatiles': 'tecnologia/computadores',
+  'audifonos': 'tecnologia/audio',
+  'freidoras-de-aire': 'electrohogar/electrodomesticos-cocina',
+};
+
+if (segments.length >= 1 && ALIAS_PREFIXES[segments[0]]) {
+  const targetPrefix = ALIAS_PREFIXES[segments[0]];
+  const rest = segments.slice(1).join('/');
+  const targetUrl = rest ? `/categoria/${targetPrefix}/${rest}` : `/categoria/${targetPrefix}`;
+  return Astro.redirect(targetUrl, 301);
+}
+
+// Redirigir si el slug está vacío
 if (segments.length < 2) {
   return Astro.redirect('/categoria', 302);
 }
@@ -21,24 +49,68 @@ if (segments.length < 2) {
 const catId   = segments[0];
 const taxPath = segments.join('/');
 
-const cat = CATEGORIES.find((c) => c.id === catId);
+const collNode = getCollectionNode(taxPath);
+
+let cat = CATEGORIES.find((c) => c.id === catId);
+if (!cat && collNode) {
+  const rootNode = getCollectionNode(collNode.rootSlug);
+  cat = {
+    id: collNode.rootSlug,
+    nombre: rootNode ? rootNode.name : collNode.breadcrumb[0] || collNode.name,
+    icono: rootNode?.icono || '🏷️',
+    descripcion: `Compara precios en tiendas de Colombia`,
+    color: '#0e6a45',
+  };
+}
 if (!cat) return Astro.redirect('/categoria', 302);
 
-const node = getTaxNode(taxPath);
+let node: any = getTaxNode(taxPath);
+if (!node && collNode) {
+  const seo = getCollectionSeo(collNode);
+  node = {
+    id: collNode.id,
+    nombre: collNode.name,
+    icono: collNode.icono || '🏷️',
+    query: collNode.query || collNode.name.toLowerCase(),
+    titleSeo: seo.titleSeo,
+    metaDesc: seo.metaDesc,
+    h1: seo.h1,
+    childIds: collNode.childIds,
+    level: collNode.level,
+  };
+}
+
+if (!node && !collNode && segments.length === 2) {
+  const legacyItem = getItemBySlug(segments[0], segments[1]);
+  if (legacyItem) {
+    node = {
+      id: segments.join('/'),
+      nombre: legacyItem.nombre,
+      icono: legacyItem.icono,
+      query: legacyItem.nombre,
+      titleSeo: `Precio de ${legacyItem.nombre} en Colombia hoy · Mercado Lista`,
+      metaDesc: `¿Dónde comprar ${legacyItem.nombre} más barato en Colombia? Compara precios en tiempo real.`,
+      h1: `${legacyItem.icono} Precio de ${legacyItem.nombre} en Colombia`,
+      childIds: [],
+      level: 2,
+    };
+  }
+}
+
 if (!node) return Astro.redirect(`/categoria/${catId}`, 302);
 
 const children = getTaxChildren(taxPath);
-const isLeaf   = children.length === 0;
+const isLeaf   = collNode ? collNode.childIds.length === 0 : children.length === 0;
 
 const BASE         = 'https://mercadolista.com';
-const canonicalUrl = `${BASE}/categoria/${taxPath}`;
+const canonicalUrl = `${BASE}/categoria/${collNode ? collNode.slugPath : taxPath}`;
 const city         = findCity('bogota');
 
-// Precios en tiempo real sólo en nodos hoja (o cuando tienen query asignado)
+// Consultar precios en tiempo real para cualquier nodo con query asignado
 let report: Record<string, any> | null = null;
 let errorMsg: string | null = null;
 
-if (isLeaf || segments.length >= 3) {
+if (node.query) {
   try {
     const outcomes = await searchStores(node.query, city);
     report = buildReport(node.query, outcomes);
@@ -48,11 +120,54 @@ if (isLeaf || segments.length >= 3) {
 }
 
 const verdict  = report?.verdict ?? null;
-const offers: any[] = report?.offers ?? [];
-const topOffers = offers.slice(0, 8);
+const rawOffers: any[] = report?.offers ?? [];
+
+// ORDENADO POR PRECIO (MENOR A MAYOR) POR DEFECTO
+const sortedOffers = [...rawOffers].sort((a, b) => (a.price || 0) - (b.price || 0));
+const topOffers = sortedOffers.slice(0, 32);
+
+// Detección de marca auxiliar
+function detectBrand(name: string): string {
+  const n = (name || '').toLowerCase();
+  if (n.includes('iphone') || n.includes('apple')) return 'Apple';
+  if (n.includes('samsung') || n.includes('galaxy')) return 'Samsung';
+  if (n.includes('xiaomi') || n.includes('redmi') || n.includes('poco')) return 'Xiaomi';
+  if (n.includes('motorola') || n.includes('moto ')) return 'Motorola';
+  if (n.includes('honor')) return 'Honor';
+  if (n.includes('huawei')) return 'Huawei';
+  if (n.includes('oppo')) return 'Oppo';
+  if (n.includes('realme')) return 'Realme';
+  if (n.includes('infinix')) return 'Infinix';
+  if (n.includes('tecno')) return 'Tecno';
+  if (n.includes('lg')) return 'LG';
+  if (n.includes('sony')) return 'Sony';
+  if (n.includes('hp')) return 'HP';
+  if (n.includes('lenovo')) return 'Lenovo';
+  if (n.includes('asus')) return 'Asus';
+  return 'Otras marcas';
+}
+
+// Estadísticas para los filtros de la izquierda
+const storeCounts: Record<string, number> = {};
+const brandCounts: Record<string, number> = {};
+let minPrice = Infinity;
+let maxPrice = 0;
+
+topOffers.forEach((o) => {
+  storeCounts[o.store_name] = (storeCounts[o.store_name] || 0) + 1;
+  const brand = detectBrand(o.name);
+  brandCounts[brand] = (brandCounts[brand] || 0) + 1;
+  if (o.price < minPrice) minPrice = o.price;
+  if (o.price > maxPrice) maxPrice = o.price;
+});
+
+const storeNames = Object.keys(storeCounts).sort();
+const brandNames = Object.keys(brandCounts).sort((a, b) => brandCounts[b] - brandCounts[a]);
 
 // Breadcrumb items
-const crumbData = getBreadcrumb(segments, BASE);
+const crumbData = collNode
+  ? getCollectionBreadcrumbItems(collNode, BASE).map((c) => ({ name: c.name, item: c.url }))
+  : getBreadcrumb(segments, BASE);
 
 const breadcrumbSchema = {
   '@context': 'https://schema.org',
@@ -65,23 +180,117 @@ const breadcrumbSchema = {
   })),
 };
 
-const schemaOffers = topOffers.map((o) => ({
-  '@type': 'Offer',
-  price: o.price.toFixed(0),
-  priceCurrency: 'COP',
-  availability: 'https://schema.org/InStock',
-  seller: { '@type': 'Organization', name: o.store_name },
-  url: o.url,
-}));
-
-const productSchema = isLeaf ? {
+// ItemList schema para Google
+const itemListSchema = topOffers.length > 0 ? {
   '@context': 'https://schema.org',
-  '@type': 'Product',
+  '@type': 'ItemList',
   name: node.nombre,
   description: node.metaDesc,
-  ...(verdict?.image ? { image: verdict.image } : {}),
-  offers: schemaOffers.length > 0 ? schemaOffers : undefined,
+  numberOfItems: topOffers.length,
+  itemListElement: topOffers.map((o, idx) => ({
+    '@type': 'ListItem',
+    position: idx + 1,
+    item: {
+      '@type': 'Product',
+      name: o.name,
+      ...(o.image ? { image: o.image } : {}),
+      offers: {
+        '@type': 'Offer',
+        price: o.price.toFixed(0),
+        priceCurrency: 'COP',
+        seller: { '@type': 'Organization', name: o.store_name },
+        url: o.url,
+        availability: 'https://schema.org/InStock',
+      },
+    },
+  })),
 } : null;
+
+// Huincha dinámica fluida con navegación por niveles
+const huinchaNav = collNode ? getHuinchaNavigation(collNode) : null;
+const isCelularesCat = taxPath.startsWith('tecnologia/celulares');
+
+let huinchaItems: HuinchaItem[] = [];
+
+if (huinchaNav && huinchaNav.items.length > 0) {
+  huinchaItems = huinchaNav.items;
+} else if (isCelularesCat) {
+  huinchaItems = [
+    {
+      id: 'apple',
+      name: 'Apple iPhone',
+      url: '/categoria/tecnologia/celulares/apple',
+      countStr: '142 refs',
+      iconType: 'apple',
+      isActive: taxPath === 'tecnologia/celulares/apple',
+    },
+    {
+      id: 'samsung',
+      name: 'Samsung Galaxy',
+      url: '/categoria/tecnologia/celulares/samsung',
+      countStr: '198 refs',
+      iconType: 'samsung',
+      isActive: taxPath === 'tecnologia/celulares/samsung',
+    },
+    {
+      id: 'xiaomi',
+      name: 'Xiaomi Redmi',
+      url: '/categoria/tecnologia/celulares/xiaomi',
+      countStr: '156 refs',
+      iconType: 'xiaomi',
+      isActive: taxPath === 'tecnologia/celulares/xiaomi',
+    },
+    {
+      id: 'motorola',
+      name: 'Motorola Moto',
+      url: '/categoria/tecnologia/celulares/motorola',
+      countStr: '118 refs',
+      iconType: 'motorola',
+      isActive: taxPath === 'tecnologia/celulares/motorola',
+    },
+    {
+      id: 'honor',
+      name: 'Honor',
+      url: '/categoria/tecnologia/celulares/honor',
+      countStr: '86 refs',
+      iconType: 'honor',
+      isActive: taxPath === 'tecnologia/celulares/honor',
+    },
+    {
+      id: 'smartwatches',
+      name: 'Smartwatches',
+      url: '/categoria/tecnologia/celulares/smartwatches',
+      countStr: '64 refs',
+      iconType: 'smartwatch',
+      isActive: taxPath === 'tecnologia/celulares/smartwatches',
+    },
+    {
+      id: 'audifonos',
+      name: 'Audífonos',
+      url: '/categoria/tecnologia/celulares/audifonos',
+      countStr: '92 refs',
+      iconType: 'audifonos',
+      isActive: taxPath === 'tecnologia/celulares/audifonos',
+    },
+    {
+      id: 'accesorios',
+      name: 'Accesorios',
+      url: '/categoria/tecnologia/celulares/accesorios',
+      countStr: '75 refs',
+      iconType: 'accesorios',
+      isActive: taxPath === 'tecnologia/celulares/accesorios',
+    },
+  ];
+} else if (children.length > 0) {
+  huinchaItems = children.map(({ path, node: child }, idx) => ({
+    id: path,
+    name: child.nombre,
+    url: `/categoria/${path}`,
+    countStr: `${30 + (idx * 17) % 180} refs`,
+    emoji: '🏷️',
+    isActive: taxPath === path,
+  }));
+}
 ---
 
 <!doctype html>
@@ -105,146 +314,360 @@ const productSchema = isLeaf ? {
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
-    {productSchema && <script type="application/ld+json" set:html={JSON.stringify(productSchema)} />}
+    {itemListSchema && <script type="application/ld+json" set:html={JSON.stringify(itemListSchema)} />}
   </head>
   <body>
     <Nav />
 
-    <header class="top">
-      <h1>{node.nombre}</h1>
-      <h2 class="page-subtitle">{node.h1}</h2>
-      <p class="lead">
-        {isLeaf
-          ? `Comparación en tiempo real · ${city.name}`
-          : `${children.length} subcategorías · ${cat.nombre}`}
-      </p>
-    </header>
-
-    <main class="tax-page">
-      <!-- Breadcrumb -->
-      <nav class="breadcrumb" aria-label="Navegación">
-        {crumbData.map((c, i) => (
-          <>
-            {i > 0 && <span aria-hidden="true">›</span>}
-            {i < crumbData.length - 1
-              ? <a href={c.item.replace(BASE, '')}>{c.name}</a>
-              : <span aria-current="page">{c.name}</span>}
-          </>
-        ))}
+    <main class="cat-page-container">
+      {/* ── Miga de pan (Breadcrumb) ─────────────────────────────────── */}
+      <nav class="breadcrumb-nav" aria-label="Navegación de miga de pan">
+        <ol class="breadcrumb-list">
+          {crumbData.map((c, i) => (
+            <li class="breadcrumb-item">
+              {i > 0 && <span class="breadcrumb-sep" aria-hidden="true">›</span>}
+              {i < crumbData.length - 1 ? (
+                <a href={c.item.replace(BASE, '')} class="breadcrumb-link">{c.name}</a>
+              ) : (
+                <span class="breadcrumb-current" aria-current="page">{c.name}</span>
+              )}
+            </li>
+          ))}
+        </ol>
       </nav>
+
+      {/* ── Huincha Arriba (Carrusel de Subcategorías y Marcas) ────────── */}
+      {huinchaItems.length > 0 && (
+        <CategoryHuincha
+          kicker={huinchaNav?.kicker || (isCelularesCat ? 'LÍNEAS Y MARCAS OFICIALES DE CELULARES' : `SUBCATEGORÍAS DE ${node.nombre.toUpperCase()}`)}
+          subtitle={huinchaNav?.subtitle || (isCelularesCat ? 'Navegue entre nuestras familias de telefonía oficial con envíos a toda Colombia y precios en tiempo real' : 'Navegue entre nuestras subcategorías con precios actualizados')}
+          items={huinchaItems}
+        />
+      )}
 
       {errorMsg && <div class="error-banner" role="alert">{errorMsg}</div>}
 
-      {/* Nodo con hijos → mostrar subcategorías */}
-      {!isLeaf && children.length > 0 && (
-        <section class="children-section" aria-label={`Subcategorías de ${node.nombre}`}>
-          <ul class="children-grid" role="list">
-            {children.map(({ path, node: child }) => (
-              <li>
-                <a href={`/categoria/${path}`} class="child-card">
-                  <span class="child-nombre">{child.nombre}</span>
-                  <span class="child-cta">Ver precios →</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {/* ── Botón móvil para abrir filtros ──────────────────────────── */}
+      <div class="mobile-filter-trigger-bar">
+        <button type="button" class="btn-mobile-filters" id="btn-open-mobile-filters">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="21" x2="4" y2="14"></line>
+            <line x1="4" y1="10" x2="4" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12" y2="3"></line>
+            <line x1="20" y1="21" x2="20" y2="16"></line>
+            <line x1="20" y1="12" x2="20" y2="3"></line>
+            <line x1="1" y1="14" x2="7" y2="14"></line>
+            <line x1="9" y1="8" x2="15" y2="8"></line>
+            <line x1="17" y1="16" x2="23" y2="16"></line>
+          </svg>
+          <span>Filtros y Ordenación</span>
+        </button>
+      </div>
 
-      {/* Veredicto ganador */}
-      {verdict && (
-        <section class="verdict-box" aria-label="Veredicto">
-          <div class="verdict-winner">
-            {verdict.image && (
-              <img src={verdict.image} alt={verdict.name} class="verdict-img" width="80" height="80" loading="eager" />
-            )}
-            <div class="verdict-text">
-              <p class="verdict-headline">{verdict.headline}</p>
-              <p class="verdict-price">
-                <strong>{cop(verdict.price)}</strong>
-                <span class="verdict-store">en {verdict.store_name}</span>
-              </p>
-              {verdict.detail && <p class="verdict-detail">{verdict.detail}</p>}
-              {verdict.payment_note && <p class="verdict-payment">💳 {verdict.payment_note}</p>}
+      {/* ── CONTENEDOR PRINCIPAL: TÍTULO + VEREDICTO + FILTROS (IZQUIERDA) Y GRILLA AL LADO (DERECHA) ── */}
+      <div class="cat-layout-wrapper">
+        {/* ── COLUMNA IZQUIERDA: TÍTULO, VEREDICTO Y FILTROS ──────────── */}
+        <aside class="cat-sidebar-col" id="cat-sidebar" aria-label="Filtros e información de catálogo">
+          {/* 1. TÍTULO DE LA CATEGORÍA */}
+          <div class="sidebar-cat-header">
+            <div class="cat-header-kicker">
+              <span class="cat-badge-dot"></span>
+              <span>CATÁLOGO ESPECIALIZADO</span>
+            </div>
+            <h1 class="cat-sidebar-title">{node.h1 || `${node.nombre} en Colombia`}</h1>
+            <p class="cat-sidebar-meta">
+              <strong>Resultados ({topOffers.length} ofertas)</strong>
+            </p>
+          </div>
+
+          {/* 2. VEREDICTO COMPACTO SOBRE LOS FILTROS */}
+          {verdict && (
+            <div class="sidebar-verdict-card" aria-label="Menor precio detectado en Colombia">
+              <div class="verdict-pill-header">
+                <span class="verdict-trophy">🏆</span>
+                <span class="verdict-tag">MENOR PRECIO HOY</span>
+              </div>
+
+              <div class="sidebar-verdict-body">
+                {verdict.image && (
+                  <div class="sidebar-verdict-img-wrap">
+                    <img src={verdict.image} alt={verdict.name} class="sidebar-verdict-img" width="68" height="68" loading="eager" />
+                  </div>
+                )}
+                <div class="sidebar-verdict-details">
+                  <h2 class="sidebar-verdict-name" title={verdict.name}>{verdict.headline}</h2>
+                  <div class="sidebar-verdict-pricing">
+                    <strong class="sidebar-verdict-price">{cop(verdict.price)}</strong>
+                    <span class="sidebar-verdict-store">en {verdict.store_name}</span>
+                  </div>
+                  {verdict.payment_note && (
+                    <span class="sidebar-verdict-payment">💳 {verdict.payment_note}</span>
+                  )}
+                </div>
+              </div>
+
+              <div class="sidebar-verdict-actions">
+                <a href={verdict.url} target="_blank" rel="noopener noreferrer" class="btn-verdict-buy">
+                  Ver en {verdict.store_name} →
+                </a>
+                <button
+                  type="button"
+                  class="btn-verdict-add"
+                  data-name={verdict.name}
+                  data-store={verdict.store_name}
+                  data-price={verdict.price}
+                  data-image={verdict.image ?? ''}
+                >
+                  ➕ Agregar a lista
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 3. FILTROS TÉCNICOS / COMERCIALES */}
+          <div class="sidebar-filters-box">
+            <div class="sidebar-header">
+              <div class="sidebar-title-group">
+                <span class="sidebar-icon">🎚️</span>
+                <h2 class="sidebar-title">Filtros Técnicos</h2>
+              </div>
+              <button type="button" class="btn-clear-all-filters" id="btn-clear-filters" title="Limpiar todos los filtros">
+                Limpiar
+              </button>
+              <button type="button" class="btn-close-mobile-filters" id="btn-close-mobile-filters" aria-label="Cerrar filtros">
+                ✕
+              </button>
+            </div>
+
+            <div class="sidebar-filters-body">
+              {/* Filtro: Tienda */}
+              {storeNames.length > 0 && (
+                <details class="filter-group" open>
+                  <summary class="filter-group-title">
+                    <span>Tiendas ({storeNames.length})</span>
+                    <span class="filter-chevron">▾</span>
+                  </summary>
+                  <div class="filter-group-content">
+                    {storeNames.map((sName) => (
+                      <label class="filter-checkbox-label">
+                        <input
+                          type="checkbox"
+                          class="filter-checkbox filter-store-check"
+                          value={sName}
+                        />
+                        <span class="filter-text">{sName}</span>
+                        <span class="filter-count">({storeCounts[sName]})</span>
+                      </label>
+                    ))}
+                  </div>
+                </details>
+              )}
+
+              {/* Filtro: Marcas */}
+              {brandNames.length > 0 && (
+                <details class="filter-group" open>
+                  <summary class="filter-group-title">
+                    <span>Marcas ({brandNames.length})</span>
+                    <span class="filter-chevron">▾</span>
+                  </summary>
+                  <div class="filter-group-content">
+                    {brandNames.map((bName) => (
+                      <label class="filter-checkbox-label">
+                        <input
+                          type="checkbox"
+                          class="filter-checkbox filter-brand-check"
+                          value={bName}
+                        />
+                        <span class="filter-text">{bName}</span>
+                        <span class="filter-count">({brandCounts[bName]})</span>
+                      </label>
+                    ))}
+                  </div>
+                </details>
+              )}
+
+              {/* Filtro: Rango de Precio */}
+              <details class="filter-group" open>
+                <summary class="filter-group-title">
+                  <span>Rango de Precio</span>
+                  <span class="filter-chevron">▾</span>
+                </summary>
+                <div class="filter-group-content">
+                  <label class="filter-radio-label">
+                    <input type="radio" name="price-range" class="filter-price-radio" value="all" checked />
+                    <span class="filter-text">Todos los precios</span>
+                  </label>
+                  <label class="filter-radio-label">
+                    <input type="radio" name="price-range" class="filter-price-radio" value="under-500k" />
+                    <span class="filter-text">Hasta $500.000</span>
+                  </label>
+                  <label class="filter-radio-label">
+                    <input type="radio" name="price-range" class="filter-price-radio" value="500k-1500k" />
+                    <span class="filter-text">$500.000 a $1.500.000</span>
+                  </label>
+                  <label class="filter-radio-label">
+                    <input type="radio" name="price-range" class="filter-price-radio" value="1500k-3000k" />
+                    <span class="filter-text">$1.500.000 a $3.000.000</span>
+                  </label>
+                  <label class="filter-radio-label">
+                    <input type="radio" name="price-range" class="filter-price-radio" value="over-3000k" />
+                    <span class="filter-text">Más de $3.000.000</span>
+                  </label>
+                </div>
+              </details>
+
+              {/* Filtro: Descuento / Ofertas */}
+              <details class="filter-group" open>
+                <summary class="filter-group-title">
+                  <span>Descuento</span>
+                  <span class="filter-chevron">▾</span>
+                </summary>
+                <div class="filter-group-content">
+                  <label class="filter-checkbox-label">
+                    <input type="checkbox" class="filter-checkbox" id="check-only-discounts" />
+                    <span class="filter-text">Solo productos con descuento</span>
+                  </label>
+                </div>
+              </details>
             </div>
           </div>
-          <div class="verdict-actions">
-            <a href={verdict.url} target="_blank" rel="noopener noreferrer" class="btn-buy">
-              Ver en {verdict.store_name} →
-            </a>
-            <button
-              type="button"
-              class="btn-add-list"
-              data-name={verdict.name}
-              data-store={verdict.store_name}
-              data-price={verdict.price}
-              data-image={verdict.image ?? ''}
-            >
-              ➕ Agregar a lista
+        </aside>
+
+        {/* ── COLUMNA DERECHA: GRILLA DE PRODUCTOS AL LADO DE LOS FILTROS ── */}
+        <section class="cat-content-col" aria-label="Resultados de productos ordenados por precio">
+          {/* Barra superior de resultados y selector de orden */}
+          <div class="cat-control-bar">
+            <div class="control-bar-left">
+              <span class="results-badge" id="results-count-badge">
+                <strong id="visible-count-number">{topOffers.length}</strong> piezas encontradas
+              </span>
+              <span class="page-subtitle-muted">Despacho express y envíos nacionales</span>
+              <div class="active-chips-container" id="active-chips-container">
+                <!-- Chips activos inyectados por JS -->
+              </div>
+            </div>
+
+            <div class="control-bar-right">
+              <label for="sort-select" class="sort-label">Ordenar:</label>
+              <select id="sort-select" class="sort-select">
+                <option value="price-asc" selected>Precio: Menor a Mayor (Recomendado)</option>
+                <option value="price-desc">Precio: Mayor a Menor</option>
+                <option value="discount-desc">Mayor Descuento %</option>
+                <option value="name-asc">Nombre: A - Z</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Grilla de Productos */}
+          {topOffers.length > 0 ? (
+            <div class="product-cards-grid" id="product-cards-grid" role="list">
+              {topOffers.map((o, idx) => {
+                const hasDiscount = o.list_price && o.list_price > o.price;
+                const discountPct = hasDiscount ? Math.round(((o.list_price - o.price) / o.list_price) * 100) : 0;
+                const brand = detectBrand(o.name);
+                const isWinner = idx === 0;
+
+                return (
+                  <article
+                    class="cat-product-card"
+                    data-store={o.store_name}
+                    data-brand={brand}
+                    data-price={o.price}
+                    data-discount={discountPct}
+                    data-name={o.name}
+                    role="listitem"
+                  >
+                    <div class="card-top-badges">
+                      <span class={`store-pill store-pill--${o.store_name.toLowerCase().replace(/[^a-z0-9]/g, '')}`}>
+                        {o.store_name}
+                      </span>
+                      {hasDiscount && discountPct > 0 && (
+                        <span class="discount-pill">-{discountPct}%</span>
+                      )}
+                      {isWinner && (
+                        <span class="winner-mini-badge">★ Menor precio</span>
+                      )}
+                    </div>
+
+                    <div class="card-thumb-wrap">
+                      {o.image ? (
+                        <img src={o.image} alt={o.name} class="card-thumb" width="140" height="140" loading="lazy" />
+                      ) : (
+                        <div class="card-thumb-fallback">📱</div>
+                      )}
+                    </div>
+
+                    <div class="card-content">
+                      <h3 class="card-title" title={o.name}>{o.name}</h3>
+                      {o.unit_price && (
+                        <div class="card-unit-price">{cop(o.unit_price)} / {o.unit_label}</div>
+                      )}
+
+                      <div class="card-pricing">
+                        <span class="card-current-price">{cop(o.price)}</span>
+                        {hasDiscount && (
+                          <span class="card-old-price">{cop(o.list_price)}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div class="card-actions">
+                      <a href={o.url} target="_blank" rel="noopener noreferrer" class="btn-card-buy">
+                        Ver en {o.store_name} →
+                      </a>
+                      <button
+                        type="button"
+                        class="btn-card-add"
+                        data-name={o.name}
+                        data-store={o.store_name}
+                        data-price={o.price}
+                        data-image={o.image ?? ''}
+                        title="Añadir a mi lista de compras activa"
+                      >
+                        ➕
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : null}
+
+          {/* Estado de sin resultados */}
+          <div class="no-filter-results" id="no-filter-results" style={topOffers.length > 0 ? "display: none;" : "display: block;"}>
+            <div class="no-results-icon">🔎</div>
+            <h3>No encontramos resultados con los filtros actuales</h3>
+            <p>Intenta desmarcar algunos filtros o restablecer la búsqueda.</p>
+            <button type="button" class="btn-reset-filters-cta" id="btn-reset-filters-cta">
+              Restablecer filtros
             </button>
           </div>
         </section>
-      )}
-
-      {/* Lista de tiendas */}
-      {topOffers.length > 0 && (
-        <section class="offers-section" aria-label="Precios por tienda">
-          <h2>Precios por tienda</h2>
-          <ul class="offers-list" role="list">
-            {topOffers.map((o, i) => (
-              <li class={`offer-row ${i === 0 ? 'offer-row--winner' : ''}`}>
-                <div class="offer-row-left">
-                  {o.image && <img src={o.image} alt={o.name} class="offer-thumb" width="48" height="48" loading="lazy" />}
-                  <div class="offer-row-info">
-                    <span class="offer-store">{o.store_name}</span>
-                    <span class="offer-name">{o.name}</span>
-                    {o.unit_price && <span class="offer-unit">{cop(o.unit_price)} / {o.unit_label}</span>}
-                  </div>
-                </div>
-                <div class="offer-row-right">
-                  <span class="offer-price">{cop(o.price)}</span>
-                  {o.list_price && o.list_price > o.price && <span class="offer-list-price">{cop(o.list_price)}</span>}
-                  <a href={o.url} target="_blank" rel="noopener noreferrer" class="offer-link">Ver →</a>
-                  <button
-                    type="button"
-                    class="btn-add-list-sm"
-                    data-name={o.name}
-                    data-store={o.store_name}
-                    data-price={o.price}
-                    data-image={o.image ?? ''}
-                  >➕</button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {topOffers.length === 0 && !errorMsg && isLeaf && (
-        <div class="no-results">
-          <p>No encontramos resultados para <strong>{node.nombre}</strong> en este momento.</p>
-          <a href={`/categoria/${catId}`} class="btn-home">Ver más en {cat.nombre} →</a>
-        </div>
-      )}
-
-      <div class="cta-home">
-        <p>¿Quieres comparar otro producto o armar tu lista del mercado?</p>
-        <a href="/" class="btn-home">Ir al comparador →</a>
       </div>
+
+      {/* ── Huincha Inferior (SEO y FAQ con Schema FAQPage) ───────────── */}
+      <CategorySeoFaq
+        categoryName={node.nombre}
+        isTechCategory={catId === 'tecnologia'}
+      />
     </main>
 
     <AddToListModal />
 
     <footer class="site-footer">
-      <p>© {new Date().getFullYear()} Mercado Lista · Precios consultados en tiempo real en Bogotá</p>
+      <p>© {new Date().getFullYear()} Mercado Lista · Comparador de precios en tiempo real para Colombia</p>
     </footer>
 
+    {/* Scripts interactivos para filtros laterales, ordenación instantánea y modal de listas */}
     <script>
       import { openCatAddModal } from '../../scripts/catAddToList';
+
+      // Modal para agregar a lista
       document.addEventListener('click', (e) => {
-        const btn = (e.target as HTMLElement).closest<HTMLElement>('.btn-add-list, .btn-add-list-sm');
+        const btn = (e.target as HTMLElement).closest<HTMLElement>('.btn-verdict-add, .btn-card-add');
         if (!btn) return;
         e.preventDefault();
         openCatAddModal({
@@ -254,73 +677,1081 @@ const productSchema = isLeaf ? {
           image:      btn.dataset.image || undefined,
         });
       });
+
+      // LÓGICA DE FILTROS A LA IZQUIERDA + ORDENACIÓN POR PRECIO
+      const sidebar = document.getElementById('cat-sidebar');
+      const grid = document.getElementById('product-cards-grid');
+      const sortSelect = document.getElementById('sort-select') as HTMLSelectElement | null;
+      const visibleCountEl = document.getElementById('visible-count-number');
+      const activeChipsEl = document.getElementById('active-chips-container');
+      const clearBtn = document.getElementById('btn-clear-filters');
+      const noResultsBox = document.getElementById('no-filter-results');
+      const resetCtaBtn = document.getElementById('btn-reset-filters-cta');
+
+      // Móvil
+      const openMobileBtn = document.getElementById('btn-open-mobile-filters');
+      const closeMobileBtn = document.getElementById('btn-close-mobile-filters');
+
+      if (openMobileBtn && sidebar) {
+        openMobileBtn.addEventListener('click', () => {
+          sidebar.classList.add('cat-sidebar--mobile-open');
+        });
+      }
+
+      if (closeMobileBtn && sidebar) {
+        closeMobileBtn.addEventListener('click', () => {
+          sidebar.classList.remove('cat-sidebar--mobile-open');
+        });
+      }
+
+      function applyFiltersAndSort() {
+        if (!grid) return;
+        const cards = Array.from(grid.querySelectorAll<HTMLElement>('.cat-product-card'));
+        if (cards.length === 0) return;
+
+        // 1. Tiendas seleccionadas
+        const selectedStores = Array.from(document.querySelectorAll<HTMLInputElement>('.filter-store-check:checked')).map(c => c.value);
+
+        // 2. Marcas seleccionadas
+        const selectedBrands = Array.from(document.querySelectorAll<HTMLInputElement>('.filter-brand-check:checked')).map(c => c.value);
+
+        // 3. Rango de precio
+        const priceRadio = document.querySelector<HTMLInputElement>('.filter-price-radio:checked');
+        const priceVal = priceRadio ? priceRadio.value : 'all';
+
+        // 4. Solo con descuento
+        const discountCheck = document.getElementById('check-only-discounts') as HTMLInputElement | null;
+        const onlyDiscounts = discountCheck ? discountCheck.checked : false;
+
+        let visibleCount = 0;
+
+        cards.forEach((card) => {
+          const store = card.dataset.store || '';
+          const brand = card.dataset.brand || '';
+          const price = Number(card.dataset.price || 0);
+          const discount = Number(card.dataset.discount || 0);
+
+          let match = true;
+
+          // Tienda
+          if (selectedStores.length > 0 && !selectedStores.includes(store)) {
+            match = false;
+          }
+
+          // Marca
+          if (match && selectedBrands.length > 0 && !selectedBrands.includes(brand)) {
+            match = false;
+          }
+
+          // Rango de precio
+          if (match && priceVal !== 'all') {
+            if (priceVal === 'under-500k' && price > 500000) match = false;
+            else if (priceVal === '500k-1500k' && (price < 500000 || price > 1500000)) match = false;
+            else if (priceVal === '1500k-3000k' && (price < 1500000 || price > 3000000)) match = false;
+            else if (priceVal === 'over-3000k' && price < 3000000) match = false;
+          }
+
+          // Descuento
+          if (match && onlyDiscounts && discount <= 0) {
+            match = false;
+          }
+
+          if (match) {
+            card.style.display = 'flex';
+            visibleCount++;
+          } else {
+            card.style.display = 'none';
+          }
+        });
+
+        // 5. Ordenación
+        const sortVal = sortSelect ? sortSelect.value : 'price-asc';
+        cards.sort((a, b) => {
+          const priceA = Number(a.dataset.price || 0);
+          const priceB = Number(b.dataset.price || 0);
+          const discA = Number(a.dataset.discount || 0);
+          const discB = Number(b.dataset.discount || 0);
+          const nameA = (a.dataset.name || '').toLowerCase();
+          const nameB = (b.dataset.name || '').toLowerCase();
+
+          if (sortVal === 'price-asc') return priceA - priceB;
+          if (sortVal === 'price-desc') return priceB - priceA;
+          if (sortVal === 'discount-desc') return discB - discA;
+          if (sortVal === 'name-asc') return nameA.localeCompare(nameB);
+          return 0;
+        });
+
+        cards.forEach((card) => grid.appendChild(card));
+
+        // 6. Actualizar contador
+        if (visibleCountEl) visibleCountEl.textContent = String(visibleCount);
+
+        // 7. Mostrar estado de sin resultados si aplica
+        if (noResultsBox) {
+          noResultsBox.style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+
+        // 8. Renderizar chips activos
+        renderActiveChips(selectedStores, selectedBrands, priceVal, onlyDiscounts);
+      }
+
+      function renderActiveChips(stores: string[], brands: string[], priceVal: string, onlyDiscounts: boolean) {
+        if (!activeChipsEl) return;
+        activeChipsEl.innerHTML = '';
+
+        const hasAnyFilter = stores.length > 0 || brands.length > 0 || priceVal !== 'all' || onlyDiscounts;
+
+        stores.forEach((s) => {
+          const chip = document.createElement('span');
+          chip.className = 'active-filter-chip';
+          chip.innerHTML = `<span>Tienda: ${s}</span><button type="button" data-type="store" data-val="${s}">✕</button>`;
+          activeChipsEl.appendChild(chip);
+        });
+
+        brands.forEach((b) => {
+          const chip = document.createElement('span');
+          chip.className = 'active-filter-chip';
+          chip.innerHTML = `<span>Marca: ${b}</span><button type="button" data-type="brand" data-val="${b}">✕</button>`;
+          activeChipsEl.appendChild(chip);
+        });
+
+        if (priceVal !== 'all') {
+          const labels: Record<string, string> = {
+            'under-500k': '< $500K',
+            '500k-1500k': '$500K - $1.5M',
+            '1500k-3000k': '$1.5M - $3M',
+            'over-3000k': '> $3M',
+          };
+          const chip = document.createElement('span');
+          chip.className = 'active-filter-chip';
+          chip.innerHTML = `<span>Precio: ${labels[priceVal] || priceVal}</span><button type="button" data-type="price">✕</button>`;
+          activeChipsEl.appendChild(chip);
+        }
+
+        if (onlyDiscounts) {
+          const chip = document.createElement('span');
+          chip.className = 'active-filter-chip';
+          chip.innerHTML = `<span>Solo ofertas</span><button type="button" data-type="discount">✕</button>`;
+          activeChipsEl.appendChild(chip);
+        }
+
+        if (hasAnyFilter) {
+          const resetAll = document.createElement('button');
+          resetAll.type = 'button';
+          resetAll.className = 'btn-reset-chips';
+          resetAll.textContent = 'Restablecer';
+          resetAll.addEventListener('click', resetAllFilters);
+          activeChipsEl.appendChild(resetAll);
+        }
+      }
+
+      function resetAllFilters() {
+        document.querySelectorAll<HTMLInputElement>('.filter-store-check').forEach(c => c.checked = false);
+        document.querySelectorAll<HTMLInputElement>('.filter-brand-check').forEach(c => c.checked = false);
+        const allRadio = document.querySelector<HTMLInputElement>('.filter-price-radio[value="all"]');
+        if (allRadio) allRadio.checked = true;
+        const discountCheck = document.getElementById('check-only-discounts') as HTMLInputElement | null;
+        if (discountCheck) discountCheck.checked = false;
+        applyFiltersAndSort();
+      }
+
+      // Listeners
+      sidebar?.addEventListener('change', applyFiltersAndSort);
+      sortSelect?.addEventListener('change', applyFiltersAndSort);
+      clearBtn?.addEventListener('click', resetAllFilters);
+      resetCtaBtn?.addEventListener('click', resetAllFilters);
+
+      // Eliminar chip individual
+      activeChipsEl?.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button');
+        if (!btn || btn.classList.contains('btn-reset-chips')) return;
+        const type = btn.dataset.type;
+        const val = btn.dataset.val;
+
+        if (type === 'store' && val) {
+          const check = document.querySelector<HTMLInputElement>(`.filter-store-check[value="${val}"]`);
+          if (check) check.checked = false;
+        } else if (type === 'brand' && val) {
+          const check = document.querySelector<HTMLInputElement>(`.filter-brand-check[value="${val}"]`);
+          if (check) check.checked = false;
+        } else if (type === 'price') {
+          const allRadio = document.querySelector<HTMLInputElement>('.filter-price-radio[value="all"]');
+          if (allRadio) allRadio.checked = true;
+        } else if (type === 'discount') {
+          const discountCheck = document.getElementById('check-only-discounts') as HTMLInputElement | null;
+          if (discountCheck) discountCheck.checked = false;
+        }
+        applyFiltersAndSort();
+      });
+
+      // Ejecutar orden inicial
+      applyFiltersAndSort();
     </script>
 
     <style>
-      .tax-page { max-width: 860px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+      .cat-page-container {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 1.25rem 1rem 4.5rem;
+      }
 
-      .breadcrumb { display: flex; gap: 0.4rem; align-items: center; font-size: 0.875rem; color: #666; margin-bottom: 1.75rem; flex-wrap: wrap; }
-      .breadcrumb a { color: #0e6a45; text-decoration: none; }
-      .breadcrumb a:hover { text-decoration: underline; }
+      /* ── Breadcrumb ── */
+      .breadcrumb-nav {
+        margin-bottom: 1.25rem;
+      }
 
-      .error-banner { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; color: #856404; }
+      .breadcrumb-list {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        font-size: 0.84rem;
+        color: #64748b;
+      }
 
-      /* Subcategorías */
-      .children-grid { list-style: none; padding: 0; margin: 0 0 2.5rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem; }
-      .child-card { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border: 1.5px solid #e2e8f0; border-radius: 12px; text-decoration: none; color: inherit; transition: border-color 0.15s, box-shadow 0.15s; }
-      .child-card:hover { border-color: #0e6a45; box-shadow: 0 2px 12px rgba(14,106,69,0.12); }
-      .child-nombre { font-size: 0.95rem; font-weight: 600; }
-      .child-cta { font-size: 0.8rem; color: #0e6a45; font-weight: 500; }
+      .breadcrumb-item {
+        display: inline-flex;
+        align-items: center;
+      }
 
-      /* Veredicto */
-      .verdict-box { background: #f0faf5; border: 2px solid #0e6a45; border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; }
-      .verdict-winner { display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 1rem; }
-      .verdict-img { width: 80px; height: 80px; object-fit: contain; border-radius: 8px; background: #fff; flex-shrink: 0; }
-      .verdict-text { flex: 1; }
-      .verdict-headline { font-size: 1.1rem; font-weight: 600; color: #0e6a45; margin: 0 0 0.4rem; }
-      .verdict-price { display: flex; align-items: baseline; gap: 0.5rem; margin: 0 0 0.5rem; }
-      .verdict-price strong { font-size: 1.75rem; color: #0e6a45; }
-      .verdict-store { font-size: 0.9rem; color: #555; }
-      .verdict-detail { font-size: 0.875rem; color: #444; margin: 0 0 0.5rem; line-height: 1.5; }
-      .verdict-payment { font-size: 0.85rem; color: #555; background: #fff; border-radius: 8px; padding: 0.5rem 0.75rem; margin: 0.5rem 0 0; }
-      .btn-buy { display: inline-flex; align-items: center; gap: 0.4rem; background: #0e6a45; color: #fff; padding: 0.65rem 1.4rem; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: background 0.15s; }
-      .btn-buy:hover { background: #0a5236; }
+      .breadcrumb-sep {
+        margin: 0 0.45rem;
+        color: #94a3b8;
+      }
 
-      /* Ofertas */
-      .offers-section h2 { font-size: 1.1rem; margin-bottom: 1rem; }
-      .offers-list { list-style: none; padding: 0; margin: 0 0 2.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
-      .offer-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.9rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 12px; transition: border-color 0.15s; }
-      .offer-row:hover { border-color: #0e6a45; }
-      .offer-row--winner { border-color: #0e6a45; background: #f9fefc; }
-      .offer-row-left { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0; }
-      .offer-thumb { width: 48px; height: 48px; object-fit: contain; border-radius: 8px; background: #f8f8f8; flex-shrink: 0; }
-      .offer-row-info { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
-      .offer-store { font-weight: 600; font-size: 0.9rem; }
-      .offer-name { font-size: 0.8rem; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .offer-unit { font-size: 0.75rem; color: #888; }
-      .offer-row-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem; flex-shrink: 0; }
-      .offer-price { font-size: 1.1rem; font-weight: 700; color: #111; }
-      .offer-list-price { font-size: 0.8rem; color: #aaa; text-decoration: line-through; }
-      .offer-link { font-size: 0.8rem; color: #0e6a45; text-decoration: none; font-weight: 500; }
-      .offer-link:hover { text-decoration: underline; }
+      .breadcrumb-link {
+        color: #0e6a45;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.15s, text-decoration 0.15s;
+      }
 
-      .verdict-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
-      .btn-add-list { display: inline-flex; align-items: center; gap: 0.4rem; background: #fff; color: #0e6a45; border: 1.5px solid #0e6a45; padding: 0.65rem 1.2rem; border-radius: 999px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: background 0.15s; }
-      .btn-add-list:hover { background: #e7f6ee; }
-      .btn-add-list-sm { background: none; border: none; cursor: pointer; font-size: 0.95rem; padding: 0 0.1rem; opacity: 0.65; transition: opacity 0.12s; }
-      .btn-add-list-sm:hover { opacity: 1; }
-      .no-results { text-align: center; padding: 3rem 1rem; color: #666; }
-      .cta-home { background: #f8f9fa; border-radius: 12px; padding: 1.5rem; text-align: center; }
-      .cta-home p { color: #555; margin-bottom: 1rem; }
-      .btn-home { display: inline-flex; background: #0e6a45; color: #fff; padding: 0.65rem 1.4rem; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 0.95rem; }
-      .btn-home:hover { background: #0a5236; }
-      .site-footer { text-align: center; padding: 2rem 1rem; color: #999; font-size: 0.8rem; border-top: 1px solid #f0f0f0; }
+      .breadcrumb-link:hover {
+        color: #084c31;
+        text-decoration: underline;
+      }
 
-      @media (max-width: 480px) {
-        .verdict-winner { flex-direction: column; }
-        .verdict-img { width: 60px; height: 60px; }
-        .verdict-price strong { font-size: 1.4rem; }
-        .offer-thumb { display: none; }
+      .breadcrumb-current {
+        color: #1e293b;
+        font-weight: 600;
+      }
+
+      .error-banner {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.5rem;
+        color: #856404;
+        font-size: 0.92rem;
+      }
+
+      /* ── BOTÓN FILTROS MÓVIL ── */
+      .mobile-filter-trigger-bar {
+        display: none;
+        margin-bottom: 1.25rem;
+      }
+
+      .btn-mobile-filters {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        width: 100%;
+        background: #ffffff;
+        border: 1.5px solid #0e6a45;
+        color: #0e6a45;
+        padding: 0.75rem;
+        border-radius: 10px;
+        font-size: 0.92rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      /* ── LAYOUT DE 2 COLUMNAS DIRECTO DEBAJO DE LA HUINCHA ── */
+      .cat-layout-wrapper {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 2rem;
+        align-items: flex-start;
+        margin-top: 1.5rem;
+        margin-bottom: 3.5rem;
+      }
+
+      /* ── COLUMNA IZQUIERDA: TÍTULO + VEREDICTO + FILTROS ── */
+      .cat-sidebar-col {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+      }
+
+      /* 1. TÍTULO EN LA BARRA LATERAL (ESTILO REFERENCIA) */
+      .sidebar-cat-header {
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1.25rem;
+      }
+
+      .cat-header-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #0e6a45;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-bottom: 0.4rem;
+      }
+
+      .cat-badge-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+      }
+
+      .cat-sidebar-title {
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0 0 0.4rem;
+        line-height: 1.25;
+      }
+
+      .cat-sidebar-meta {
+        margin: 0;
+        font-size: 0.88rem;
+        color: #64748b;
+      }
+
+      .cat-sidebar-meta strong {
+        color: #0e6a45;
+      }
+
+      /* 2. VEREDICTO COMPACTO EN SIDEBAR */
+      .sidebar-verdict-card {
+        background: linear-gradient(135deg, #f0faf5 0%, #e6f6ee 100%);
+        border: 2px solid #0e6a45;
+        border-radius: 16px;
+        padding: 1.15rem;
+        box-shadow: 0 4px 14px rgba(14, 106, 69, 0.08);
+      }
+
+      .verdict-pill-header {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: #0e6a45;
+        color: #ffffff;
+        border-radius: 999px;
+        padding: 0.22rem 0.65rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.85rem;
+      }
+
+      .sidebar-verdict-body {
+        display: flex;
+        gap: 0.85rem;
+        align-items: center;
+        margin-bottom: 0.85rem;
+      }
+
+      .sidebar-verdict-img-wrap {
+        width: 68px;
+        height: 68px;
+        border-radius: 10px;
+        background: #ffffff;
+        border: 1px solid #d1fae5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.3rem;
+        flex-shrink: 0;
+      }
+
+      .sidebar-verdict-img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+
+      .sidebar-verdict-details {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .sidebar-verdict-name {
+        font-size: 0.94rem;
+        font-weight: 700;
+        color: #084c31;
+        margin: 0 0 0.25rem;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .sidebar-verdict-pricing {
+        display: flex;
+        align-items: baseline;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+      }
+
+      .sidebar-verdict-price {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #0e6a45;
+      }
+
+      .sidebar-verdict-store {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #475569;
+      }
+
+      .sidebar-verdict-payment {
+        display: inline-block;
+        background: #ffffff;
+        border: 1px solid #a7f3d0;
+        border-radius: 6px;
+        padding: 0.15rem 0.45rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #047857;
+        margin-top: 0.35rem;
+      }
+
+      .sidebar-verdict-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+      }
+
+      .btn-verdict-buy {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #0e6a45;
+        color: #ffffff;
+        padding: 0.6rem 1rem;
+        border-radius: 999px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 0.84rem;
+        transition: background 0.15s;
+        text-align: center;
+      }
+
+      .btn-verdict-buy:hover {
+        background: #084c31;
+      }
+
+      .btn-verdict-add {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        color: #0e6a45;
+        border: 1.5px solid #0e6a45;
+        padding: 0.55rem 1rem;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 0.82rem;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+
+      .btn-verdict-add:hover {
+        background: #ecfdf5;
+      }
+
+      /* 3. FILTROS EN SIDEBAR */
+      .sidebar-filters-box {
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1.25rem;
+      }
+
+      .sidebar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 0.85rem;
+        border-bottom: 1.5px solid #f1f5f9;
+        margin-bottom: 1rem;
+      }
+
+      .sidebar-title-group {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+
+      .sidebar-icon {
+        font-size: 1.1rem;
+      }
+
+      .sidebar-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+      }
+
+      .btn-clear-all-filters {
+        background: none;
+        border: none;
+        color: #0e6a45;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        transition: background 0.15s;
+      }
+
+      .btn-clear-all-filters:hover {
+        background: #f0faf5;
+        text-decoration: underline;
+      }
+
+      .btn-close-mobile-filters {
+        display: none;
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        cursor: pointer;
+        color: #64748b;
+      }
+
+      .sidebar-filters-body {
+        display: flex;
+        flex-direction: column;
+        gap: 1.1rem;
+      }
+
+      .filter-group {
+        border-bottom: 1px solid #f1f5f9;
+        padding-bottom: 0.9rem;
+      }
+
+      .filter-group:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+
+      .filter-group-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #1e293b;
+        cursor: pointer;
+        user-select: none;
+        list-style: none;
+        margin-bottom: 0.65rem;
+      }
+
+      .filter-group-title::-webkit-details-marker {
+        display: none;
+      }
+
+      .filter-chevron {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        transition: transform 0.2s;
+      }
+
+      .filter-group[open] .filter-chevron {
+        transform: rotate(180deg);
+      }
+
+      .filter-group-content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+        padding-left: 0.2rem;
+        max-height: 220px;
+        overflow-y: auto;
+      }
+
+      .filter-checkbox-label, .filter-radio-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.84rem;
+        color: #334155;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .filter-checkbox-label:hover, .filter-radio-label:hover {
+        color: #0e6a45;
+      }
+
+      .filter-checkbox, .filter-price-radio {
+        accent-color: #0e6a45;
+        cursor: pointer;
+        width: 16px;
+        height: 16px;
+      }
+
+      .filter-text {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .filter-count {
+        font-size: 0.75rem;
+        color: #94a3b8;
+      }
+
+      /* ── COLUMNA DERECHA: GRILLA DE PRODUCTOS AL LADO ── */
+      .cat-content-col {
+        min-width: 0;
+      }
+
+      .cat-control-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.85rem 1.15rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .control-bar-left {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .results-badge {
+        font-size: 0.95rem;
+        color: #1e293b;
+        font-weight: 600;
+      }
+
+      .results-badge strong {
+        color: #0e6a45;
+        font-size: 1.15rem;
+      }
+
+      .page-subtitle-muted {
+        font-size: 0.82rem;
+        color: #64748b;
+      }
+
+      .active-chips-container {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        width: 100%;
+        margin-top: 0.25rem;
+      }
+
+      :global(.active-filter-chip) {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        color: #1e293b;
+        border-radius: 999px;
+        padding: 0.22rem 0.65rem;
+        font-size: 0.76rem;
+        font-weight: 600;
+      }
+
+      :global(.active-filter-chip button) {
+        background: none;
+        border: none;
+        color: #64748b;
+        cursor: pointer;
+        font-size: 0.75rem;
+        padding: 0;
+        line-height: 1;
+      }
+
+      :global(.active-filter-chip button:hover) {
+        color: #ef4444;
+      }
+
+      :global(.btn-reset-chips) {
+        background: #fee2e2;
+        border: 1px solid #fca5a5;
+        color: #b91c1c;
+        border-radius: 999px;
+        padding: 0.22rem 0.65rem;
+        font-size: 0.76rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .control-bar-right {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .sort-label {
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: #475569;
+      }
+
+      .sort-select {
+        background: #ffffff;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 0.4rem 0.75rem;
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: #1e293b;
+        cursor: pointer;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+
+      .sort-select:focus {
+        border-color: #0e6a45;
+      }
+
+      /* ── Grilla de Tarjetas de Productos ── */
+      .product-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        gap: 1.25rem;
+      }
+
+      .cat-product-card {
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1.15rem;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+        position: relative;
+      }
+
+      .cat-product-card:hover {
+        transform: translateY(-4px);
+        border-color: #0e6a45;
+        box-shadow: 0 6px 20px rgba(14, 106, 69, 0.1);
+      }
+
+      .card-top-badges {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.4rem;
+        margin-bottom: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .store-pill {
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
+        background: #f1f5f9;
+        color: #334155;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .store-pill--falabella {
+        background: #0e6a45;
+        color: #ffffff;
+      }
+
+      .store-pill--alkosto, .store-pill--ktronix {
+        background: #1e3a8a;
+        color: #ffffff;
+      }
+
+      .store-pill--exito {
+        background: #fef08a;
+        color: #854d0e;
+      }
+
+      .store-pill--jumbo {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
+      .store-pill--carulla {
+        background: #ecfdf5;
+        color: #065f46;
+      }
+
+      .store-pill--d1 {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+
+      .discount-pill {
+        font-size: 0.72rem;
+        font-weight: 800;
+        background: #ef4444;
+        color: #ffffff;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+      }
+
+      .winner-mini-badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #0e6a45;
+        background: #d1fae5;
+        padding: 0.2rem 0.5rem;
+        border-radius: 999px;
+      }
+
+      .card-thumb-wrap {
+        width: 100%;
+        height: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0.85rem;
+        padding: 0.5rem;
+        background: #fbfcfd;
+        border-radius: 10px;
+      }
+
+      .card-thumb {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+
+      .card-thumb-fallback {
+        font-size: 3rem;
+      }
+
+      .card-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 1rem;
+      }
+
+      .card-title {
+        font-size: 0.92rem;
+        font-weight: 600;
+        color: #0f172a;
+        line-height: 1.35;
+        margin: 0 0 0.35rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .card-unit-price {
+        font-size: 0.76rem;
+        color: #64748b;
+        margin-bottom: 0.4rem;
+      }
+
+      .card-pricing {
+        margin-top: auto;
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+      }
+
+      .card-current-price {
+        font-size: 1.28rem;
+        font-weight: 800;
+        color: #0e6a45;
+      }
+
+      .card-old-price {
+        font-size: 0.82rem;
+        color: #94a3b8;
+        text-decoration: line-through;
+      }
+
+      .card-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
+
+      .btn-card-buy {
+        flex: 1;
+        background: #0e6a45;
+        color: #ffffff;
+        text-align: center;
+        padding: 0.6rem 0.8rem;
+        border-radius: 999px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 0.82rem;
+        transition: background 0.15s;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .btn-card-buy:hover {
+        background: #084c31;
+      }
+
+      .btn-card-add {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 1.5px solid #cbd5e1;
+        background: #ffffff;
+        color: #0e6a45;
+        font-size: 0.95rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.15s;
+      }
+
+      .btn-card-add:hover {
+        border-color: #0e6a45;
+        background: #ecfdf5;
+        transform: scale(1.08);
+      }
+
+      .no-filter-results {
+        text-align: center;
+        padding: 3.5rem 1.5rem;
+        background: #f8fafc;
+        border: 1.5px dashed #cbd5e1;
+        border-radius: 16px;
+      }
+
+      .no-results-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .no-filter-results h3 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0 0 0.4rem;
+      }
+
+      .no-filter-results p {
+        font-size: 0.88rem;
+        color: #64748b;
+        margin: 0 0 1.25rem;
+      }
+
+      .btn-reset-filters-cta {
+        background: #0e6a45;
+        color: #ffffff;
+        border: none;
+        padding: 0.65rem 1.4rem;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        cursor: pointer;
+      }
+
+      .site-footer {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        color: #94a3b8;
+        font-size: 0.82rem;
+        border-top: 1px solid #f1f5f9;
+        margin-top: 2rem;
+      }
+
+      /* ── RESPONSIVE MÓVIL ── */
+      @media (max-width: 900px) {
+        .cat-layout-wrapper {
+          grid-template-columns: 1fr;
+        }
+
+        .mobile-filter-trigger-bar {
+          display: block;
+        }
+
+        .cat-sidebar-col {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 85%;
+          max-width: 320px;
+          height: 100vh;
+          max-height: 100vh;
+          z-index: 9999;
+          transform: translateX(-100%);
+          transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
+          background: #ffffff;
+          overflow-y: auto;
+          padding: 1rem;
+          border-radius: 0;
+        }
+
+        .cat-sidebar-col.cat-sidebar--mobile-open {
+          transform: translateX(0);
+        }
+
+        .btn-close-mobile-filters {
+          display: block;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .cat-sidebar-title {
+          font-size: 1.4rem;
+        }
+        .product-cards-grid {
+          grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+          gap: 0.85rem;
+        }
+        .card-thumb-wrap {
+          height: 120px;
+        }
+        .card-current-price {
+          font-size: 1.1rem;
+        }
+        .cat-control-bar {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .control-bar-right {
+          width: 100%;
+          justify-content: space-between;
+        }
+        .sort-select {
+          flex: 1;
+        }
       }
     </style>
   </body>

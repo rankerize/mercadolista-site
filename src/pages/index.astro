@@ -7,6 +7,8 @@ import AddToListModal from '../components/AddToListModal.astro';
 import CookieBanner from '../components/CookieBanner.astro';
 import GoogleAnalytics from '../components/GoogleAnalytics.astro';
 import AssistantChatWidget from '../components/AssistantChatWidget.astro';
+import CategoryBanner from '../components/CategoryBanner.astro';
+import ShowcaseBanner from '../components/ShowcaseBanner.astro';
 ---
 
 <!doctype html>
@@ -51,7 +53,8 @@ import AssistantChatWidget from '../components/AssistantChatWidget.astro';
         <img src="/logo-canasta.png" alt="" width="436" height="398" />
       </div>
       <div class="hero-copy">
-        <h1 class="hero-title">¿Dónde conviene comprarlo?</h1>
+        <h1 class="hero-kicker">Comparador de precios</h1>
+        <h2 class="hero-title">¿Dónde conviene comprarlo?</h2>
         <p class="lead" id="lead">
           Compara el precio publicado en tiendas de Colombia y te dice en cuál está el más bajo.
         </p>
@@ -95,6 +98,9 @@ import AssistantChatWidget from '../components/AssistantChatWidget.astro';
               minlength="2"
               maxlength="80"
             />
+            <button type="button" id="search-camera-btn" class="search-camera-btn" title="Buscar por foto o código de barras" aria-label="Buscar por foto o código de barras">
+              📷
+            </button>
             <button type="submit" id="submit">Comparar</button>
             <div id="query-autocomplete" class="autocomplete-dropdown" style="top: 100%; left: 0; margin-top: 4px;"></div>
           </div>
@@ -179,12 +185,13 @@ import AssistantChatWidget from '../components/AssistantChatWidget.astro';
 
           <div class="list-actions">
             <button type="button" id="add-row" class="ghost">Agregar producto</button>
+            <button type="button" id="list-camera-btn" class="ghost" style="color: var(--pine); font-weight: 500;" title="Fotografiar alacena o escanear código">📷 Escanear producto</button>
             <button type="submit" id="list-submit">Comparar lista</button>
           </div>
         </div>
 
-        <!-- Explorador de Categorías Populares -->
-        <div class="categories-container" id="categories-container">
+        <!-- Explorador de Categorías Populares (Mantenido para compatibilidad de scripts) -->
+        <div class="categories-container" id="categories-container" hidden>
           <div class="category-chips-header">
             <span class="category-chips-title">Explorar por categorías</span>
           </div>
@@ -199,6 +206,12 @@ import AssistantChatWidget from '../components/AssistantChatWidget.astro';
           <button type="button" data-query="televisor 55">Televisor 55"</button>
         </div>
       </form>
+
+      <!-- Banner de Categorías Retail (Imagen 1) -->
+      <CategoryBanner />
+
+      <!-- Módulo Vitrina "Encontrar de una" (Imagen 2) -->
+      <ShowcaseBanner />
 
       <p id="status" class="status" role="status"></p>
       <section id="results" class="results" hidden></section>

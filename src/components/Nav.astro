@@ -1,5 +1,6 @@
 ---
 import { CATEGORIES } from '../lib/catalog';
+import CameraSearchModal from './CameraSearchModal.astro';
 const pathname = Astro.url.pathname;
 const isHome = pathname === '/';
 ---
@@ -40,6 +41,9 @@ const isHome = pathname === '/';
         autocomplete="off"
         aria-label="Buscar productos"
       />
+      <button type="button" id="ml-nav-camera-btn" class="ml-nav-camera-btn" title="Buscar por foto o código de barras" aria-label="Buscar por foto o código de barras">
+        📷
+      </button>
       <button type="submit" class="ml-search-btn" aria-label="Buscar">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="11" cy="11" r="8"/>
@@ -134,7 +138,38 @@ const isHome = pathname === '/';
   </div>
 </aside>
 
+<CameraSearchModal />
+
 <script>
+  import { initCameraSearch } from '../scripts/cameraSearch';
+
+  const camModal = initCameraSearch({
+    onSearchSelected: (query) => {
+      if (window.location.pathname === '/') {
+        const mainInput = document.getElementById('query') as HTMLInputElement | null;
+        const mainForm  = document.getElementById('search-form') as HTMLFormElement | null;
+        if (mainInput && mainForm) {
+          mainInput.value = query;
+          mainForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+          return;
+        }
+      }
+      window.location.href = `/?q=${encodeURIComponent(query)}`;
+    },
+  });
+
+  const navCameraBtn = document.getElementById('ml-nav-camera-btn');
+  navCameraBtn?.addEventListener('click', () => camModal.open('photo'));
+
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement | null;
+    const btn = target?.closest('#search-camera-btn, #list-camera-btn');
+    if (btn) {
+      e.preventDefault();
+      camModal.open('photo');
+    }
+  });
+
   // Drawer
   const menuBtn  = document.getElementById('ml-menu-btn')!;
   const drawer   = document.getElementById('ml-drawer')!;

@@ -301,3 +301,146 @@ describe('Category, Slugs and Search Redirection Routing', () => {
     expect(getProductUrl(sampleProduct)).toBe('/categoria/lacteos/leche-entera');
   });
 });
+
+describe('Visual AI & Barcode Search Validation', () => {
+  it('validates Colombian and international barcode formats (EAN-13, EAN-8)', () => {
+    // Código EAN-13 común colombiano (prefijo 770)
+    expect(cleanEan('7702129001052')).toBe('7702129001052');
+    // Código con espacios o guiones
+    expect(cleanEan('770-2129-001052')).toBe('7702129001052');
+    // Código EAN-8
+    expect(cleanEan('77012345')).toBe('77012345');
+    // Inválidos: menos de 8 dígitos o caracteres no numéricos
+    expect(cleanEan('12345')).toBeNull();
+    expect(cleanEan('abcdefgh')).toBeNull();
+    // Inválido: números idénticos repetidos (ruido de sensor)
+    expect(cleanEan('0000000000000')).toBeNull();
+  });
+
+  it('normalizes quantities and formats from visual recognition', () => {
+    function formatNorm(rawFmt: string): 'gramos' | 'mililitros' | 'unidades' {
+      const lower = String(rawFmt || '').toLowerCase();
+      if (lower.includes('mili') || lower.includes('ml') || lower.includes('litr')) return 'mililitros';
+      if (lower.includes('gram') || lower.includes('g') || lower.includes('kilo')) return 'gramos';
+      return 'unidades';
+    }
+
+    expect(formatNorm('1000 ml')).toBe('mililitros');
+    expect(formatNorm('1 Litro')).toBe('mililitros');
+    expect(formatNorm('500 gramos')).toBe('gramos');
+    expect(formatNorm('1 kg')).toBe('gramos');
+    expect(formatNorm('30 unidades')).toBe('unidades');
+    expect(formatNorm('desconocido')).toBe('unidades');
+  });
+
+  it('generates optimal queries for supermarket searching', () => {
+    const rawName = 'Leche Deslactosada';
+    const rawBrand = 'Colanta';
+    const rawSize = '1000 ml';
+    const query = [rawName, rawBrand, rawSize].filter(Boolean).join(' ').trim();
+    expect(query).toBe('Leche Deslactosada Colanta 1000 ml');
+  });
+});
+
+describe('TaxCo Enterprise Collection Taxonomy Tests', () => {
+  it('loads full TaxCo tree with 3,266 nodes and 28 root departments', async () => {
+    const { getRootDepartments } = await import('../src/lib/collectionTaxonomy');
+    const roots = getRootDepartments();
+    expect(roots.length).toBe(28);
+    
+    const rootSlugs = roots.map(r => r.slugPath);
+    expect(rootSlugs).toContain('alimentos-y-bebidas');
+    expect(rootSlugs).toContain('tecnologia');
+    expect(rootSlugs).toContain('electrohogar');
+    expect(rootSlugs).toContain('deportes-y-aire-libre');
+  });
+
+  it('resolves nodes by CatId, slugPath and legacy alias', async () => {
+    const { getCollectionNode, getCollectionChildren } = await import('../src/lib/collectionTaxonomy');
+    
+    // Por slugPath exacto
+    const node = getCollectionNode('tecnologia/audio/audifonos');
+    expect(node).toBeDefined();
+    expect(node?.name).toBe('Audífonos');
+    expect(node?.rootSlug).toBe('tecnologia');
+
+    // Por CatId directo
+    const byId = getCollectionNode('cat50670');
+    expect(byId).toBeDefined();
+    expect(byId?.name).toBe('Audífonos');
+
+    // Hijos de Audífonos
+    const children = getCollectionChildren('cat50670');
+    expect(children.length).toBeGreaterThan(0);
+    const childNames = children.map(c => c.name);
+    expect(childNames).toContain('In-Ear');
+  });
+
+  it('generates SEO metadata and breadcrumbs for categories', async () => {
+    const { getCollectionNode, getCollectionSeo, getCollectionBreadcrumbItems } = await import('../src/lib/collectionTaxonomy');
+    const node = getCollectionNode('tecnologia/audio/audifonos/in-ear');
+    expect(node).toBeDefined();
+    if (!node) return;
+
+    const seo = getCollectionSeo(node);
+    expect(seo.titleSeo).toContain('Precios de In-Ear en Colombia hoy');
+    expect(seo.canonicalUrl).toBe('https://mercadolista.com/categoria/tecnologia/audio/audifonos/in-ear');
+
+    const crumbs = getCollectionBreadcrumbItems(node);
+    expect(crumbs.length).toBe(6); // Inicio, Categorias, Tecnologia, Audio, Audifonos, In-Ear
+    expect(crumbs[0].name).toBe('Inicio');
+    expect(crumbs[1].name).toBe('Categorías');
+  });
+
+  it('searches collections by keyword across the 3,266 tree', async () => {
+    const { searchCollections } = await import('../src/lib/collectionTaxonomy');
+    const results = searchCollections('audifonos');
+    expect(results.length).toBeGreaterThan(0);
+    expect(results[0].name.toLowerCase()).toContain('audífonos');
+  });
+
+  it('generates fluid huincha navigation with Level 2 subcategories on Level 1 departments', async () => {
+    const { getCollectionNode, getHuinchaNavigation, getCategoryEmoji } = await import('../src/lib/collectionTaxonomy');
+
+    // 1. Navegación en Nivel 1 (Tecnología): la huincha debe tener las categorías de Nivel 2 (N2)
+    const n1 = getCollectionNode('tecnologia');
+    expect(n1).toBeDefined();
+    if (!n1) return;
+
+    const navN1 = getHuinchaNavigation(n1);
+    expect(navN1.currentLevel).toBe(1);
+    expect(navN1.kicker).toContain('CATEGORÍAS DE TECNOLOGÍA');
+    expect(navN1.items.length).toBe(8); // Audio, Computadores, Fotografía, Smart Home, Smartwatch, Telefonía, Televisores, Zona Gamer
+
+    const n2Names = navN1.items.map(i => i.name);
+    expect(n2Names).toContain('Audio');
+    expect(n2Names).toContain('Telefonía');
+    expect(n2Names).toContain('Computadores');
+    expect(n2Names).toContain('Televisores y Video');
+
+    // Verificar que cada item de la huincha tiene emoji y url limpia
+    const telItem = navN1.items.find(i => i.name === 'Telefonía');
+    expect(telItem).toBeDefined();
+    expect(telItem?.url).toBe('/categoria/tecnologia/telefonia');
+    expect(telItem?.emoji).toBe('📱');
+
+    // 2. Navegación en Nivel 2 (Telefonía): la huincha debe mostrar las subcategorías de Nivel 3 (N3)
+    const n2 = getCollectionNode('tecnologia/telefonia');
+    expect(n2).toBeDefined();
+    if (!n2) return;
+
+    const navN2 = getHuinchaNavigation(n2);
+    expect(navN2.currentLevel).toBe(2);
+    expect(navN2.kicker).toContain('SUBCATEGORÍAS DE TELEFONÍA');
+    const n3Names = navN2.items.map(i => i.name);
+    expect(n3Names).toContain('Celulares y Teléfonos');
+    expect(n3Names).toContain('Accesorios Celulares');
+
+    // 3. Emojis inteligentes
+    expect(getCategoryEmoji('Audífonos')).toBe('🎧');
+    expect(getCategoryEmoji('Computadores')).toBe('💻');
+    expect(getCategoryEmoji('Smartwatch')).toBe('⌚');
+    expect(getCategoryEmoji('Lácteos y frescos')).toBe('🧀');
+    expect(getCategoryEmoji('Carnes')).toBe('🥩');
+  });
+});

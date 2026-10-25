@@ -1,0 +1,408 @@
+---
+// src/components/CategorySeoFaq.astro
+// Huincha inferior de contenido SEO enriquecido y preguntas frecuentes (FAQ) con Schema FAQPage
+
+export interface FaqItem {
+  question: string;
+  answer: string;
+}
+
+export interface Props {
+  categoryName?: string;
+  isTechCategory?: boolean;
+  customFaqs?: FaqItem[];
+  customTitle?: string;
+  customDescription?: string;
+}
+
+const {
+  categoryName = 'Celulares y Teléfonos',
+  isTechCategory = true,
+  customFaqs,
+  customTitle,
+  customDescription,
+} = Astro.props;
+
+const DEFAULT_PHONE_FAQS: FaqItem[] = [
+  {
+    question: '¿Dónde comprar celulares más baratos en Colombia hoy?',
+    answer: 'Los precios de celulares varían constantemente según promociones bancarias, Cyberlunes, Black Friday y ofertas flash. En Colombia, tiendas como Falabella, Alkosto, Éxito y Jumbo alternan los precios más bajos de la semana. Mercado Lista compara en tiempo real todas estas tiendas para que encuentres el menor precio al instante sin tener que abrir cada sitio web.',
+  },
+  {
+    question: '¿Es seguro comprar celulares online en Falabella, Alkosto o Éxito?',
+    answer: 'Sí, es 100% seguro. Falabella, Alkosto, Ktronix y Éxito son distribuidores autorizados oficiales de marcas líderes como Apple, Samsung, Xiaomi y Motorola. Todos los equipos que comercializan son nuevos, sellados de fábrica, con garantía oficial colombiana de 1 año y factura electrónica válida para registro.',
+  },
+  {
+    question: '¿Qué significa que un celular esté homologado ante la CRC en Colombia?',
+    answer: 'La homologación por parte de la Comisión de Regulación de Comunicaciones (CRC) certifica que el teléfono cumple con las frecuencias electromagnéticas y redes móviles del país. Comprar celulares en tiendas oficiales reconocidas como Falabella o Éxito garantiza que el equipo está legalmente homologado y no será bloqueado por IMEI por los operadores móviles (Claro, Movistar, Tigo, WOM).',
+  },
+  {
+    question: '¿Cuáles son las marcas de celulares más recomendadas y vendidas en Colombia?',
+    answer: 'Las marcas con mayor cuota de mercado y soporte técnico en Colombia son Samsung (con sus populares líneas Galaxy A y Galaxy S), Apple (iPhone 13, 14, 15 y 16), Xiaomi (destacando por su relación calidad-precio en Redmi Note y Poco) y Motorola (con la familia Moto G y Edge).',
+  },
+  {
+    question: '¿Conviene comprar un celular libre o con plan de operador?',
+    answer: 'Comprar un celular libre te da total libertad: no quedas atado a contratos de permanencia con un operador, puedes cambiar de SIM card o de operador cuando quieras, o usar dos líneas en equipos Dual SIM. Además, al comparar precios libres en Falabella, Alkosto o Éxito, suele ser más económico que adquirirlo financiado a cuotas con operadores.',
+  },
+  {
+    question: '¿Qué celular comprar con un presupuesto menor a $1.000.000 COP?',
+    answer: 'En el rango inferior a 1 millón de pesos colombianos, los modelos más recomendados por rendimiento y batería son el Xiaomi Redmi Note 13, Samsung Galaxy A15 / A25 y Motorola Moto G24 / G54, todos con pantallas nítidas de 90Hz o 120Hz y baterías de larga duración de 5.000 mAh.',
+  },
+];
+
+const DEFAULT_GENERIC_FAQS: FaqItem[] = [
+  {
+    question: `¿Dónde encontrar los precios más bajos en ${categoryName} en Colombia?`,
+    answer: `Mercado Lista compara en tiempo real los catálogos de Éxito, D1, Jumbo, Carulla, Olímpica y Falabella para mostrarte qué tienda tiene el precio más económico por unidad y por paquete hoy.`,
+  },
+  {
+    question: '¿Cada cuánto tiempo se actualizan los precios en Mercado Lista?',
+    answer: 'Los precios se consultan en tiempo real directamente en las plataformas y APIs de los supermercados y tiendas aliadas cada vez que realizas una búsqueda o visitas una categoría.',
+  },
+  {
+    question: '¿Puedo armar mi lista de mercado completa y calcular el ahorro total?',
+    answer: 'Sí. Puedes añadir cualquier producto a tu lista activa tocando el botón «➕ Agregar a lista», comparar el costo de la canasta global en cada tienda y exportar el veredicto óptimo directamente a WhatsApp.',
+  },
+];
+
+const faqs = customFaqs && customFaqs.length > 0
+  ? customFaqs
+  : (isTechCategory ? DEFAULT_PHONE_FAQS : DEFAULT_GENERIC_FAQS);
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((faq) => ({
+    '@type': 'Question',
+    name: faq.question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: faq.answer,
+    },
+  })),
+};
+---
+
+<section class="seo-faq-section" aria-label="Información y preguntas frecuentes">
+  {/* Huincha SEO editorial */}
+  <article class="seo-editorial">
+    <div class="seo-header">
+      <span class="seo-kicker">GUÍA DE COMPRA INTELIGENTE · MERCADO LISTA</span>
+      <h2 class="seo-title">{customTitle || `Precios de ${categoryName} en Colombia: Guía de compra y ahorro`}</h2>
+    </div>
+
+    <div class="seo-body">
+      <p>
+        {customDescription || (
+          isTechCategory
+            ? `Comprar celulares y teléfonos en Colombia al mejor precio requiere comparar entre las principales cadenas de retail y tecnología: Falabella, Alkosto, Ktronix, Éxito y Jumbo. Cada tienda maneja alianzas bancarias, descuentos con tarjetas de crédito específicas (como Tarjeta Falabella CMR, Tarjeta Éxito Tuya o Crédito 20 Minutos Alkosto) y promociones de temporada que pueden significar diferencias de hasta un 35% en el mismo modelo.`
+            : `Encuentra las mejores ofertas de ${categoryName.toLowerCase()} en Colombia comparando en tiempo real en Éxito, D1, Jumbo, Carulla y Falabella. Ahorra en cada compra comparando el precio por gramo, mililitro o unidad de empaque.`
+        )}
+      </p>
+
+      {isTechCategory && (
+        <div class="seo-cards-grid">
+          <div class="seo-card">
+            <div class="seo-card-icon">⚡</div>
+            <h3 class="seo-card-title">Gama Alta & Flagships</h3>
+            <p class="seo-card-desc">
+              Modelos como el <strong>iPhone 16 / 15</strong> y <strong>Samsung Galaxy S24 / S25 Ultra</strong> ofrecen las mejores cámaras con teleobjetivo, acabados en titanio, procesadores de vanguardia (Apple A18 / Snapdragon 8 Gen 3) y soporte de software por hasta 7 años.
+            </p>
+          </div>
+
+          <div class="seo-card">
+            <div class="seo-card-icon">🎯</div>
+            <h3 class="seo-card-title">Gama Media Calidad-Precio</h3>
+            <p class="seo-card-desc">
+              El segmento más competido en Colombia con <strong>Samsung Galaxy A55</strong>, <strong>Xiaomi Redmi Note 13 Pro 5G</strong> y <strong>Motorola Edge 50</strong>. Pantallas AMOLED a 120Hz, carga rápida de hasta 67W y conectividad 5G por debajo de $1.800.000 COP.
+            </p>
+          </div>
+
+          <div class="seo-card">
+            <div class="seo-card-icon">🛡️</div>
+            <h3 class="seo-card-title">Garantía y Homologación CRC</h3>
+            <p class="seo-card-desc">
+              Comprar en canales retail formales (Falabella, Alkosto, Éxito) asegura que el equipo cuente con código de homologación registrado ante la Comisión de Regulación de Comunicaciones y no sea bloqueado en Claro, Tigo o Movistar.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div class="seo-tips-box">
+        <h3>💡 4 Consejos clave antes de comprar tu celular en Colombia:</h3>
+        <ol class="seo-tips-list">
+          <li><strong>Verifica el almacenamiento interno:</strong> Te recomendamos mínimo <strong>128 GB</strong> o preferiblemente <strong>256 GB</strong> para que no te quedes sin espacio con las fotos, videos y actualizaciones del sistema operativo.</li>
+          <li><strong>Elige al menos 6 GB u 8 GB de memoria RAM:</strong> Garantiza que tus aplicaciones de mensajería, redes sociales y juegos funcionen fluidos sin congelamientos ni recargas lentas.</li>
+          <li><strong>Batería y velocidad de carga:</strong> Busca modelos con batería de mínimo <strong>5.000 mAh</strong> y soporte de carga rápida (25W, 33W o 67W) para completar el día sin depender del cargador.</li>
+          <li><strong>Compara el precio en tiempo real en Mercado Lista:</strong> Antes de pagar, consulta nuestra tabla comparativa para asegurarte de cuál tienda tiene la oferta más baja en este instante.</li>
+        </ol>
+      </div>
+    </div>
+  </article>
+
+  {/* Huincha de Preguntas Frecuentes (FAQ) */}
+  <section class="faq-container" aria-label="Preguntas Frecuentes">
+    <div class="faq-header">
+      <span class="faq-badge">RESOLVEMOS TUS DUDAS</span>
+      <h2 class="faq-title">Preguntas Frecuentes sobre {categoryName}</h2>
+      <p class="faq-subtitle">Todo lo que necesitas saber antes de comprar en Colombia</p>
+    </div>
+
+    <div class="faq-accordion" role="region">
+      {faqs.map((faq, idx) => (
+        <details class="faq-item" open={idx === 0}>
+          <summary class="faq-question">
+            <span>{faq.question}</span>
+            <span class="faq-toggle-icon" aria-hidden="true">+</span>
+          </summary>
+          <div class="faq-answer">
+            <p>{faq.answer}</p>
+          </div>
+        </details>
+      ))}
+    </div>
+  </section>
+
+  {/* Schema FAQPage JSON-LD */}
+  <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+</section>
+
+<style>
+  .seo-faq-section {
+    margin-top: 3.5rem;
+    padding-top: 2.5rem;
+    border-top: 2px solid #e2e8f0;
+  }
+
+  /* Editorial SEO */
+  .seo-editorial {
+    margin-bottom: 3.5rem;
+  }
+
+  .seo-header {
+    margin-bottom: 1.25rem;
+  }
+
+  .seo-kicker {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #0e6a45;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: inline-block;
+    margin-bottom: 0.35rem;
+  }
+
+  .seo-title {
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.3;
+    margin: 0;
+  }
+
+  .seo-body p {
+    font-size: 0.95rem;
+    color: #475569;
+    line-height: 1.65;
+    margin-bottom: 1.5rem;
+  }
+
+  .seo-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0 2rem;
+  }
+
+  .seo-card {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.25rem;
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .seo-card:hover {
+    border-color: #0e6a45;
+    box-shadow: 0 4px 14px rgba(14, 106, 69, 0.08);
+    transform: translateY(-2px);
+  }
+
+  .seo-card-icon {
+    font-size: 1.6rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .seo-card-title {
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 0.45rem;
+  }
+
+  .seo-card-desc {
+    font-size: 0.86rem;
+    color: #64748b;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .seo-tips-box {
+    background: #f8fafc;
+    border-left: 4px solid #0e6a45;
+    border-radius: 0 12px 12px 0;
+    padding: 1.25rem 1.5rem;
+    margin: 1.75rem 0;
+  }
+
+  .seo-tips-box h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0e6a45;
+    margin: 0 0 0.85rem;
+  }
+
+  .seo-tips-list {
+    margin: 0;
+    padding-left: 1.25rem;
+    color: #334155;
+    font-size: 0.88rem;
+    line-height: 1.65;
+  }
+
+  .seo-tips-list li {
+    margin-bottom: 0.5rem;
+  }
+
+  /* FAQ Accordion */
+  .faq-container {
+    background: #fbfcfd;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 2rem 1.75rem;
+  }
+
+  .faq-header {
+    text-align: center;
+    margin-bottom: 1.75rem;
+  }
+
+  .faq-badge {
+    display: inline-block;
+    background: #e6f6ee;
+    color: #0e6a45;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    margin-bottom: 0.4rem;
+  }
+
+  .faq-title {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 0.35rem;
+  }
+
+  .faq-subtitle {
+    font-size: 0.88rem;
+    color: #64748b;
+    margin: 0;
+  }
+
+  .faq-accordion {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .faq-item {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .faq-item:hover {
+    border-color: #cbd5e1;
+  }
+
+  .faq-item[open] {
+    border-color: #0e6a45;
+    box-shadow: 0 2px 10px rgba(14, 106, 69, 0.06);
+  }
+
+  .faq-question {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.1rem 1.25rem;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1e293b;
+    list-style: none;
+    user-select: none;
+  }
+
+  .faq-question::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq-toggle-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #0e6a45;
+    font-size: 1.1rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s;
+  }
+
+  .faq-item[open] .faq-toggle-icon {
+    transform: rotate(45deg);
+    background: #0e6a45;
+    color: #ffffff;
+  }
+
+  .faq-answer {
+    padding: 0 1.25rem 1.15rem;
+    font-size: 0.88rem;
+    color: #475569;
+    line-height: 1.6;
+    border-top: 1px dashed #f1f5f9;
+    margin-top: 0.25rem;
+    padding-top: 0.75rem;
+  }
+
+  .faq-answer p {
+    margin: 0;
+  }
+
+  @media (max-width: 640px) {
+    .faq-container {
+      padding: 1.5rem 1rem;
+    }
+    .faq-title {
+      font-size: 1.2rem;
+    }
+    .seo-title {
+      font-size: 1.3rem;
+    }
+    .faq-question {
+      font-size: 0.88rem;
+      padding: 0.9rem 1rem;
+    }
+  }
+</style>

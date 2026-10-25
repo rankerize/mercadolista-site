@@ -71,6 +71,11 @@ Los usuarios y las listas viven en Firebase. El proyecto es `mercadologo`.
      - **URL `/asistente`**: Asesor conversacional de compras que traduce solicitudes culinarias (e.g. «Quiero hacer pasta boloñesa para 2 personas») en ingredientes con porciones exactas, cotiza en vivo contra `/api/lista` (D1, Éxito, Jumbo, etc.) y permite guardar como receta o exportar a WhatsApp.
      - **Widget Flotante Inferior Derecho (`src/components/AssistantChatWidget.astro`)**: Botón flotante animado en la esquina inferior derecha presente en toda la app (excepto en `/asistente`). Abre un mini-chat de asistencia con preguntas frecuentes y buscador que redirige automáticamente a `/asistente?prompt=...`.
      - **Endpoint `/api/asistente`**: Motor híbrido con integración de Google Gemini Flash y catálogo culinario inteligente colombiano local como respaldo de alta resiliencia.
+   13. **Buscador por Imagen y Escáner de Código de Barras (`CameraSearchModal.astro`, `/api/identificar-imagen`, `/api/buscar-barcode`)**:
+     - **Foto de Empaque con IA (Gemini Vision)**: El usuario toma una foto o sube una imagen de un producto o empaque (con compresión client-side en canvas). Gemini 1.5 Flash Vision analiza la imagen e identifica marca, producto, presentación (gramos/ml/unidades) y genera la `query_optima` para las tiendas colombianas.
+     - **Escáner de Código de Barras (EAN-13, EAN-8)**: Escaneo en vivo con la cámara mediante `BarcodeDetector` web nativo con mira láser animada y vibración táctil, respaldado por `/api/buscar-barcode` que consulta Open Food Facts y catálogo colombiano.
+     - **Acciones directas**: Desde el modal el usuario puede comparar precios inmediatamente en todas las tiendas o agregarlo directamente a su lista de compras activa.
+     - **Botón `📷` accesible**: Ubicado en el buscador principal (`#single-search`), en el buscador global del encabezado (`Nav.astro`) y en el editor de la lista de compras.
 - **Archivos de integración**:
   - `src/lib/firebase.ts`: SDK cliente de Firebase de la Web App `mercadologo`.
   - `src/lib/firebaseAuth.ts`: `loginWithGoogle()`, `logoutUser()`, `subscribeAuth()`, `getUserLists()`, `saveUserList()`, `deleteUserList()`, `getListById()`, `joinSharedList()`, `shareListWithEmail()`, `subscribeList()`, `toggleItemBought()`, `getUserProfile()`, `saveUserProfile()`.

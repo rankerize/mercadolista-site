@@ -110,8 +110,14 @@ export const CATALOG_ITEMS: CatalogItem[] = [
   { nombre: 'Televisor 43 pulgadas Smart', categoria: 'tecnologia', icono: '📺', formato: 'unidades', cantidad: 1, keywords: ['televisor', 'tv', '43', 'smart', 'fhd'] },
   { nombre: 'Freidora de aire air fryer', categoria: 'tecnologia', icono: '🍟', formato: 'unidades', cantidad: 1, keywords: ['freidora', 'aire', 'airfryer', 'oster', 'black decker'] },
   { nombre: 'Portátil laptop 15 pulgadas', categoria: 'tecnologia', icono: '💻', formato: 'unidades', cantidad: 1, keywords: ['portatil', 'laptop', 'computador', 'hp', 'lenovo', 'asus'] },
-  { nombre: 'Audífonos inalámbricos bluetooth', categoria: 'tecnologia', icono: '🎧', formato: 'unidades', cantidad: 1, keywords: ['audifonos', 'inalambricos', 'bluetooth', 'tws'] },
+  { nombre: 'Audífonos inalámbricos bluetooth', categoria: 'tecnologia', icono: '🎧', formato: 'unidades', cantidad: 1, keywords: ['audifonos', 'inalambricos', 'bluetooth', 'tws', 'airpods'] },
   { nombre: 'Celular smartphone 128GB', categoria: 'tecnologia', icono: '📱', formato: 'unidades', cantidad: 1, keywords: ['celular', 'smartphone', 'samsung', 'xiaomi', 'motorola'] },
+  { nombre: 'iPhone 15 128GB', categoria: 'tecnologia', icono: '📱', formato: 'unidades', cantidad: 1, keywords: ['iphone', 'apple', '15', 'celular', 'smartphone'] },
+  { nombre: 'Samsung Galaxy A55 5G', categoria: 'tecnologia', icono: '📱', formato: 'unidades', cantidad: 1, keywords: ['samsung', 'galaxy', 'a55', '5g', 'celular'] },
+  { nombre: 'Xiaomi Redmi Note 13', categoria: 'tecnologia', icono: '📱', formato: 'unidades', cantidad: 1, keywords: ['xiaomi', 'redmi', 'note', '13', 'celular'] },
+  { nombre: 'Motorola Moto G84 5G', categoria: 'tecnologia', icono: '📱', formato: 'unidades', cantidad: 1, keywords: ['motorola', 'moto', 'g84', '5g', 'celular'] },
+  { nombre: 'Smartwatch reloj inteligente', categoria: 'tecnologia', icono: '⌚', formato: 'unidades', cantidad: 1, keywords: ['smartwatch', 'reloj', 'inteligente', 'band'] },
+  { nombre: 'Cargador rápido tipo C 25W', categoria: 'tecnologia', icono: '🔌', formato: 'unidades', cantidad: 1, keywords: ['cargador', 'tipo c', 'carga rapida', 'usb c'] },
   { nombre: 'Licuadora con vaso de vidrio', categoria: 'tecnologia', icono: '🥤', formato: 'unidades', cantidad: 1, keywords: ['licuadora', 'oster', 'vaso', 'vidrio'] },
 ];
 

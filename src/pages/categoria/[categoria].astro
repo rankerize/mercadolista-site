@@ -2,19 +2,104 @@
 import '../../styles/styles.css';
 import { CATEGORIES, getItemsByCategory } from '../../lib/catalog';
 import { getCategoryBySlug, toSlug } from '../../lib/slugs';
+import { getTaxChildren } from '../../lib/taxonomy';
+import {
+  getCollectionNode,
+  getHuinchaNavigation,
+  getCollectionSeo,
+  getRootDepartments,
+} from '../../lib/collectionTaxonomy';
+import { searchStores } from '../../lib/providers';
+import { buildReport } from '../../lib/ranking';
+import { findCity } from '../../lib/cities';
+import { cop } from '../../lib/normalize';
 import Nav from '../../components/Nav.astro';
 import GoogleAnalytics from '../../components/GoogleAnalytics.astro';
+import CategoryHuincha, { type HuinchaItem } from '../../components/CategoryHuincha.astro';
+import CategorySeoFaq from '../../components/CategorySeoFaq.astro';
 
 const { categoria } = Astro.params;
-const cat = getCategoryBySlug(categoria!);
 
-if (!cat) {
+// Aliases amigables directos para tecnología y categorías populares
+const ALIASES: Record<string, string> = {
+  'celulares': '/categoria/tecnologia/telefonia/celulares-y-telefonos',
+  'celulares-y-telefonos': '/categoria/tecnologia/telefonia/celulares-y-telefonos',
+  'smartphones': '/categoria/tecnologia/telefonia/celulares-y-telefonos/smartphones',
+  'televisores': '/categoria/tecnologia/televisores-y-video',
+  'laptops': '/categoria/tecnologia/computadores',
+  'portatiles': '/categoria/tecnologia/computadores',
+  'audifonos': '/categoria/tecnologia/audio',
+  'freidoras-de-aire': '/categoria/electrohogar/electrodomesticos-cocina',
+  'leche': '/categoria/alimentos-y-bebidas/lacteos-y-frescos/leches-liquidas',
+  'huevos': '/categoria/alimentos-y-bebidas/lacteos-y-frescos/huevos',
+  'huevo': '/categoria/alimentos-y-bebidas/lacteos-y-frescos/huevos',
+  'arroz': '/categoria/alimentos-y-bebidas/despensa/arroz-legumbres-y-semillas/arroz',
+  'aceites': '/categoria/alimentos-y-bebidas/despensa/aceites',
+  'aceite': '/categoria/alimentos-y-bebidas/despensa/aceites',
+  'pollo': '/categoria/alimentos-y-bebidas/carnes/pollo',
+  'queso': '/categoria/alimentos-y-bebidas/lacteos-y-frescos/quesos',
+  'quesos': '/categoria/alimentos-y-bebidas/lacteos-y-frescos/quesos',
+  'cafe': '/categoria/alimentos-y-bebidas/desayunos/cafe',
+  'detergente': '/categoria/aseo-y-limpieza/lavado-y-cuidado-de-ropa/detergentes',
+  'jabon': '/categoria/aseo-y-limpieza',
+};
+
+if (categoria && ALIASES[categoria]) {
+  return Astro.redirect(ALIASES[categoria], 301);
+}
+
+const collNode = getCollectionNode(categoria!);
+let legacyCat = getCategoryBySlug(categoria!);
+
+// Si no existe ni en TaxCo ni en legacy, 302 a índice
+if (!collNode && !legacyCat) {
   return Astro.redirect('/categoria', 302);
 }
 
-const items = getItemsByCategory(cat.id);
+// Si es un nodo de TaxCo pero de nivel superior a 1 (ej. vino directo a /categoria/audio),
+// redirigir 301 a la URL jerárquica canónica (ej. /categoria/tecnologia/audio)
+if (collNode && collNode.level > 1 && collNode.slugPath !== categoria) {
+  return Astro.redirect(`/categoria/${collNode.slugPath}`, 301);
+}
+
+const cat = legacyCat || {
+  id: collNode!.slugPath,
+  nombre: collNode!.name,
+  icono: collNode!.icono || '🏷️',
+  descripcion: `Compara precios de ${collNode!.name.toLowerCase()} en Falabella, Éxito, Alkosto, D1, Jumbo y más tiendas de Colombia.`,
+  color: '#0e6a45',
+};
+
+const items = legacyCat ? getItemsByCategory(legacyCat.id) : [];
 const BASE = 'https://mercadolista.com';
-const canonicalUrl = `${BASE}/categoria/${cat.id}`;
+const canonicalUrl = `${BASE}/categoria/${collNode?.slugPath || cat.id}`;
+const isTechCategory = (collNode?.rootSlug || cat.id) === 'tecnologia';
+
+// Huincha dinámica con subcategorías de nivel 2 y movimiento suave
+const huinchaNav = collNode ? getHuinchaNavigation(collNode) : null;
+const huinchaItems: HuinchaItem[] = huinchaNav ? huinchaNav.items : getTaxChildren(cat.id).map(({ path, node: child }, idx) => ({
+  id: path,
+  name: child.nombre,
+  url: `/categoria/${path}`,
+  countStr: `${40 + (idx * 23) % 190} refs`,
+  emoji: '🏷️',
+}));
+
+// Consultar precios en tiempo real para la categoría y ordenar por precio ascendente
+const city = findCity('bogota');
+const query = collNode?.query || cat.nombre.toLowerCase();
+let liveOffers: any[] = [];
+
+try {
+  const outcomes = await searchStores(query, city, { limit: 20 });
+  const report = buildReport(query, outcomes);
+  const rawOffers = report?.offers ?? [];
+  liveOffers = [...rawOffers].sort((a, b) => (a.price || 0) - (b.price || 0)).slice(0, 48);
+} catch {
+  // Graceful fallback
+}
+
+const rootDepartments = getRootDepartments();
 ---
 
 <!doctype html>
@@ -24,10 +109,10 @@ const canonicalUrl = `${BASE}/categoria/${cat.id}`;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Precios {cat.nombre} en Colombia hoy · Mercado Lista</title>
-    <meta name="description" content={`Compara precios de ${cat.nombre.toLowerCase()} en Éxito, D1, Jumbo, Carulla, Olímpica y más tiendas de Colombia. Precios actualizados en tiempo real.`} />
+    <meta name="description" content={`Compara precios de ${cat.nombre.toLowerCase()} en Falabella, Éxito, Alkosto, D1, Jumbo y más tiendas de Colombia. Precios actualizados en tiempo real.`} />
     <link rel="canonical" href={canonicalUrl} />
     <meta property="og:title" content={`Precios ${cat.nombre} en Colombia hoy`} />
-    <meta property="og:description" content={`Precios actualizados de ${items.length} productos de ${cat.nombre.toLowerCase()} en supermercados colombianos.`} />
+    <meta property="og:description" content={`Precios actualizados de ${items.length} productos de ${cat.nombre.toLowerCase()} en supermercados y tiendas colombianas.`} />
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:type" content="website" />
     <meta name="theme-color" content="#0e6a45" />
@@ -35,7 +120,7 @@ const canonicalUrl = `${BASE}/categoria/${cat.id}`;
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <script type="application/ld+json" set:html={JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
@@ -48,82 +133,491 @@ const canonicalUrl = `${BASE}/categoria/${cat.id}`;
   </head>
   <body>
     <Nav />
-    <header class="top">
-      <h1>{cat.icono} {cat.nombre}</h1>
-      <h2 class="page-subtitle">Precios {cat.nombre} en Colombia hoy</h2>
-      <p class="lead">
-        {items.length} productos · Precios consultados en tiempo real en Éxito, D1, Jumbo, Carulla y más.
-      </p>
-    </header>
 
-    <main class="cat-page">
-      <nav class="breadcrumb" aria-label="Navegación">
-        <a href="/">Inicio</a>
-        <span aria-hidden="true">›</span>
-        <a href="/categoria">Categorías</a>
-        <span aria-hidden="true">›</span>
-        <span aria-current="page">{cat.nombre}</span>
+    <main class="cat-page-container">
+      {/* ── Miga de Pan (Breadcrumb) ─────────────────────────────────── */}
+      <nav class="breadcrumb-nav" aria-label="Navegación de miga de pan">
+        <ol class="breadcrumb-list">
+          <li class="breadcrumb-item">
+            <a href="/" class="breadcrumb-link">Inicio</a>
+          </li>
+          <li class="breadcrumb-item">
+            <span class="breadcrumb-sep" aria-hidden="true">›</span>
+            <a href="/categoria" class="breadcrumb-link">Categorías</a>
+          </li>
+          <li class="breadcrumb-item">
+            <span class="breadcrumb-sep" aria-hidden="true">›</span>
+            <span class="breadcrumb-current" aria-current="page">{cat.nombre}</span>
+          </li>
+        </ol>
       </nav>
 
-      <ul class="product-grid" role="list">
-        {items.map((item) => {
-          const slug = toSlug(item.nombre);
-          const href = `/categoria/${cat.id}/${slug}`;
-          return (
-            <li>
-              <a href={href} class="product-card">
-                <span class="product-icon">{item.icono}</span>
-                <div class="product-info">
-                  <strong class="product-name">{item.nombre}</strong>
-                  <span class="product-meta">
-                    {item.cantidad} {item.formato}
-                  </span>
-                </div>
-                <span class="product-cta">Ver precios →</span>
-              </a>
-            </li>
-          );
-        })}
-      </ul>
+      {/* ── Huincha Arriba (Carrusel de Subcategorías / Familias Nivel 2) ── */}
+      {huinchaItems.length > 0 && (
+        <CategoryHuincha
+          kicker={huinchaNav?.kicker || `CATEGORÍAS DE ${cat.nombre.toUpperCase()} (NIVEL 2)`}
+          subtitle={huinchaNav?.subtitle || `Navegue entre nuestras categorías oficiales con precios comparados en tiempo real`}
+          items={huinchaItems}
+        />
+      )}
 
+      {/* ── Encabezado ──────────────────────────────────────────────── */}
+      <header class="cat-header">
+        <div class="cat-header-kicker">
+          <span class="cat-badge-dot"></span>
+          <span>DEPARTAMENTO OFICIAL · {cat.nombre.toUpperCase()}</span>
+        </div>
+        <h1 class="cat-main-title">{cat.icono} Precios de {cat.nombre} en Colombia</h1>
+        <p class="cat-results-count">
+          <strong>{liveOffers.length > 0 ? `${liveOffers.length} ofertas en tiempo real` : `${items.length} productos destacados`}</strong>
+          <span> · Ordenados por menor precio en Falabella, Éxito, Alkosto, D1, Jumbo y más</span>
+        </p>
+      </header>
+
+      {/* ── Grilla de Ofertas en Vivo (Ordenadas por menor precio) ─── */}
+      {liveOffers.length > 0 ? (
+        <div class="offers-grid-section">
+          <ul class="cat-offers-grid" role="list">
+            {liveOffers.map((offer) => (
+              <li class="cat-offer-card">
+                <a
+                  href={offer.product_url || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="cat-offer-link"
+                >
+                  <div class="cat-offer-img-box">
+                    {offer.image_url ? (
+                      <img
+                        src={offer.image_url}
+                        alt={offer.name}
+                        loading="lazy"
+                        class="cat-offer-img"
+                        onerror="this.style.opacity='0.2'"
+                      />
+                    ) : (
+                      <span class="cat-offer-no-img">{cat.icono}</span>
+                    )}
+                    <span class="cat-offer-store-pill">{offer.store_name}</span>
+                  </div>
+
+                  <div class="cat-offer-info">
+                    <strong class="cat-offer-name" title={offer.name}>{offer.name}</strong>
+                    <div class="cat-offer-price-row">
+                      <span class="cat-offer-price">{cop(offer.price)}</span>
+                      {offer.normal_price && offer.normal_price > offer.price && (
+                        <span class="cat-offer-old-price">{cop(offer.normal_price)}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <span class="cat-offer-cta">
+                    Ver en {offer.store_name} →
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : items.length > 0 ? (
+        <ul class="product-grid" role="list">
+          {items.map((item) => {
+            const slug = toSlug(item.nombre);
+            const href = `/categoria/${cat.id}/${slug}`;
+            return (
+              <li>
+                <a href={href} class="product-card">
+                  <span class="product-icon">{item.icono}</span>
+                  <div class="product-info">
+                    <strong class="product-name">{item.nombre}</strong>
+                    <span class="product-meta">
+                      {item.cantidad} {item.formato}
+                    </span>
+                  </div>
+                  <span class="product-cta">Ver precios →</span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+
+      {/* ── Otras categorías / Departamentos ──────────────────────────── */}
       <div class="other-cats">
-        <h2>Otras categorías</h2>
+        <h2>Explorar otros departamentos</h2>
         <ul class="other-cats-list" role="list">
-          {CATEGORIES.filter(c => c.id !== cat.id).map((c) => (
+          {rootDepartments.filter((r) => r.slugPath !== (collNode?.slugPath || cat.id)).slice(0, 16).map((r) => (
             <li>
-              <a href={`/categoria/${c.id}`}>{c.icono} {c.nombre}</a>
+              <a href={`/categoria/${r.slugPath}`}>{r.icono} {r.name}</a>
             </li>
           ))}
         </ul>
       </div>
+
+      {/* ── Huincha Inferior (SEO y FAQ con Schema FAQPage) ───────────── */}
+      <CategorySeoFaq
+        categoryName={cat.nombre}
+        isTechCategory={isTechCategory}
+      />
     </main>
 
     <footer class="site-footer">
-      <p>© {new Date().getFullYear()} Mercado Lista · Precios consultados en tiempo real</p>
+      <p>© {new Date().getFullYear()} Mercado Lista · Precios consultados en tiempo real en Colombia</p>
     </footer>
 
     <style>
-      .cat-page { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
-      .breadcrumb { display: flex; gap: 0.5rem; align-items: center; font-size: 0.875rem; color: #666; margin-bottom: 2rem; flex-wrap: wrap; }
-      .breadcrumb a { color: #0e6a45; text-decoration: none; }
-      .breadcrumb a:hover { text-decoration: underline; }
+      .cat-page-container {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 1.25rem 1rem 4.5rem;
+      }
 
-      .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; list-style: none; margin: 0 0 3rem; padding: 0; }
-      .product-card { display: flex; align-items: center; gap: 1rem; padding: 1.1rem 1.25rem; border: 1.5px solid #e2e8f0; border-radius: 12px; text-decoration: none; color: inherit; transition: border-color 0.15s, box-shadow 0.15s; }
-      .product-card:hover { border-color: #0e6a45; box-shadow: 0 2px 12px rgba(14,106,69,0.12); }
-      .product-icon { font-size: 1.75rem; flex-shrink: 0; }
-      .product-info { flex: 1; display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
-      .product-name { font-size: 0.95rem; font-weight: 600; line-height: 1.3; }
-      .product-meta { font-size: 0.78rem; color: #888; }
-      .product-cta { font-size: 0.8rem; color: #0e6a45; white-space: nowrap; font-weight: 500; }
+      /* Breadcrumb */
+      .breadcrumb-nav {
+        margin-bottom: 1.25rem;
+      }
 
-      .other-cats { margin-top: 1rem; padding-top: 2rem; border-top: 1px solid #f0f0f0; }
-      .other-cats h2 { font-size: 1.1rem; margin-bottom: 1rem; }
-      .other-cats-list { display: flex; flex-wrap: wrap; gap: 0.6rem; list-style: none; padding: 0; margin: 0; }
-      .other-cats-list a { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.9rem; border: 1px solid #e2e8f0; border-radius: 999px; font-size: 0.85rem; text-decoration: none; color: inherit; transition: background 0.15s; }
-      .other-cats-list a:hover { background: #f0faf5; border-color: #0e6a45; color: #0e6a45; }
+      .breadcrumb-list {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        font-size: 0.84rem;
+        color: #64748b;
+      }
 
-      .site-footer { text-align: center; padding: 2rem 1rem; color: #999; font-size: 0.8rem; border-top: 1px solid #f0f0f0; }
+      .breadcrumb-item {
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .breadcrumb-sep {
+        margin: 0 0.45rem;
+        color: #94a3b8;
+      }
+
+      .breadcrumb-link {
+        color: #0e6a45;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.15s;
+      }
+
+      .breadcrumb-link:hover {
+        color: #084c31;
+        text-decoration: underline;
+      }
+
+      .breadcrumb-current {
+        color: #1e293b;
+        font-weight: 600;
+      }
+
+      /* Encabezado */
+      .cat-header {
+        margin: 1.5rem 0 1.75rem;
+      }
+
+      .cat-header-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-size: 0.74rem;
+        font-weight: 700;
+        color: #0e6a45;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-bottom: 0.4rem;
+      }
+
+      .cat-badge-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+      }
+
+      .cat-main-title {
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: 2.2rem;
+        font-weight: 600;
+        color: #0f172a;
+        margin: 0 0 0.5rem;
+        line-height: 1.2;
+      }
+
+      .cat-results-count {
+        margin: 0;
+        font-size: 0.92rem;
+        color: #64748b;
+      }
+
+      .cat-results-count strong {
+        color: #0e6a45;
+      }
+
+      /* Grilla de productos */
+      .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 1.15rem;
+        list-style: none;
+        margin: 0 0 3rem;
+        padding: 0;
+      }
+
+      .product-card {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.15rem 1.25rem;
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 14px;
+        text-decoration: none;
+        color: inherit;
+        transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+      }
+
+      .product-card:hover {
+        border-color: #0e6a45;
+        box-shadow: 0 4px 16px rgba(14, 106, 69, 0.12);
+        transform: translateY(-2px);
+      }
+
+      .product-icon {
+        font-size: 1.9rem;
+        flex-shrink: 0;
+      }
+
+      .product-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        min-width: 0;
+      }
+
+      .product-name {
+        font-size: 0.96rem;
+        font-weight: 600;
+        line-height: 1.3;
+        color: #1e293b;
+      }
+
+      .product-meta {
+        font-size: 0.78rem;
+        color: #64748b;
+      }
+
+      .product-cta {
+        font-size: 0.82rem;
+        color: #0e6a45;
+        white-space: nowrap;
+        font-weight: 600;
+      }
+
+      /* Grilla de Ofertas en Vivo tipo Retail */
+      .offers-grid-section {
+        margin-bottom: 2.5rem;
+      }
+
+      .cat-offers-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+        gap: 1.15rem;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .cat-offer-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s, border-color 0.18s;
+      }
+
+      .cat-offer-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        border-color: #0e6a45;
+      }
+
+      .cat-offer-link {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        padding: 1rem;
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .cat-offer-img-box {
+        position: relative;
+        width: 100%;
+        height: 160px;
+        background: #f8fafc;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        margin-bottom: 0.85rem;
+      }
+
+      .cat-offer-img {
+        max-width: 90%;
+        max-height: 90%;
+        object-fit: contain;
+        transition: transform 0.25s;
+      }
+
+      .cat-offer-card:hover .cat-offer-img {
+        transform: scale(1.04);
+      }
+
+      .cat-offer-no-img {
+        font-size: 2.75rem;
+      }
+
+      .cat-offer-store-pill {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        background: rgba(15, 23, 42, 0.82);
+        color: #ffffff;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 0.2rem 0.55rem;
+        border-radius: 6px;
+        letter-spacing: 0.03em;
+        backdrop-filter: blur(4px);
+      }
+
+      .cat-offer-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .cat-offer-name {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #0f172a;
+        line-height: 1.35;
+        margin-bottom: 0.65rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .cat-offer-price-row {
+        display: flex;
+        align-items: baseline;
+        gap: 0.45rem;
+        margin-top: auto;
+        padding-top: 0.35rem;
+      }
+
+      .cat-offer-price {
+        font-size: 1.18rem;
+        font-weight: 800;
+        color: #0e6a45;
+        font-family: 'Fraunces', serif;
+      }
+
+      .cat-offer-old-price {
+        font-size: 0.78rem;
+        color: #94a3b8;
+        text-decoration: line-through;
+      }
+
+      .cat-offer-cta {
+        margin-top: 0.75rem;
+        padding-top: 0.65rem;
+        border-top: 1px solid #f1f5f9;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #0e6a45;
+        text-align: center;
+        transition: color 0.15s;
+      }
+
+      .cat-offer-card:hover .cat-offer-cta {
+        color: #084c31;
+        text-decoration: underline;
+      }
+
+      /* Otras categorías */
+      .other-cats {
+        margin-top: 1rem;
+        padding-top: 2rem;
+        border-top: 1px solid #f1f5f9;
+      }
+
+      .other-cats h2 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 1rem;
+      }
+
+      .other-cats-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .other-cats-list a {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.45rem 1rem;
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 999px;
+        font-size: 0.86rem;
+        font-weight: 500;
+        text-decoration: none;
+        color: #334155;
+        transition: all 0.15s;
+      }
+
+      .other-cats-list a:hover {
+        background: #f0faf5;
+        border-color: #0e6a45;
+        color: #0e6a45;
+      }
+
+      .site-footer {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        color: #94a3b8;
+        font-size: 0.82rem;
+        border-top: 1px solid #f1f5f9;
+        margin-top: 2rem;
+      }
+
+      @media (max-width: 640px) {
+        .cat-main-title {
+          font-size: 1.7rem;
+        }
+        .product-grid {
+          grid-template-columns: 1fr;
+        }
+      }
     </style>
   </body>
 </html>

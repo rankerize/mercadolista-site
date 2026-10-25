@@ -1,5 +1,6 @@
 import type { Offer, StoreOutcome } from './types';
 import { categoryMatches, cop, relevance, requiredMatchRatio, unitPrice } from './normalize';
+import { findBestCategoryHelp } from './collectionTaxonomy';
 
 function offerPayload(offer: Offer, score: number, categoryHit: boolean): Record<string, any> {
   const measured = unitPrice(offer.name, offer.price);
@@ -164,17 +165,17 @@ export function buildReport(query: string, outcomes: StoreOutcome[]): Record<str
   const scored: [Offer, number, boolean][] = collected.map((offer) => [
     offer,
     relevance(query, offer.name, offer.brand),
-    categoryMatches(query, offer.categories),
+    categoryMatches(query, offer.categories, offer.name),
   ]);
 
   const threshold = requiredMatchRatio(query);
-  let strict = scored.filter((item) => item[1] + 1e-9 >= threshold);
+  let strict = scored.filter((item) => item[1] > 0 && item[1] + 1e-9 >= threshold);
   let relaxed = false;
 
   if (strict.length === 0 && scored.length > 0) {
     relaxed = true;
     strict = scored.filter((item) => item[1] >= 0.5);
-    if (strict.length === 0) strict = scored;
+    if (strict.length === 0) strict = scored.filter((item) => item[1] > 0);
   }
 
   const same = strict.length > 0 ? sameProduct(strict) : null;
@@ -222,11 +223,14 @@ export function buildReport(query: string, outcomes: StoreOutcome[]): Record<str
     };
   }
 
+  const categoryHelp = findBestCategoryHelp(query);
+
   return {
     query,
     relaxed,
     verdict,
     same_product: samePayload,
+    category_suggestion: categoryHelp,
     offers: offersSorted.map(([offer, score, categoryHit]) => offerPayload(offer, score, categoryHit)),
     stores: outcomes.map((outcome) => ({
       id: outcome.store_id,

@@ -85,7 +85,86 @@ export function tokenMatches(token: string, productTokens: Set<string>, productT
   return false;
 }
 
+export const ACCESSORY_TERMS = new Set([
+  'acomodador', 'acomodadores',
+  'organizador', 'organizadores',
+  'portahuevos', 'porta-huevos', 'huevera', 'hueveras',
+  'dispensador', 'dispensadores',
+  'soporte', 'soportes',
+  'separador', 'separadores',
+  'batidor', 'batidores', 'batidora',
+  'cocinador', 'cocinadores',
+  'hervidor', 'hervidores',
+  'escalfador', 'escalfadores',
+  'rallador', 'ralladores',
+  'exprimidor', 'exprimidores',
+  'espumador', 'espumadores',
+  'molde', 'moldes',
+  'jabonera', 'jaboneras',
+  'mantequillera', 'mantequilleras',
+  'quesera', 'queseras',
+  'panera', 'paneras',
+  'aceitera', 'aceiteras',
+  'arrocera', 'arroceras',
+  'cafetera', 'cafeteras',
+  'molinillo',
+  'extractor', 'extractores',
+  'biberon', 'biberones',
+  'pelador', 'peladores',
+  'descorazonador',
+  'peluche', 'juguete', 'disfraz',
+]);
+
+export function isAccessoryMismatch(query: string, name: string): boolean {
+  const normQ = normalize(query);
+  const qTokens = new Set(tokens(query));
+
+  // Si la búsqueda del usuario ya incluye algún término de accesorio explícitamente
+  // (ej. "organizador de huevos", "huevera", "cafetera", "arrocera", "dispensador"),
+  // NO es un mismatch (el usuario realmente busca el accesorio/utensilio).
+  for (const t of qTokens) {
+    if (ACCESSORY_TERMS.has(t) || t === 'porta' || (t.startsWith('porta') && !t.startsWith('portatil') && !t.startsWith('portada'))) {
+      return false;
+    }
+  }
+  if (/\bporta\s+/i.test(normQ) || /\b(organizador|soporte|dispensador|huevera)\b/i.test(normQ)) {
+    return false;
+  }
+
+  const normName = normalize(name);
+  const nameTokens = tokens(name);
+
+  // 1. Coincidencia directa con ACCESSORY_TERMS en los tokens del producto
+  for (const t of nameTokens) {
+    if (ACCESSORY_TERMS.has(t)) {
+      return true;
+    }
+  }
+
+  // 2. Patrones con "porta", ej: "porta huevos", "porta-huevos", "portahuevos", "porta leche"
+  if (/\bporta[\s-]*[a-z]{3,}\b/i.test(normName)) {
+    const portaMatch = normName.match(/\bporta[\s-]*([a-z]+)\b/i);
+    if (portaMatch) {
+      const rest = portaMatch[1];
+      if (!rest.startsWith('til') && !rest.startsWith('da') && !rest.startsWith('folio') && !rest.startsWith('ble')) {
+        return true;
+      }
+    }
+  }
+
+  // 3. Patrones de organizador/soporte/recipiente/caja para alimentos:
+  // "recipiente para huevos", "caja organizadora para huevos", "bandeja organizadora de huevos"
+  if (/\b(recipiente|caja organizadora|bandeja organizadora|estante organizador)\s+(?:para|de)\s+(?:huevos?|nevera|refrigerador)\b/i.test(normName)) {
+    return true;
+  }
+
+  return false;
+}
+
 export function relevance(query: string, name: string, brand?: string | null): number {
+  if (isAccessoryMismatch(query, name)) {
+    return 0.0;
+  }
   const queryTokens = tokens(query);
   if (queryTokens.length === 0) return 0.0;
   const blob = `${name} ${brand || ''}`;
@@ -105,8 +184,9 @@ export function requiredMatchRatio(query: string): number {
   return count <= 2 ? 1.0 : 0.67;
 }
 
-export function categoryMatches(query: string, categories: string[]): boolean {
+export function categoryMatches(query: string, categories: string[], name?: string): boolean {
   if (!categories || categories.length === 0) return false;
+  if (name && isAccessoryMismatch(query, name)) return false;
   const blob = categories.join(' ');
   const productTokens = new Set(tokens(blob));
   const productText = normalize(blob);
