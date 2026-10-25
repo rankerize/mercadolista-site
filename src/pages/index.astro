@@ -80,6 +80,24 @@ import AssistantChatWidget from '../components/AssistantChatWidget.astro';
           </select>
         </div>
 
+        <div id="single-search">
+          <label for="query">Producto</label>
+          <div class="search-row" style="position: relative;">
+            <input
+              id="query"
+              name="q"
+              type="search"
+              placeholder="Ej. leche entera colanta, arroz roa, televisor 55"
+              autocomplete="off"
+              required
+              minlength="2"
+              maxlength="80"
+            />
+            <button type="submit" id="submit">Comparar</button>
+            <div id="query-autocomplete" class="autocomplete-dropdown" style="top: 100%; left: 0; margin-top: 4px;"></div>
+          </div>
+        </div>
+
         <div id="unit-filters" class="unit-filters" hidden>
           <div>
             <label for="unit-basis">Unidad</label>
@@ -111,24 +129,6 @@ import AssistantChatWidget from '../components/AssistantChatWidget.astro';
                 <option value={category.id}>{category.icono} {category.nombre}</option>
               ))}
             </select>
-          </div>
-        </div>
-
-        <div id="single-search">
-          <label for="query">Producto</label>
-          <div class="search-row" style="position: relative;">
-            <input
-              id="query"
-              name="q"
-              type="search"
-              placeholder="Ej. leche entera colanta, arroz roa, televisor 55"
-              autocomplete="off"
-              required
-              minlength="2"
-              maxlength="80"
-            />
-            <button type="submit" id="submit">Comparar</button>
-            <div id="query-autocomplete" class="autocomplete-dropdown" style="top: 100%; left: 0; margin-top: 4px;"></div>
           </div>
         </div>
 
