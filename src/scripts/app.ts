@@ -60,6 +60,8 @@ function syncUnitMin() {
 }
 const submit = document.querySelector<HTMLButtonElement>('#submit')!;
 const status = document.querySelector<HTMLElement>('#status')!;
+// Cuadrícula de resultados: 4 columnas × 5 filas por página.
+const OFFERS_PER_PAGE = 20;
 const results = document.querySelector<HTMLElement>('#results')!;
 const examples = document.querySelector<HTMLElement>('#examples')!;
 const lead = document.querySelector<HTMLElement>('#lead')!;
@@ -495,48 +497,78 @@ function render(report: any) {
 
   const others = el('section', 'panel');
   others.append(el('h3', null, 'Ofertas parecidas'));
-  const list = el('div', 'offers');
-  for (const offer of report.offers) {
-    const row = el('article', 'offer');
-    const photoImg = safeImage(offer.image);
-    row.append(photoImg || el('div'));
-    const info = el('div');
-    info.append(el('h4', null, offer.name));
-    const bits = [offer.store_name];
-    if (offer.brand) bits.push(offer.brand);
-    if (offer.unit_price) bits.push(`${money(offer.unit_price)} / ${offer.unit_label}`);
-    info.append(el('p', 'meta', bits.join(' · ')));
-    const link = el('a', null, 'Ver producto');
-    link.href = offer.url;
-    link.target = '_blank';
-    link.rel = 'noreferrer';
-    info.append(link);
+  const list = el('div', 'offers offers-grid');
+  const pager = el('nav', 'offers-pager');
+  others.append(list, pager);
 
-    const addBtn = el('button', 'btn-add-list', '➕ Añadir a lista');
-    addBtn.type = 'button';
-    addBtn.title = 'Añadir a lista de compras';
-    addBtn.addEventListener('click', () => {
-      openAddToListModal({
-        name: offer.name,
-        brand: offer.brand,
-        unit_name: offer.unit_name,
-        unit_quantity: offer.unit_quantity,
-        price: offer.price,
-        store_name: offer.store_name,
-        image: offer.image,
+  const drawPage = (page: number) => {
+    const start = (page - 1) * OFFERS_PER_PAGE;
+    list.replaceChildren();
+    for (const offer of report.offers.slice(start, start + OFFERS_PER_PAGE)) {
+      const row = el('article', 'offer');
+      const photoImg = safeImage(offer.image);
+      row.append(photoImg || el('div'));
+      const info = el('div');
+      info.append(el('h4', null, offer.name));
+      const bits = [offer.store_name];
+      if (offer.brand) bits.push(offer.brand);
+      if (offer.unit_price) bits.push(`${money(offer.unit_price)} / ${offer.unit_label}`);
+      info.append(el('p', 'meta', bits.join(' · ')));
+      const link = el('a', null, 'Ver producto');
+      link.href = offer.url;
+      link.target = '_blank';
+      link.rel = 'noreferrer';
+      info.append(link);
+
+      const addBtn = el('button', 'btn-add-list', '➕ Añadir a lista');
+      addBtn.type = 'button';
+      addBtn.title = 'Añadir a lista de compras';
+      addBtn.addEventListener('click', () => {
+        openAddToListModal({
+          name: offer.name,
+          brand: offer.brand,
+          unit_name: offer.unit_name,
+          unit_quantity: offer.unit_quantity,
+          price: offer.price,
+          store_name: offer.store_name,
+          image: offer.image,
+        });
       });
-    });
-    info.append(addBtn);
+      info.append(addBtn);
 
-    const price = el('div', 'money');
-    price.append(el('strong', null, money(offer.price)));
-    if (offer.list_price) price.append(el('span', 'was', money(offer.list_price)));
-    const cardEl = paymentLine(offer);
-    if (cardEl) price.append(cardEl);
-    row.append(info, price);
-    list.append(row);
-  }
-  others.append(list);
+      const price = el('div', 'money');
+      price.append(el('strong', null, money(offer.price)));
+      if (offer.list_price) price.append(el('span', 'was', money(offer.list_price)));
+      const cardEl = paymentLine(offer);
+      if (cardEl) price.append(cardEl);
+      row.append(info, price);
+      list.append(row);
+    }
+    drawPager(page);
+  };
+
+  const drawPager = (page: number) => {
+    const pages = Math.ceil(report.offers.length / OFFERS_PER_PAGE);
+    pager.replaceChildren();
+    pager.hidden = pages <= 1;
+    if (pages <= 1) return;
+    const goTo = (target: number) => {
+      drawPage(target);
+      others.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    const prev = el('button', 'btn-page', '← Anterior');
+    prev.type = 'button';
+    prev.disabled = page === 1;
+    prev.addEventListener('click', () => goTo(page - 1));
+    const next = el('button', 'btn-page', 'Siguiente →');
+    next.type = 'button';
+    next.disabled = page === pages;
+    next.addEventListener('click', () => goTo(page + 1));
+    const info = el('span', 'pager-info', `Página ${page} de ${pages} · ${report.offers.length} productos`);
+    pager.append(prev, info, next);
+  };
+
+  drawPage(1);
   results.append(others);
   renderStores(report.stores);
 }
