@@ -1,12 +1,15 @@
 ---
 import '../styles/styles.css';
 import { CATEGORIES } from '../lib/catalog';
+import { CITIES } from '../lib/cities';
 import Nav from '../components/Nav.astro';
 import ShareModal from '../components/ShareModal.astro';
 import AddToListModal from '../components/AddToListModal.astro';
 import CookieBanner from '../components/CookieBanner.astro';
 import GoogleAnalytics from '../components/GoogleAnalytics.astro';
 import AssistantChatWidget from '../components/AssistantChatWidget.astro';
+import CategoryBanner from '../components/CategoryBanner.astro';
+import ShowcaseBanner from '../components/ShowcaseBanner.astro';
 ---
 
 <!doctype html>
@@ -51,7 +54,8 @@ import AssistantChatWidget from '../components/AssistantChatWidget.astro';
         <img src="/logo-canasta.png" alt="" width="436" height="398" />
       </div>
       <div class="hero-copy">
-        <h1 class="hero-title">¿Dónde conviene comprarlo?</h1>
+        <h1 class="hero-kicker">Comparador de precios</h1>
+        <h2 class="hero-title">¿Dónde conviene comprarlo?</h2>
         <p class="lead" id="lead">
           Compara el precio publicado en tiendas de Colombia y te dice en cuál está el más bajo.
         </p>
@@ -75,28 +79,57 @@ import AssistantChatWidget from '../components/AssistantChatWidget.astro';
       </div>
 
       <form id="search-form" class="search">
-        <div class="city-row" id="city-row">
-          <label for="city">Ciudad</label>
-          <select id="city" name="ciudad">
-            <option value="bogota" selected>Bogotá</option>
-          </select>
-        </div>
+        <div class="search-bar-unified">
+          <!-- Selector de Ciudad Lindo y Compacto -->
+          <div class="city-picker" id="city-row">
+            <label for="city" class="city-picker__label">
+              <span class="city-picker__icon" aria-hidden="true">📍</span>
+              <span class="city-picker__tag">Ciudad</span>
+            </label>
+            <div class="city-picker__select-wrap">
+              <select id="city" name="ciudad" aria-label="Ciudad de compra">
+                {CITIES.map((c) => (
+                  <option value={c.id} selected={c.id === 'bogota'}>{c.name}</option>
+                ))}
+              </select>
+              <svg class="city-picker__arrow" width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="1 1 5 5 9 1"></polyline>
+              </svg>
+            </div>
+          </div>
 
-        <div id="single-search">
-          <label for="query">Producto</label>
-          <div class="search-row" style="position: relative;">
-            <input
-              id="query"
-              name="q"
-              type="search"
-              placeholder="Ej. leche entera colanta, arroz roa, televisor 55"
-              autocomplete="off"
-              required
-              minlength="2"
-              maxlength="80"
-            />
-            <button type="submit" id="submit">Comparar</button>
-            <div id="query-autocomplete" class="autocomplete-dropdown" style="top: 100%; left: 0; margin-top: 4px;"></div>
+          <!-- Divisor visual -->
+          <div class="search-bar-unified__divider" aria-hidden="true"></div>
+
+          <!-- Buscador de Producto -->
+          <div id="single-search" class="search-product">
+            <div class="search-product__inner">
+              <label for="query" class="search-product__label">
+                <span class="search-product__icon" aria-hidden="true">🔍</span>
+                <span class="search-product__tag">Producto</span>
+              </label>
+              <div class="search-product__input-wrap" style="position: relative;">
+                <input
+                  id="query"
+                  name="q"
+                  type="search"
+                  placeholder="Ej. leche entera colanta, arroz roa, televisor 55..."
+                  autocomplete="off"
+                  required
+                  minlength="2"
+                  maxlength="80"
+                  aria-label="Buscar producto para comparar precios"
+                />
+                <button type="button" id="search-camera-btn" class="search-camera-btn" title="Buscar por foto o código de barras" aria-label="Buscar por foto o código de barras">
+                  📷
+                </button>
+                <div id="query-autocomplete" class="autocomplete-dropdown" style="top: 100%; left: 0; margin-top: 4px;"></div>
+              </div>
+            </div>
+
+            <button type="submit" id="submit" class="search-btn-submit">
+              <span>Comparar</span>
+            </button>
           </div>
         </div>
 
@@ -179,12 +212,13 @@ import AssistantChatWidget from '../components/AssistantChatWidget.astro';
 
           <div class="list-actions">
             <button type="button" id="add-row" class="ghost">Agregar producto</button>
+            <button type="button" id="list-camera-btn" class="ghost" style="color: var(--pine); font-weight: 500;" title="Fotografiar alacena o escanear código">📷 Escanear producto</button>
             <button type="submit" id="list-submit">Comparar lista</button>
           </div>
         </div>
 
-        <!-- Explorador de Categorías Populares -->
-        <div class="categories-container" id="categories-container">
+        <!-- Explorador de Categorías Populares (Mantenido para compatibilidad de scripts) -->
+        <div class="categories-container" id="categories-container" hidden>
           <div class="category-chips-header">
             <span class="category-chips-title">Explorar por categorías</span>
           </div>
@@ -192,13 +226,14 @@ import AssistantChatWidget from '../components/AssistantChatWidget.astro';
           <div class="category-quick-items" id="category-quick-items" hidden></div>
         </div>
 
-        <div class="examples" id="examples">
-          <button type="button" data-query="leche entera colanta">Leche Colanta</button>
-          <button type="button" data-query="arroz roa">Arroz Roa</button>
-          <button type="button" data-query="aceite premier">Aceite Premier</button>
-          <button type="button" data-query="televisor 55">Televisor 55"</button>
-        </div>
+        <div class="examples" id="examples" style="display: none !important;" hidden></div>
       </form>
+
+      <!-- Banner de Categorías Retail (Imagen 1) -->
+      <CategoryBanner />
+
+      <!-- Módulo Vitrina "Encontrar de una" (Imagen 2) -->
+      <ShowcaseBanner />
 
       <p id="status" class="status" role="status"></p>
       <section id="results" class="results" hidden></section>

@@ -1,7 +1,9 @@
 ---
-import { CATEGORIES } from '../lib/catalog';
+import { getDrawerDepartments } from '../lib/collectionTaxonomy';
+import CameraSearchModal from './CameraSearchModal.astro';
 const pathname = Astro.url.pathname;
 const isHome = pathname === '/';
+const drawerDepartments = getDrawerDepartments();
 ---
 
 <nav class="ml-nav" aria-label="Navegación principal">
@@ -40,6 +42,9 @@ const isHome = pathname === '/';
         autocomplete="off"
         aria-label="Buscar productos"
       />
+      <button type="button" id="ml-nav-camera-btn" class="ml-nav-camera-btn" title="Buscar por foto o código de barras" aria-label="Buscar por foto o código de barras">
+        📷
+      </button>
       <button type="submit" class="ml-search-btn" aria-label="Buscar">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="11" cy="11" r="8"/>
@@ -104,7 +109,10 @@ const isHome = pathname === '/';
 <!-- Drawer lateral -->
 <aside class="ml-drawer" id="ml-drawer" aria-label="Menú de categorías" aria-hidden="true">
   <div class="ml-drawer__head">
-    <span class="ml-drawer__greeting">Categorías</span>
+    <div class="ml-drawer__head-title">
+      <span class="ml-drawer__greeting">Categorías</span>
+      <span class="ml-drawer__badge">Departamentos</span>
+    </div>
     <button class="ml-drawer__close" id="ml-drawer-close" aria-label="Cerrar menú">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
         <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -112,29 +120,114 @@ const isHome = pathname === '/';
     </button>
   </div>
 
-  <ul class="ml-drawer__list" role="list">
-    {CATEGORIES.map((c) => (
-      <li>
-        <a
-          href={`/categoria/${c.id}`}
-          class:list={['ml-drawer__link', { 'ml-drawer__link--on': pathname.startsWith(`/categoria/${c.id}`) }]}
-        >
-          <span class="ml-drawer__ico" aria-hidden="true">{c.icono}</span>
-          <span class="ml-drawer__name">{c.nombre}</span>
-          <svg class="ml-drawer__arrow" width="7" height="12" viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="1 1 7 7 1 13"/>
-          </svg>
-        </a>
-      </li>
-    ))}
+  <!-- Buscador rápido dentro del menú para filtrar categorías al instante -->
+  <div class="ml-drawer__filter-wrap">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input
+      type="search"
+      id="ml-drawer-filter"
+      class="ml-drawer__filter-input"
+      placeholder="Filtrar categorías..."
+      autocomplete="off"
+      aria-label="Filtrar categorías en el menú"
+    />
+  </div>
+
+  <ul class="ml-drawer__list" id="ml-drawer-list" role="list">
+    {drawerDepartments.map((dept) => {
+      const isCurrentDept = pathname === dept.url || pathname.startsWith(`/categoria/${dept.slugPath}`);
+      return (
+        <li class="ml-drawer__item" data-dept-name={dept.name.toLowerCase()}>
+          <div class:list={['ml-drawer__row', { 'ml-drawer__row--active': isCurrentDept }]}>
+            <a
+              href={dept.url}
+              class="ml-drawer__dept-link"
+              title={`Ver catálogo de ${dept.name}`}
+            >
+              <span class="ml-drawer__ico" aria-hidden="true">{dept.icono}</span>
+              <span class="ml-drawer__name">{dept.name}</span>
+            </a>
+            <button
+              type="button"
+              class:list={['ml-drawer__toggle', { 'is-open': isCurrentDept }]}
+              aria-expanded={isCurrentDept ? 'true' : 'false'}
+              aria-label={`Desplegar subcategorías de ${dept.name}`}
+              title="Desplegar subcategorías"
+            >
+              <svg class="ml-drawer__arrow" width="8" height="12" viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="1 1 7 7 1 13"/>
+              </svg>
+            </button>
+          </div>
+
+          <ul class:list={['ml-drawer__sublist', { 'is-expanded': isCurrentDept }]} role="list">
+            {dept.subcategories.map((sub) => {
+              const isCurrentSub = pathname === sub.url || pathname.startsWith(sub.url + '/');
+              return (
+                <li class="ml-drawer__subitem" data-sub-name={sub.name.toLowerCase()}>
+                  <a
+                    href={sub.url}
+                    class:list={['ml-drawer__sublink', { 'ml-drawer__sublink--active': isCurrentSub }]}
+                  >
+                    <span class="ml-drawer__subico" aria-hidden="true">{sub.icono}</span>
+                    <span class="ml-drawer__subname">{sub.name}</span>
+                  </a>
+                </li>
+              );
+            })}
+            <li class="ml-drawer__subitem ml-drawer__subitem--all">
+              <a href={dept.url} class="ml-drawer__sublink ml-drawer__sublink--all">
+                <span>Ver todo en {dept.name} →</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+      );
+    })}
   </ul>
 
   <div class="ml-drawer__footer">
-    <a href="/categoria" class="ml-drawer__all">Ver todas las categorías →</a>
+    <a href="/categoria" class="ml-drawer__all">
+      <span>Ver directorio completo (+3.200 categorías) →</span>
+    </a>
   </div>
 </aside>
 
+<CameraSearchModal />
+
 <script>
+  import { initCameraSearch } from '../scripts/cameraSearch';
+
+  const camModal = initCameraSearch({
+    onSearchSelected: (query) => {
+      if (window.location.pathname === '/') {
+        const mainInput = document.getElementById('query') as HTMLInputElement | null;
+        const mainForm  = document.getElementById('search-form') as HTMLFormElement | null;
+        if (mainInput && mainForm) {
+          mainInput.value = query;
+          mainForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+          return;
+        }
+      }
+      window.location.href = `/?q=${encodeURIComponent(query)}`;
+    },
+  });
+
+  const navCameraBtn = document.getElementById('ml-nav-camera-btn');
+  navCameraBtn?.addEventListener('click', () => camModal.open('photo'));
+
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement | null;
+    const btn = target?.closest('#search-camera-btn, #list-camera-btn');
+    if (btn) {
+      e.preventDefault();
+      camModal.open('photo');
+    }
+  });
+
   // Drawer
   const menuBtn  = document.getElementById('ml-menu-btn')!;
   const drawer   = document.getElementById('ml-drawer')!;
@@ -161,6 +254,83 @@ const isHome = pathname === '/';
   overlay.addEventListener('click', closeDrawer);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
   drawer.querySelectorAll('a').forEach((a) => a.addEventListener('click', closeDrawer));
+
+  // Drawer Accordion: Desplegar subcategorías
+  const drawerList = document.getElementById('ml-drawer-list');
+  if (drawerList) {
+    drawerList.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement | null;
+      const toggleBtn = target?.closest('.ml-drawer__toggle') as HTMLElement | null;
+      if (toggleBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const item = toggleBtn.closest('.ml-drawer__item');
+        const sublist = item?.querySelector('.ml-drawer__sublist');
+        const isExpanded = sublist?.classList.contains('is-expanded');
+
+        if (isExpanded) {
+          sublist?.classList.remove('is-expanded');
+          toggleBtn.classList.remove('is-open');
+          toggleBtn.setAttribute('aria-expanded', 'false');
+        } else {
+          sublist?.classList.add('is-expanded');
+          toggleBtn.classList.add('is-open');
+          toggleBtn.setAttribute('aria-expanded', 'true');
+        }
+      }
+    });
+  }
+
+  // Filtrado rápido dentro del cajón de categorías
+  const drawerFilter = document.getElementById('ml-drawer-filter') as HTMLInputElement | null;
+  if (drawerFilter && drawerList) {
+    drawerFilter.addEventListener('input', () => {
+      const q = drawerFilter.value.trim().toLowerCase();
+      const items = drawerList.querySelectorAll<HTMLElement>('.ml-drawer__item');
+
+      items.forEach((item) => {
+        if (!q) {
+          item.style.display = '';
+          const sublist = item.querySelector('.ml-drawer__sublist');
+          const toggle = item.querySelector('.ml-drawer__toggle');
+          const row = item.querySelector('.ml-drawer__row');
+          if (!row?.classList.contains('ml-drawer__row--active')) {
+            sublist?.classList.remove('is-expanded');
+            toggle?.classList.remove('is-open');
+            toggle?.setAttribute('aria-expanded', 'false');
+          }
+          const subitems = item.querySelectorAll<HTMLElement>('.ml-drawer__subitem');
+          subitems.forEach((s) => (s.style.display = ''));
+          return;
+        }
+
+        const deptName = item.dataset.deptName || '';
+        const subitems = item.querySelectorAll<HTMLElement>('.ml-drawer__subitem');
+        let matchedSub = false;
+
+        subitems.forEach((sub) => {
+          const subName = sub.dataset.subName || '';
+          if (subName.includes(q)) {
+            sub.style.display = '';
+            matchedSub = true;
+          } else if (!sub.classList.contains('ml-drawer__subitem--all')) {
+            sub.style.display = 'none';
+          }
+        });
+
+        if (deptName.includes(q) || matchedSub) {
+          item.style.display = '';
+          const sublist = item.querySelector('.ml-drawer__sublist');
+          const toggle = item.querySelector('.ml-drawer__toggle');
+          sublist?.classList.add('is-expanded');
+          toggle?.classList.add('is-open');
+          toggle?.setAttribute('aria-expanded', 'true');
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    });
+  }
 
   // Buscador: en la home dispara el formulario principal; en otras páginas navega a /?q=
   const navForm = document.getElementById('ml-nav-search') as HTMLFormElement;
@@ -405,7 +575,7 @@ const isHome = pathname === '/';
     position: fixed;
     top: 0; left: 0; bottom: 0;
     z-index: 500;
-    width: min(300px, 85vw);
+    width: min(340px, 88vw);
     background: #fff;
     box-shadow: 4px 0 28px rgba(0,0,0,0.16);
     display: flex;
@@ -419,14 +589,30 @@ const isHome = pathname === '/';
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1.1rem 1.25rem 0.9rem;
+    padding: 1rem 1.15rem 0.85rem;
     border-bottom: 2px solid #0e6a45;
+    background: #fff;
+  }
+  .ml-drawer__head-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
   .ml-drawer__greeting {
     font-family: Fraunces, serif;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     font-weight: 640;
     color: #0e6a45;
+  }
+  .ml-drawer__badge {
+    font-size: 0.68rem;
+    font-weight: 600;
+    background: #e8f5e9;
+    color: #0e6a45;
+    padding: 2px 7px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
   }
   .ml-drawer__close {
     background: none;
@@ -441,6 +627,32 @@ const isHome = pathname === '/';
   }
   .ml-drawer__close:hover { background: #f3f4f6; color: #111; }
 
+  /* Filtro rápido dentro del drawer */
+  .ml-drawer__filter-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.6rem 1rem;
+    background: #f8faf9;
+    border-bottom: 1px solid #edf2ef;
+    color: #64748b;
+  }
+  .ml-drawer__filter-input {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 0.4rem 0.65rem;
+    font-size: 0.84rem;
+    font-family: inherit;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .ml-drawer__filter-input:focus {
+    border-color: #0e6a45;
+    box-shadow: 0 0 0 2px rgba(14, 106, 69, 0.15);
+  }
+
   .ml-drawer__list {
     flex: 1;
     list-style: none;
@@ -449,35 +661,152 @@ const isHome = pathname === '/';
     overflow-y: auto;
     scrollbar-width: thin;
   }
-  .ml-drawer__link {
+  .ml-drawer__item {
+    margin: 0;
+    border-bottom: 1px solid #f1f3f2;
+  }
+
+  /* Fila principal del departamento L1 */
+  .ml-drawer__row {
     display: flex;
     align-items: center;
-    gap: 0.8rem;
-    padding: 0.9rem 1.25rem;
+    transition: background 0.12s;
+  }
+  .ml-drawer__row:hover {
+    background: #f8fbf9;
+  }
+  .ml-drawer__row--active {
+    background: #f0faf5;
+  }
+  .ml-drawer__dept-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0.5rem 0.75rem 1.15rem;
     text-decoration: none;
-    color: #1d1a16;
-    font-size: 0.95rem;
+    color: #1e293b;
+    font-size: 0.93rem;
+    font-weight: 600;
+    flex: 1;
+    min-width: 0;
+    transition: color 0.1s;
+  }
+  .ml-drawer__row--active .ml-drawer__dept-link,
+  .ml-drawer__dept-link:hover {
+    color: #0e6a45;
+  }
+  .ml-drawer__ico {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .ml-drawer__name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Botón de acordeón */
+  .ml-drawer__toggle {
+    background: none;
+    border: none;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s;
+  }
+  .ml-drawer__toggle:hover {
+    color: #0e6a45;
+  }
+  .ml-drawer__arrow {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .ml-drawer__toggle.is-open .ml-drawer__arrow {
+    transform: rotate(90deg);
+    color: #0e6a45;
+  }
+
+  /* Subcategorías L2 / Short-Tail desplegables */
+  .ml-drawer__sublist {
+    display: none;
+    list-style: none;
+    margin: 0;
+    padding: 0.25rem 0 0.5rem 0;
+    background: #fafcfb;
+    border-top: 1px dashed #e2e8e5;
+  }
+  .ml-drawer__sublist.is-expanded {
+    display: block;
+    animation: drawerSubOpen 0.18s ease-out;
+  }
+  @keyframes drawerSubOpen {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .ml-drawer__subitem {
+    margin: 0;
+  }
+  .ml-drawer__sublink {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem 1rem 0.55rem 2.6rem;
+    text-decoration: none;
+    color: #334155;
+    font-size: 0.88rem;
     font-weight: 500;
-    border-bottom: 1px solid #f5f5f5;
     transition: background 0.1s, color 0.1s;
   }
-  .ml-drawer__link:hover,
-  .ml-drawer__link--on { background: #f0faf5; color: #0e6a45; }
-  .ml-drawer__ico  { font-size: 1.25rem; flex-shrink: 0; line-height: 1; }
-  .ml-drawer__name { flex: 1; }
-  .ml-drawer__arrow { flex-shrink: 0; color: #bbb; transition: color 0.1s; }
-  .ml-drawer__link:hover .ml-drawer__arrow,
-  .ml-drawer__link--on  .ml-drawer__arrow { color: #0e6a45; }
+  .ml-drawer__sublink:hover {
+    background: #eef7f2;
+    color: #0e6a45;
+  }
+  .ml-drawer__sublink--active {
+    background: #e6f5ec;
+    color: #0e6a45;
+    font-weight: 600;
+  }
+  .ml-drawer__subico {
+    font-size: 1rem;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .ml-drawer__subname {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ml-drawer__sublink--all {
+    color: #0e6a45;
+    font-weight: 600;
+    font-size: 0.82rem;
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+  }
+  .ml-drawer__sublink--all:hover {
+    text-decoration: underline;
+  }
 
+  /* Footer del menú */
   .ml-drawer__footer {
-    padding: 0.9rem 1.25rem;
-    border-top: 1px solid #f0f0f0;
+    padding: 0.9rem 1.15rem;
+    border-top: 1px solid #edf2ef;
+    background: #fff;
   }
   .ml-drawer__all {
     font-size: 0.85rem;
     color: #0e6a45;
     text-decoration: none;
     font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
   }
   .ml-drawer__all:hover { text-decoration: underline; }
 </style>

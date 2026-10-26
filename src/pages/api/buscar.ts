@@ -4,6 +4,9 @@ import { searchStores } from '../../lib/providers';
 import { buildReport } from '../../lib/ranking';
 import { checkRateLimit, rateLimitResponse } from '../../lib/rateLimit';
 
+// Máximo de productos que se piden a cada tienda (VTEX admite hasta 50 por consulta).
+const RESULTADOS_POR_TIENDA = 50;
+
 export const GET: APIRoute = async ({ request, url }) => {
   // Limitar a máximo 30 búsquedas por minuto por IP
   const limit = checkRateLimit(request, {
@@ -31,7 +34,7 @@ export const GET: APIRoute = async ({ request, url }) => {
 
   try {
     const city = findCity(ciudadParam);
-    const outcomes = await searchStores(query, city);
+    const outcomes = await searchStores(query, city, RESULTADOS_POR_TIENDA);
     const report = buildReport(query, outcomes);
     report.city = { id: city.id, name: city.name };
 

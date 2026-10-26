@@ -1,0 +1,91 @@
+---
+import '../../styles/styles.css';
+import { searchStores } from '../../lib/providers';
+import { buildReport } from '../../lib/ranking';
+import { findCity } from '../../lib/cities';
+import Nav from '../../components/Nav.astro';
+import AddToListModal from '../../components/AddToListModal.astro';
+import GoogleAnalytics from '../../components/GoogleAnalytics.astro';
+import PlpView from '../../components/PlpView.astro';
+
+const BASE = 'https://mercadolista.com';
+
+const rawQuery = Astro.url.searchParams.get('query') ?? Astro.url.searchParams.get('q') ?? '';
+const query = rawQuery.trim().replace(/\s+/g, ' ');
+
+if (query.length < 2) {
+  return Astro.redirect('/', 302);
+}
+
+const city = findCity(Astro.url.searchParams.get('ciudad') || 'bogota');
+
+// Precios en vivo para el render inicial; si tarda, el cliente consulta /api/buscar
+let report: Record<string, any> | null = null;
+try {
+  const searchPromise = searchStores(query, city);
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('SSR timeout')), 4000)
+  );
+  const outcomes = (await Promise.race([searchPromise, timeoutPromise])) as any;
+  report = buildReport(query, outcomes);
+} catch {
+  // Sin datos en SSR: PlpView consulta los precios desde el cliente
+}
+
+const verdict = report?.verdict ?? null;
+const offers = [...(report?.offers ?? [])].sort((a, b) => (a.price || 0) - (b.price || 0));
+
+const searchUrl = `${BASE}/search/?query=${encodeURIComponent(query)}`;
+const crumbs = [
+  { name: 'Inicio', item: BASE },
+  { name: 'Búsqueda', item: `${BASE}/search/` },
+  { name: query, item: searchUrl },
+];
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <GoogleAnalytics />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`Precios de "${query}" en Colombia hoy · Mercado Lista`}</title>
+    <meta name="description" content={`Compara precios de ${query} en Falabella, Éxito, Alkosto, D1, Jumbo y más tiendas de Colombia.`} />
+    <meta name="robots" content="noindex,follow" />
+    <meta name="theme-color" content="#0e6a45" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <Nav />
+
+    <PlpView
+      h1={`Resultados para "${query}"`}
+      nombre={query}
+      query={query}
+      city={city}
+      crumbs={crumbs}
+      offers={offers}
+      verdict={verdict}
+    />
+
+    <AddToListModal />
+
+    <footer class="site-footer">
+      <p>© {new Date().getFullYear()} Mercado Lista · Comparador de precios en tiempo real para Colombia</p>
+    </footer>
+    <style>
+      .site-footer {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        color: #94a3b8;
+        font-size: 0.82rem;
+        border-top: 1px solid #f1f5f9;
+        margin-top: 2rem;
+      }
+    </style>
+  </body>
+</html>

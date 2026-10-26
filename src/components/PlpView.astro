@@ -1,0 +1,1981 @@
+---
+import CategoryHuincha, { type HuinchaItem } from './CategoryHuincha.astro';
+import CategorySeoFaq from './CategorySeoFaq.astro';
+import { cop } from '../lib/normalize';
+
+interface Crumb {
+  name: string;
+  item: string;
+}
+
+interface Props {
+  h1: string;
+  nombre: string;
+  query: string;
+  city: { id: string };
+  crumbs: Crumb[];
+  offers: any[];
+  verdict: any | null;
+  errorMsg?: string | null;
+  huinchaItems?: HuinchaItem[];
+  huinchaKicker?: string;
+  huinchaSubtitle?: string;
+  showFaq?: boolean;
+  isTechCategory?: boolean;
+}
+
+const {
+  h1,
+  nombre,
+  query,
+  city,
+  crumbs,
+  offers,
+  verdict,
+  errorMsg = null,
+  huinchaItems = [],
+  huinchaKicker = '',
+  huinchaSubtitle = '',
+  showFaq = false,
+  isTechCategory = false,
+} = Astro.props;
+
+const BASE = 'https://mercadolista.com';
+const topOffers = offers;
+
+// Detección de marca auxiliar
+function detectBrand(name: string): string {
+  const n = (name || '').toLowerCase();
+  if (n.includes('iphone') || n.includes('apple')) return 'Apple';
+  if (n.includes('samsung') || n.includes('galaxy')) return 'Samsung';
+  if (n.includes('xiaomi') || n.includes('redmi') || n.includes('poco')) return 'Xiaomi';
+  if (n.includes('motorola') || n.includes('moto ')) return 'Motorola';
+  if (n.includes('honor')) return 'Honor';
+  if (n.includes('huawei')) return 'Huawei';
+  if (n.includes('oppo')) return 'Oppo';
+  if (n.includes('realme')) return 'Realme';
+  if (n.includes('infinix')) return 'Infinix';
+  if (n.includes('tecno')) return 'Tecno';
+  if (n.includes('lg')) return 'LG';
+  if (n.includes('sony')) return 'Sony';
+  if (n.includes('hp')) return 'HP';
+  if (n.includes('lenovo')) return 'Lenovo';
+  if (n.includes('asus')) return 'Asus';
+  return 'Otras marcas';
+}
+
+// Estadísticas para los filtros de la izquierda
+const storeCounts: Record<string, number> = {};
+const brandCounts: Record<string, number> = {};
+let minPrice = Infinity;
+let maxPrice = 0;
+
+topOffers.forEach((o) => {
+  storeCounts[o.store_name] = (storeCounts[o.store_name] || 0) + 1;
+  const brand = detectBrand(o.name);
+  brandCounts[brand] = (brandCounts[brand] || 0) + 1;
+  if (o.price < minPrice) minPrice = o.price;
+  if (o.price > maxPrice) maxPrice = o.price;
+});
+
+const storeNames = Object.keys(storeCounts).sort();
+const brandNames = Object.keys(brandCounts).sort((a, b) => brandCounts[b] - brandCounts[a]);
+
+---
+
+    <main class="cat-page-container" id="cat-page-container" data-query={query} data-city={city.id} data-initial-count={topOffers.length}>
+      {/* ── Miga de pan (Breadcrumb) ─────────────────────────────────── */}
+      <nav class="breadcrumb-nav" aria-label="Navegación de miga de pan">
+        <ol class="breadcrumb-list">
+          {crumbs.map((c, i) => (
+            <li class="breadcrumb-item">
+              {i > 0 && <span class="breadcrumb-sep" aria-hidden="true">›</span>}
+              {i < crumbs.length - 1 ? (
+                <a href={c.item.replace(BASE, '')} class="breadcrumb-link">{c.name}</a>
+              ) : (
+                <span class="breadcrumb-current" aria-current="page">{c.name}</span>
+              )}
+            </li>
+          ))}
+        </ol>
+      </nav>
+
+      {/* ── Huincha Arriba (Carrusel de Subcategorías y Marcas) ────────── */}
+      {huinchaItems.length > 0 && (
+        <CategoryHuincha
+          kicker={huinchaKicker}
+          subtitle={huinchaSubtitle}
+          items={huinchaItems}
+        />
+      )}
+
+      {errorMsg && <div class="error-banner" role="alert">{errorMsg}</div>}
+
+      {/* ── Botón móvil para abrir filtros ──────────────────────────── */}
+      <div class="mobile-filter-trigger-bar">
+        <button type="button" class="btn-mobile-filters" id="btn-open-mobile-filters">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="21" x2="4" y2="14"></line>
+            <line x1="4" y1="10" x2="4" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12" y2="3"></line>
+            <line x1="20" y1="21" x2="20" y2="16"></line>
+            <line x1="20" y1="12" x2="20" y2="3"></line>
+            <line x1="1" y1="14" x2="7" y2="14"></line>
+            <line x1="9" y1="8" x2="15" y2="8"></line>
+            <line x1="17" y1="16" x2="23" y2="16"></line>
+          </svg>
+          <span>Filtros y Ordenación</span>
+        </button>
+      </div>
+
+      {/* ── CONTENEDOR PRINCIPAL: TÍTULO + VEREDICTO + FILTROS (IZQUIERDA) Y GRILLA AL LADO (DERECHA) ── */}
+      <div class="cat-layout-wrapper">
+        {/* ── COLUMNA IZQUIERDA: TÍTULO, VEREDICTO Y FILTROS ──────────── */}
+        <aside class="cat-sidebar-col" id="cat-sidebar" aria-label="Filtros e información de catálogo">
+          {/* 1. TÍTULO DE LA CATEGORÍA */}
+          <div class="sidebar-cat-header">
+            <div class="cat-header-kicker">
+              <span class="cat-badge-dot"></span>
+              <span>CATÁLOGO ESPECIALIZADO</span>
+            </div>
+            <h1 class="cat-sidebar-title">{h1}</h1>
+            <p class="cat-sidebar-meta">
+              <strong>Resultados (<span id="sidebar-count-number">{topOffers.length}</span> ofertas)</strong>
+            </p>
+          </div>
+
+          {/* 2. VEREDICTO COMPACTO SOBRE LOS FILTROS */}
+          <div id="sidebar-verdict-slot">
+            {verdict && (
+              <div class="sidebar-verdict-card" aria-label="Menor precio detectado en Colombia">
+                <div class="verdict-pill-header">
+                  <span class="verdict-trophy">🏆</span>
+                  <span class="verdict-tag">MENOR PRECIO HOY</span>
+                </div>
+
+                <div class="sidebar-verdict-body">
+                  {verdict.image && (
+                    <div class="sidebar-verdict-img-wrap">
+                      <img src={verdict.image} alt={verdict.name} class="sidebar-verdict-img" width="68" height="68" loading="eager" />
+                    </div>
+                  )}
+                  <div class="sidebar-verdict-details">
+                    <h2 class="sidebar-verdict-name" title={verdict.name}>{verdict.headline}</h2>
+                    <div class="sidebar-verdict-pricing">
+                      <strong class="sidebar-verdict-price">{cop(verdict.price)}</strong>
+                      <span class="sidebar-verdict-store">en {verdict.store_name}</span>
+                    </div>
+                    {verdict.payment_note && (
+                      <span class="sidebar-verdict-payment">💳 {verdict.payment_note}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div class="sidebar-verdict-actions">
+                  <a href={verdict.url} target="_blank" rel="noopener noreferrer" class="btn-verdict-buy">
+                    Ver en {verdict.store_name} →
+                  </a>
+                  <button
+                    type="button"
+                    class="btn-verdict-add"
+                    data-name={verdict.name}
+                    data-store={verdict.store_name}
+                    data-price={verdict.price}
+                    data-image={verdict.image ?? ''}
+                  >
+                    ➕ Agregar a lista
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 3. FILTROS TÉCNICOS / COMERCIALES */}
+          <div class="sidebar-filters-box">
+            <div class="sidebar-header">
+              <div class="sidebar-title-group">
+                <span class="sidebar-icon">🎚️</span>
+                <h2 class="sidebar-title">Filtros Técnicos</h2>
+              </div>
+              <button type="button" class="btn-clear-all-filters" id="btn-clear-filters" title="Limpiar todos los filtros">
+                Limpiar
+              </button>
+              <button type="button" class="btn-close-mobile-filters" id="btn-close-mobile-filters" aria-label="Cerrar filtros">
+                ✕
+              </button>
+            </div>
+
+            <div class="sidebar-filters-body">
+              {/* Filtro: Tienda */}
+              <div id="sidebar-stores-slot">
+                {storeNames.length > 0 && (
+                  <details class="filter-group" open>
+                    <summary class="filter-group-title">
+                      <span>Tiendas ({storeNames.length})</span>
+                      <span class="filter-chevron">▾</span>
+                    </summary>
+                    <div class="filter-group-content">
+                      {storeNames.map((sName) => (
+                        <label class="filter-checkbox-label">
+                          <input
+                            type="checkbox"
+                            class="filter-checkbox filter-store-check"
+                            value={sName}
+                          />
+                          <span class="filter-text">{sName}</span>
+                          <span class="filter-count">({storeCounts[sName]})</span>
+                        </label>
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </div>
+
+              {/* Filtro: Marcas */}
+              <div id="sidebar-brands-slot">
+                {brandNames.length > 0 && (
+                  <details class="filter-group" open>
+                    <summary class="filter-group-title">
+                      <span>Marcas ({brandNames.length})</span>
+                      <span class="filter-chevron">▾</span>
+                    </summary>
+                    <div class="filter-group-content">
+                      {brandNames.map((bName) => (
+                        <label class="filter-checkbox-label">
+                          <input
+                            type="checkbox"
+                            class="filter-checkbox filter-brand-check"
+                            value={bName}
+                          />
+                          <span class="filter-text">{bName}</span>
+                          <span class="filter-count">({brandCounts[bName]})</span>
+                        </label>
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </div>
+
+              {/* Filtro: Rango de Precio */}
+              <details class="filter-group" open>
+                <summary class="filter-group-title">
+                  <span>Rango de Precio</span>
+                  <span class="filter-chevron">▾</span>
+                </summary>
+                <div class="filter-group-content">
+                  <label class="filter-radio-label">
+                    <input type="radio" name="price-range" class="filter-price-radio" value="all" checked />
+                    <span class="filter-text">Todos los precios</span>
+                  </label>
+                  <label class="filter-radio-label">
+                    <input type="radio" name="price-range" class="filter-price-radio" value="under-500k" />
+                    <span class="filter-text">Hasta $500.000</span>
+                  </label>
+                  <label class="filter-radio-label">
+                    <input type="radio" name="price-range" class="filter-price-radio" value="500k-1500k" />
+                    <span class="filter-text">$500.000 a $1.500.000</span>
+                  </label>
+                  <label class="filter-radio-label">
+                    <input type="radio" name="price-range" class="filter-price-radio" value="1500k-3000k" />
+                    <span class="filter-text">$1.500.000 a $3.000.000</span>
+                  </label>
+                  <label class="filter-radio-label">
+                    <input type="radio" name="price-range" class="filter-price-radio" value="over-3000k" />
+                    <span class="filter-text">Más de $3.000.000</span>
+                  </label>
+                </div>
+              </details>
+
+              {/* Filtro: Descuento / Ofertas */}
+              <details class="filter-group" open>
+                <summary class="filter-group-title">
+                  <span>Descuento</span>
+                  <span class="filter-chevron">▾</span>
+                </summary>
+                <div class="filter-group-content">
+                  <label class="filter-checkbox-label">
+                    <input type="checkbox" class="filter-checkbox" id="check-only-discounts" />
+                    <span class="filter-text">Solo productos con descuento</span>
+                  </label>
+                </div>
+              </details>
+            </div>
+          </div>
+        </aside>
+
+        {/* ── COLUMNA DERECHA: GRILLA DE PRODUCTOS AL LADO DE LOS FILTROS ── */}
+        <section class="cat-content-col" aria-label="Resultados de productos ordenados por precio">
+          {/* Barra superior de resultados y selector de orden */}
+          <div class="cat-control-bar">
+            <div class="control-bar-left">
+              <span class="results-badge" id="results-count-badge">
+                <strong id="visible-count-number">{topOffers.length}</strong> piezas encontradas
+              </span>
+              <span class="page-subtitle-muted">Despacho express y envíos nacionales</span>
+              <div class="active-chips-container" id="active-chips-container">
+                <!-- Chips activos inyectados por JS -->
+              </div>
+            </div>
+
+            <div class="control-bar-right">
+              <label for="cat-city-select" class="sort-label">📍 Ciudad:</label>
+              <select id="cat-city-select" class="sort-select">
+                <option value="bogota" selected={city.id === 'bogota'}>Bogotá</option>
+                <option value="medellin" selected={city.id === 'medellin'}>Medellín</option>
+                <option value="cali" selected={city.id === 'cali'}>Cali</option>
+                <option value="barranquilla" selected={city.id === 'barranquilla'}>Barranquilla</option>
+                <option value="cartagena" selected={city.id === 'cartagena'}>Cartagena</option>
+                <option value="bucaramanga" selected={city.id === 'bucaramanga'}>Bucaramanga</option>
+                <option value="pereira" selected={city.id === 'pereira'}>Pereira</option>
+                <option value="manizales" selected={city.id === 'manizales'}>Manizales</option>
+                <option value="cucuta" selected={city.id === 'cucuta'}>Cúcuta</option>
+                <option value="ibague" selected={city.id === 'ibague'}>Ibagué</option>
+                <option value="santa-marta" selected={city.id === 'santa-marta'}>Santa Marta</option>
+                <option value="villavicencio" selected={city.id === 'villavicencio'}>Villavicencio</option>
+              </select>
+
+              <label for="sort-select" class="sort-label">Ordenar:</label>
+              <select id="sort-select" class="sort-select">
+                <option value="price-asc" selected>Precio: Menor a Mayor (Recomendado)</option>
+                <option value="price-desc">Precio: Mayor a Menor</option>
+                <option value="discount-desc">Mayor Descuento %</option>
+                <option value="name-asc">Nombre: A - Z</option>
+              </select>
+
+              <button type="button" class="btn-refresh-prices" id="btn-refresh-prices" title="Actualizar precios en tiempo real" aria-label="Actualizar precios en tiempo real">
+                🔄
+              </button>
+            </div>
+          </div>
+
+          {/* Loader animado en tiempo real */}
+          <div class="cat-live-loader" id="cat-live-loader" style={topOffers.length > 0 ? "display: none;" : "display: block;"}>
+            <div class="cat-live-loader-card">
+              <div class="cat-live-spinner"></div>
+              <div class="cat-live-loader-text">
+                <h3 class="cat-live-loading-title">Consultando precios en tiempo real…</h3>
+                <p class="cat-live-loading-subtitle">Buscando "{query}" en Éxito, Carulla, Jumbo, Olímpica, D1, Alkosto y Falabella</p>
+              </div>
+            </div>
+            <div class="cat-skeleton-grid">
+              <div class="cat-skeleton-card"></div>
+              <div class="cat-skeleton-card"></div>
+              <div class="cat-skeleton-card"></div>
+              <div class="cat-skeleton-card"></div>
+              <div class="cat-skeleton-card"></div>
+              <div class="cat-skeleton-card"></div>
+            </div>
+          </div>
+
+          {/* Grilla de Productos */}
+          <div class="product-cards-grid" id="product-cards-grid" role="list" style={topOffers.length === 0 ? "display: none;" : "display: grid;"}>
+            {topOffers.map((o, idx) => {
+              const hasDiscount = o.list_price && o.list_price > o.price;
+              const discountPct = hasDiscount ? Math.round(((o.list_price - o.price) / o.list_price) * 100) : 0;
+              const brand = detectBrand(o.name);
+              const isWinner = idx === 0;
+
+              return (
+                <article
+                  class="cat-product-card"
+                  data-store={o.store_name}
+                  data-brand={brand}
+                  data-price={o.price}
+                  data-discount={discountPct}
+                  data-name={o.name}
+                  role="listitem"
+                >
+                  <div class="card-top-badges">
+                    <span class={`store-pill store-pill--${o.store_name.toLowerCase().replace(/[^a-z0-9]/g, '')}`}>
+                      {o.store_name}
+                    </span>
+                    {hasDiscount && discountPct > 0 && (
+                      <span class="discount-pill">-{discountPct}%</span>
+                    )}
+                    {isWinner && (
+                      <span class="winner-mini-badge">★ Menor precio</span>
+                    )}
+                  </div>
+
+                  <div class="card-thumb-wrap">
+                    {o.image ? (
+                      <img src={o.image} alt={o.name} class="card-thumb" width="140" height="140" loading="lazy" />
+                    ) : (
+                      <div class="card-thumb-fallback">📱</div>
+                    )}
+                  </div>
+
+                  <div class="card-content">
+                    <h3 class="card-title" title={o.name}>{o.name}</h3>
+                    {o.unit_price && (
+                      <div class="card-unit-price">{cop(o.unit_price)} / {o.unit_label}</div>
+                    )}
+
+                    <div class="card-pricing">
+                      <span class="card-current-price">{cop(o.price)}</span>
+                      {hasDiscount && (
+                        <span class="card-old-price">{cop(o.list_price)}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div class="card-actions">
+                    <a href={o.url} target="_blank" rel="noopener noreferrer" class="btn-card-buy">
+                      Ver en {o.store_name} →
+                    </a>
+                    <button
+                      type="button"
+                      class="btn-card-add"
+                      data-name={o.name}
+                      data-store={o.store_name}
+                      data-price={o.price}
+                      data-image={o.image ?? ''}
+                      title="Añadir a mi lista de compras activa"
+                    >
+                      ➕
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          <nav class="offers-pager" id="product-pager" aria-label="Páginas de productos" hidden></nav>
+
+          {/* Estado de sin resultados */}
+          <div class="no-filter-results" id="no-filter-results" style="display: none;">
+            <div class="no-results-icon">🔎</div>
+            <h3>No encontramos resultados con los filtros actuales</h3>
+            <p>Intenta desmarcar algunos filtros o restablecer la búsqueda.</p>
+            <button type="button" class="btn-reset-filters-cta" id="btn-reset-filters-cta">
+              Restablecer filtros
+            </button>
+          </div>
+        </section>
+      </div>
+
+      {/* ── Huincha Inferior (SEO y FAQ con Schema FAQPage) ───────────── */}
+      {showFaq && (
+        <CategorySeoFaq
+          categoryName={nombre}
+          isTechCategory={isTechCategory}
+        />
+      )}
+    </main>
+
+<script>
+      import { openCatAddModal } from '../scripts/catAddToList';
+      import { escapeHtml } from '../lib/normalize';
+
+      // Contenedor principal con metadatos
+      const pageContainer = document.getElementById('cat-page-container');
+      const query = pageContainer?.dataset.query || '';
+      let currentCity = pageContainer?.dataset.city || 'bogota';
+      const initialCount = Number(pageContainer?.dataset.initialCount || 0);
+      // Grilla: 4 columnas × 5 filas = 20 productos por página
+      const PLP_PAGE_SIZE = 20;
+      let currentPage = 1;
+      let lastFilterKey = '';
+
+      // Elementos del DOM
+      const sidebar = document.getElementById('cat-sidebar');
+      const grid = document.getElementById('product-cards-grid');
+      const pager = document.getElementById('product-pager');
+      const liveLoader = document.getElementById('cat-live-loader');
+      const sortSelect = document.getElementById('sort-select') as HTMLSelectElement | null;
+      const citySelect = document.getElementById('cat-city-select') as HTMLSelectElement | null;
+      const refreshBtn = document.getElementById('btn-refresh-prices');
+      const visibleCountEl = document.getElementById('visible-count-number');
+      const sidebarCountEl = document.getElementById('sidebar-count-number');
+      const activeChipsEl = document.getElementById('active-chips-container');
+      const clearBtn = document.getElementById('btn-clear-filters');
+      const noResultsBox = document.getElementById('no-filter-results');
+      const resetCtaBtn = document.getElementById('btn-reset-filters-cta');
+      const verdictSlot = document.getElementById('sidebar-verdict-slot');
+      const storesSlot = document.getElementById('sidebar-stores-slot');
+      const brandsSlot = document.getElementById('sidebar-brands-slot');
+
+      // Móvil
+      const openMobileBtn = document.getElementById('btn-open-mobile-filters');
+      const closeMobileBtn = document.getElementById('btn-close-mobile-filters');
+
+      if (openMobileBtn && sidebar) {
+        openMobileBtn.addEventListener('click', () => {
+          sidebar.classList.add('cat-sidebar--mobile-open');
+        });
+      }
+
+      if (closeMobileBtn && sidebar) {
+        closeMobileBtn.addEventListener('click', () => {
+          sidebar.classList.remove('cat-sidebar--mobile-open');
+        });
+      }
+
+      // Modal para agregar a lista
+      document.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLElement>('.btn-verdict-add, .btn-card-add');
+        if (!btn) return;
+        e.preventDefault();
+        openCatAddModal({
+          name:       btn.dataset.name  ?? '',
+          store_name: btn.dataset.store ?? '',
+          price:      btn.dataset.price ? Number(btn.dataset.price) : undefined,
+          image:      btn.dataset.image || undefined,
+        });
+      });
+
+      function detectBrand(name: string): string {
+        const n = (name || '').toLowerCase();
+        if (n.includes('iphone') || n.includes('apple')) return 'Apple';
+        if (n.includes('samsung') || n.includes('galaxy')) return 'Samsung';
+        if (n.includes('xiaomi') || n.includes('redmi') || n.includes('poco')) return 'Xiaomi';
+        if (n.includes('motorola') || n.includes('moto ')) return 'Motorola';
+        if (n.includes('honor')) return 'Honor';
+        if (n.includes('huawei')) return 'Huawei';
+        if (n.includes('oppo')) return 'Oppo';
+        if (n.includes('realme')) return 'Realme';
+        if (n.includes('infinix')) return 'Infinix';
+        if (n.includes('tecno')) return 'Tecno';
+        if (n.includes('lg')) return 'LG';
+        if (n.includes('sony')) return 'Sony';
+        if (n.includes('hp')) return 'HP';
+        if (n.includes('lenovo')) return 'Lenovo';
+        if (n.includes('asus')) return 'Asus';
+        return 'Otras marcas';
+      }
+
+      function formatCop(val: number): string {
+        return '$ ' + Math.round(val).toLocaleString('es-CO');
+      }
+
+      function renderOffers(report: any) {
+        if (!grid) return;
+        const rawOffers = report.offers || [];
+        const sorted = [...rawOffers].sort((a: any, b: any) => (a.price || 0) - (b.price || 0));
+        const topOffers = sorted.slice(0, 200);
+
+        // Actualizar contadores
+        if (visibleCountEl) visibleCountEl.textContent = String(topOffers.length);
+        if (sidebarCountEl) sidebarCountEl.textContent = String(topOffers.length);
+
+        if (topOffers.length === 0) {
+          if (liveLoader) liveLoader.style.display = 'none';
+          if (grid) grid.style.display = 'none';
+          if (noResultsBox) noResultsBox.style.display = 'block';
+          return;
+        }
+
+        // Renderizar veredicto ganador
+        if (verdictSlot) {
+          const v = report.verdict;
+          if (v) {
+            verdictSlot.innerHTML = `
+              <div class="sidebar-verdict-card" aria-label="Menor precio detectado en Colombia">
+                <div class="verdict-pill-header">
+                  <span class="verdict-trophy">🏆</span>
+                  <span class="verdict-tag">MENOR PRECIO HOY</span>
+                </div>
+                <div class="sidebar-verdict-body">
+                  ${v.image ? `
+                    <div class="sidebar-verdict-img-wrap">
+                      <img src="${escapeHtml(v.image)}" alt="${escapeHtml(v.name)}" class="sidebar-verdict-img" width="68" height="68" loading="eager" />
+                    </div>` : ''}
+                  <div class="sidebar-verdict-details">
+                    <h2 class="sidebar-verdict-name" title="${escapeHtml(v.name)}">${escapeHtml(v.headline || v.name)}</h2>
+                    <div class="sidebar-verdict-pricing">
+                      <strong class="sidebar-verdict-price">${formatCop(v.price)}</strong>
+                      <span class="sidebar-verdict-store">en ${escapeHtml(v.store_name)}</span>
+                    </div>
+                    ${v.payment_note ? `<span class="sidebar-verdict-payment">💳 ${escapeHtml(v.payment_note)}</span>` : ''}
+                  </div>
+                </div>
+                <div class="sidebar-verdict-actions">
+                  <a href="${escapeHtml(v.url)}" target="_blank" rel="noopener noreferrer" class="btn-verdict-buy">
+                    Ver en ${escapeHtml(v.store_name)} →
+                  </a>
+                  <button
+                    type="button"
+                    class="btn-verdict-add"
+                    data-name="${escapeHtml(v.name)}"
+                    data-store="${escapeHtml(v.store_name)}"
+                    data-price="${v.price}"
+                    data-image="${escapeHtml(v.image || '')}"
+                  >
+                    ➕ Agregar a lista
+                  </button>
+                </div>
+              </div>
+            `;
+          } else {
+            verdictSlot.innerHTML = '';
+          }
+        }
+
+        // Conteo para filtros laterales
+        const storeCounts: Record<string, number> = {};
+        const brandCounts: Record<string, number> = {};
+        topOffers.forEach((o: any) => {
+          storeCounts[o.store_name] = (storeCounts[o.store_name] || 0) + 1;
+          const brand = detectBrand(o.name);
+          brandCounts[brand] = (brandCounts[brand] || 0) + 1;
+        });
+
+        // Reconstruir filtro de tiendas
+        if (storesSlot) {
+          const sNames = Object.keys(storeCounts).sort();
+          if (sNames.length > 0) {
+            storesSlot.innerHTML = `
+              <details class="filter-group" open>
+                <summary class="filter-group-title">
+                  <span>Tiendas (${sNames.length})</span>
+                  <span class="filter-chevron">▾</span>
+                </summary>
+                <div class="filter-group-content">
+                  ${sNames.map((sName) => `
+                    <label class="filter-checkbox-label">
+                      <input type="checkbox" class="filter-checkbox filter-store-check" value="${escapeHtml(sName)}" />
+                      <span class="filter-text">${escapeHtml(sName)}</span>
+                      <span class="filter-count">(${storeCounts[sName]})</span>
+                    </label>
+                  `).join('')}
+                </div>
+              </details>
+            `;
+          } else {
+            storesSlot.innerHTML = '';
+          }
+        }
+
+        // Reconstruir filtro de marcas
+        if (brandsSlot) {
+          const bNames = Object.keys(brandCounts).sort((a, b) => brandCounts[b] - brandCounts[a]);
+          if (bNames.length > 0) {
+            brandsSlot.innerHTML = `
+              <details class="filter-group" open>
+                <summary class="filter-group-title">
+                  <span>Marcas (${bNames.length})</span>
+                  <span class="filter-chevron">▾</span>
+                </summary>
+                <div class="filter-group-content">
+                  ${bNames.map((bName) => `
+                    <label class="filter-checkbox-label">
+                      <input type="checkbox" class="filter-checkbox filter-brand-check" value="${escapeHtml(bName)}" />
+                      <span class="filter-text">${escapeHtml(bName)}</span>
+                      <span class="filter-count">(${brandCounts[bName]})</span>
+                    </label>
+                  `).join('')}
+                </div>
+              </details>
+            `;
+          } else {
+            brandsSlot.innerHTML = '';
+          }
+        }
+
+        // Renderizar tarjetas de productos
+        grid.innerHTML = topOffers.map((o: any, idx: number) => {
+          const hasDiscount = o.list_price && o.list_price > o.price;
+          const discountPct = hasDiscount ? Math.round(((o.list_price - o.price) / o.list_price) * 100) : 0;
+          const brand = detectBrand(o.name);
+          const isWinner = idx === 0;
+          const storePillClass = `store-pill store-pill--${o.store_name.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+
+          return `
+            <article
+              class="cat-product-card"
+              data-store="${escapeHtml(o.store_name)}"
+              data-brand="${escapeHtml(brand)}"
+              data-price="${o.price}"
+              data-discount="${discountPct}"
+              data-name="${escapeHtml(o.name)}"
+              role="listitem"
+            >
+              <div class="card-top-badges">
+                <span class="${storePillClass}">${escapeHtml(o.store_name)}</span>
+                ${hasDiscount && discountPct > 0 ? `<span class="discount-pill">-${discountPct}%</span>` : ''}
+                ${isWinner ? `<span class="winner-mini-badge">★ Menor precio</span>` : ''}
+              </div>
+
+              <div class="card-thumb-wrap">
+                ${o.image ? `
+                  <img src="${escapeHtml(o.image)}" alt="${escapeHtml(o.name)}" class="card-thumb" width="140" height="140" loading="lazy" />
+                ` : `
+                  <div class="card-thumb-fallback">📱</div>
+                `}
+              </div>
+
+              <div class="card-content">
+                <h3 class="card-title" title="${escapeHtml(o.name)}">${escapeHtml(o.name)}</h3>
+                ${o.unit_price ? `
+                  <div class="card-unit-price">${formatCop(o.unit_price)} / ${escapeHtml(o.unit_label || '')}</div>
+                ` : ''}
+
+                <div class="card-pricing">
+                  <span class="card-current-price">${formatCop(o.price)}</span>
+                  ${hasDiscount ? `<span class="card-old-price">${formatCop(o.list_price)}</span>` : ''}
+                </div>
+              </div>
+
+              <div class="card-actions">
+                <a href="${escapeHtml(o.url)}" target="_blank" rel="noopener noreferrer" class="btn-card-buy">
+                  Ver en ${escapeHtml(o.store_name)} →
+                </a>
+                <button
+                  type="button"
+                  class="btn-card-add"
+                  data-name="${escapeHtml(o.name)}"
+                  data-store="${escapeHtml(o.store_name)}"
+                  data-price="${o.price}"
+                  data-image="${escapeHtml(o.image || '')}"
+                  title="Añadir a mi lista de compras activa"
+                >
+                  ➕
+                </button>
+              </div>
+            </article>
+          `;
+        }).join('');
+
+        if (liveLoader) liveLoader.style.display = 'none';
+        if (noResultsBox) noResultsBox.style.display = 'none';
+        grid.style.display = 'grid';
+        currentPage = 1;
+
+        applyFiltersAndSort();
+      }
+
+      async function fetchLiveCategoryOffers(q: string, c: string) {
+        if (!q) return;
+        if (liveLoader) liveLoader.style.display = 'block';
+        if (grid) grid.style.display = 'none';
+        if (noResultsBox) noResultsBox.style.display = 'none';
+
+        try {
+          const res = await fetch(`/api/buscar?q=${encodeURIComponent(q)}&ciudad=${encodeURIComponent(c)}`);
+          if (!res.ok) throw new Error('Error al consultar precios en vivo');
+          const report = await res.json();
+          renderOffers(report);
+        } catch (err) {
+          console.warn('Error fetching live offers:', err);
+          if (liveLoader) liveLoader.style.display = 'none';
+          if (noResultsBox) noResultsBox.style.display = 'block';
+        }
+      }
+
+      function renderPlpPager(pages: number, total: number) {
+        if (!pager) return;
+        pager.replaceChildren();
+        pager.hidden = pages <= 1;
+        if (pages <= 1) return;
+
+        const goTo = (target: number) => {
+          currentPage = target;
+          applyFiltersAndSort();
+          grid?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
+        const prev = document.createElement('button');
+        prev.type = 'button';
+        prev.className = 'btn-page';
+        prev.textContent = '← Anterior';
+        prev.disabled = currentPage === 1;
+        prev.addEventListener('click', () => goTo(currentPage - 1));
+
+        const info = document.createElement('span');
+        info.className = 'pager-info';
+        info.textContent = `Página ${currentPage} de ${pages} · ${total} productos`;
+
+        const next = document.createElement('button');
+        next.type = 'button';
+        next.className = 'btn-page';
+        next.textContent = 'Siguiente →';
+        next.disabled = currentPage === pages;
+        next.addEventListener('click', () => goTo(currentPage + 1));
+
+        pager.append(prev, info, next);
+      }
+
+      function applyFiltersAndSort() {
+        if (!grid) return;
+        const cards = Array.from(grid.querySelectorAll<HTMLElement>('.cat-product-card'));
+        if (cards.length === 0) return;
+
+        // 1. Tiendas seleccionadas
+        const selectedStores = Array.from(document.querySelectorAll<HTMLInputElement>('.filter-store-check:checked')).map(c => c.value);
+
+        // 2. Marcas seleccionadas
+        const selectedBrands = Array.from(document.querySelectorAll<HTMLInputElement>('.filter-brand-check:checked')).map(c => c.value);
+
+        // 3. Rango de precio
+        const priceRadio = document.querySelector<HTMLInputElement>('.filter-price-radio:checked');
+        const priceVal = priceRadio ? priceRadio.value : 'all';
+
+        // 4. Solo con descuento
+        const discountCheck = document.getElementById('check-only-discounts') as HTMLInputElement | null;
+        const onlyDiscounts = discountCheck ? discountCheck.checked : false;
+
+        let visibleCount = 0;
+
+        cards.forEach((card) => {
+          const store = card.dataset.store || '';
+          const brand = card.dataset.brand || '';
+          const price = Number(card.dataset.price || 0);
+          const discount = Number(card.dataset.discount || 0);
+
+          let match = true;
+
+          // Tienda
+          if (selectedStores.length > 0 && !selectedStores.includes(store)) {
+            match = false;
+          }
+
+          // Marca
+          if (match && selectedBrands.length > 0 && !selectedBrands.includes(brand)) {
+            match = false;
+          }
+
+          // Rango de precio
+          if (match && priceVal !== 'all') {
+            if (priceVal === 'under-500k' && price > 500000) match = false;
+            else if (priceVal === '500k-1500k' && (price < 500000 || price > 1500000)) match = false;
+            else if (priceVal === '1500k-3000k' && (price < 1500000 || price > 3000000)) match = false;
+            else if (priceVal === 'over-3000k' && price < 3000000) match = false;
+          }
+
+          // Descuento
+          if (match && onlyDiscounts && discount <= 0) {
+            match = false;
+          }
+
+          if (match) {
+            card.style.display = 'flex';
+            visibleCount++;
+          } else {
+            card.style.display = 'none';
+          }
+        });
+
+        // 5. Ordenación
+        const sortVal = sortSelect ? sortSelect.value : 'price-asc';
+        cards.sort((a, b) => {
+          const priceA = Number(a.dataset.price || 0);
+          const priceB = Number(b.dataset.price || 0);
+          const discA = Number(a.dataset.discount || 0);
+          const discB = Number(b.dataset.discount || 0);
+          const nameA = (a.dataset.name || '').toLowerCase();
+          const nameB = (b.dataset.name || '').toLowerCase();
+
+          if (sortVal === 'price-asc') return priceA - priceB;
+          if (sortVal === 'price-desc') return priceB - priceA;
+          if (sortVal === 'discount-desc') return discB - discA;
+          if (sortVal === 'name-asc') return nameA.localeCompare(nameB);
+          return 0;
+        });
+
+        cards.forEach((card) => grid.appendChild(card));
+
+        // 5b. Paginación sobre las tarjetas que pasaron los filtros
+        const matched = cards.filter((card) => card.style.display !== 'none');
+        const pages = Math.max(1, Math.ceil(matched.length / PLP_PAGE_SIZE));
+        const filterKey = [selectedStores.join('|'), selectedBrands.join('|'), priceVal, String(onlyDiscounts), sortVal].join('#');
+        if (filterKey !== lastFilterKey) {
+          currentPage = 1;
+          lastFilterKey = filterKey;
+        }
+        currentPage = Math.min(currentPage, pages);
+        matched.forEach((card, index) => {
+          const inPage = index >= (currentPage - 1) * PLP_PAGE_SIZE && index < currentPage * PLP_PAGE_SIZE;
+          card.style.display = inPage ? 'flex' : 'none';
+        });
+        renderPlpPager(pages, matched.length);
+
+        // 7. Actualizar contador
+        if (visibleCountEl) visibleCountEl.textContent = String(visibleCount);
+
+        // 7. Mostrar estado de sin resultados si aplica
+        if (noResultsBox) {
+          noResultsBox.style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+
+        // 8. Renderizar chips activos
+        renderActiveChips(selectedStores, selectedBrands, priceVal, onlyDiscounts);
+      }
+
+      function renderActiveChips(stores: string[], brands: string[], priceVal: string, onlyDiscounts: boolean) {
+        if (!activeChipsEl) return;
+        activeChipsEl.innerHTML = '';
+
+        const hasAnyFilter = stores.length > 0 || brands.length > 0 || priceVal !== 'all' || onlyDiscounts;
+
+        stores.forEach((s) => {
+          const chip = document.createElement('span');
+          chip.className = 'active-filter-chip';
+          chip.innerHTML = `<span>Tienda: ${escapeHtml(s)}</span><button type="button" data-type="store" data-val="${escapeHtml(s)}">✕</button>`;
+          activeChipsEl.appendChild(chip);
+        });
+
+        brands.forEach((b) => {
+          const chip = document.createElement('span');
+          chip.className = 'active-filter-chip';
+          chip.innerHTML = `<span>Marca: ${escapeHtml(b)}</span><button type="button" data-type="brand" data-val="${escapeHtml(b)}">✕</button>`;
+          activeChipsEl.appendChild(chip);
+        });
+
+        if (priceVal !== 'all') {
+          const labels: Record<string, string> = {
+            'under-500k': '< $500K',
+            '500k-1500k': '$500K - $1.5M',
+            '1500k-3000k': '$1.5M - $3M',
+            'over-3000k': '> $3M',
+          };
+          const chip = document.createElement('span');
+          chip.className = 'active-filter-chip';
+          chip.innerHTML = `<span>Precio: ${labels[priceVal] || priceVal}</span><button type="button" data-type="price">✕</button>`;
+          activeChipsEl.appendChild(chip);
+        }
+
+        if (onlyDiscounts) {
+          const chip = document.createElement('span');
+          chip.className = 'active-filter-chip';
+          chip.innerHTML = `<span>Solo ofertas</span><button type="button" data-type="discount">✕</button>`;
+          activeChipsEl.appendChild(chip);
+        }
+
+        if (hasAnyFilter) {
+          const resetAll = document.createElement('button');
+          resetAll.type = 'button';
+          resetAll.className = 'btn-reset-chips';
+          resetAll.textContent = 'Restablecer';
+          resetAll.addEventListener('click', resetAllFilters);
+          activeChipsEl.appendChild(resetAll);
+        }
+      }
+
+      function resetAllFilters() {
+        document.querySelectorAll<HTMLInputElement>('.filter-store-check').forEach(c => c.checked = false);
+        document.querySelectorAll<HTMLInputElement>('.filter-brand-check').forEach(c => c.checked = false);
+        const allRadio = document.querySelector<HTMLInputElement>('.filter-price-radio[value="all"]');
+        if (allRadio) allRadio.checked = true;
+        const discountCheck = document.getElementById('check-only-discounts') as HTMLInputElement | null;
+        if (discountCheck) discountCheck.checked = false;
+        applyFiltersAndSort();
+      }
+
+      // Listeners
+      sidebar?.addEventListener('change', applyFiltersAndSort);
+      sortSelect?.addEventListener('change', applyFiltersAndSort);
+      clearBtn?.addEventListener('click', resetAllFilters);
+      resetCtaBtn?.addEventListener('click', () => {
+        resetAllFilters();
+        if (initialCount === 0 && query) {
+          fetchLiveCategoryOffers(query, currentCity);
+        }
+      });
+
+      // Cambio de ciudad en selector de control
+      citySelect?.addEventListener('change', () => {
+        currentCity = citySelect.value;
+        localStorage.setItem('mercadolista_city', currentCity);
+        fetchLiveCategoryOffers(query, currentCity);
+      });
+
+      // Botón de refrescar precios
+      refreshBtn?.addEventListener('click', () => {
+        fetchLiveCategoryOffers(query, currentCity);
+      });
+
+      // Eliminar chip individual
+      activeChipsEl?.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button');
+        if (!btn || btn.classList.contains('btn-reset-chips')) return;
+        const type = btn.dataset.type;
+        const val = btn.dataset.val;
+
+        if (type === 'store' && val) {
+          const check = document.querySelector<HTMLInputElement>(`.filter-store-check[value="${val}"]`);
+          if (check) check.checked = false;
+        } else if (type === 'brand' && val) {
+          const check = document.querySelector<HTMLInputElement>(`.filter-brand-check[value="${val}"]`);
+          if (check) check.checked = false;
+        } else if (type === 'price') {
+          const allRadio = document.querySelector<HTMLInputElement>('.filter-price-radio[value="all"]');
+          if (allRadio) allRadio.checked = true;
+        } else if (type === 'discount') {
+          const discountCheck = document.getElementById('check-only-discounts') as HTMLInputElement | null;
+          if (discountCheck) discountCheck.checked = false;
+        }
+        applyFiltersAndSort();
+      });
+
+      // INICIO / HIDRATACIÓN AUTOMÁTICA
+      // Si SSR vino vacío (0 ofertas), dispara de inmediato la consulta en vivo
+      if (initialCount === 0 && query) {
+        const storedCity = localStorage.getItem('mercadolista_city');
+        if (storedCity && citySelect) {
+          citySelect.value = storedCity;
+          currentCity = storedCity;
+        }
+        fetchLiveCategoryOffers(query, currentCity);
+      } else {
+        applyFiltersAndSort();
+      }
+</script>
+
+<style>
+      .cat-page-container {
+        width: 100%;
+        max-width: none;
+        margin: 0 auto;
+        padding: 1.25rem 1rem 4.5rem;
+      }
+
+      /* ── Breadcrumb ── */
+      .breadcrumb-nav {
+        margin-bottom: 1.25rem;
+      }
+
+      .breadcrumb-list {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        font-size: 0.84rem;
+        color: #64748b;
+      }
+
+      .breadcrumb-item {
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .breadcrumb-sep {
+        margin: 0 0.45rem;
+        color: #94a3b8;
+      }
+
+      .breadcrumb-link {
+        color: #0e6a45;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.15s, text-decoration 0.15s;
+      }
+
+      .breadcrumb-link:hover {
+        color: #084c31;
+        text-decoration: underline;
+      }
+
+      .breadcrumb-current {
+        color: #1e293b;
+        font-weight: 600;
+      }
+
+      .error-banner {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.5rem;
+        color: #856404;
+        font-size: 0.92rem;
+      }
+
+      /* ── BOTÓN FILTROS MÓVIL ── */
+      .mobile-filter-trigger-bar {
+        display: none;
+        margin-bottom: 1.25rem;
+      }
+
+      .btn-mobile-filters {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        width: 100%;
+        background: #ffffff;
+        border: 1.5px solid #0e6a45;
+        color: #0e6a45;
+        padding: 0.75rem;
+        border-radius: 10px;
+        font-size: 0.92rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      /* ── LAYOUT DE 2 COLUMNAS DIRECTO DEBAJO DE LA HUINCHA ── */
+      .cat-layout-wrapper {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 2rem;
+        align-items: flex-start;
+        margin-top: 1.5rem;
+        margin-bottom: 3.5rem;
+      }
+
+      /* ── COLUMNA IZQUIERDA: TÍTULO + VEREDICTO + FILTROS ── */
+      .cat-sidebar-col {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+      }
+
+      /* 1. TÍTULO EN LA BARRA LATERAL (ESTILO REFERENCIA) */
+      .sidebar-cat-header {
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1.25rem;
+      }
+
+      .cat-header-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #0e6a45;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-bottom: 0.4rem;
+      }
+
+      .cat-badge-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+      }
+
+      .cat-sidebar-title {
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0 0 0.4rem;
+        line-height: 1.25;
+      }
+
+      .cat-sidebar-meta {
+        margin: 0;
+        font-size: 0.88rem;
+        color: #64748b;
+      }
+
+      .cat-sidebar-meta strong {
+        color: #0e6a45;
+      }
+
+      /* 2. VEREDICTO COMPACTO EN SIDEBAR */
+      .sidebar-verdict-card {
+        background: linear-gradient(135deg, #f0faf5 0%, #e6f6ee 100%);
+        border: 2px solid #0e6a45;
+        border-radius: 16px;
+        padding: 1.15rem;
+        box-shadow: 0 4px 14px rgba(14, 106, 69, 0.08);
+      }
+
+      .verdict-pill-header {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: #0e6a45;
+        color: #ffffff;
+        border-radius: 999px;
+        padding: 0.22rem 0.65rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.85rem;
+      }
+
+      .sidebar-verdict-body {
+        display: flex;
+        gap: 0.85rem;
+        align-items: center;
+        margin-bottom: 0.85rem;
+      }
+
+      .sidebar-verdict-img-wrap {
+        width: 68px;
+        height: 68px;
+        border-radius: 10px;
+        background: #ffffff;
+        border: 1px solid #d1fae5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.3rem;
+        flex-shrink: 0;
+      }
+
+      .sidebar-verdict-img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+
+      .sidebar-verdict-details {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .sidebar-verdict-name {
+        font-size: 0.94rem;
+        font-weight: 700;
+        color: #084c31;
+        margin: 0 0 0.25rem;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .sidebar-verdict-pricing {
+        display: flex;
+        align-items: baseline;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+      }
+
+      .sidebar-verdict-price {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #0e6a45;
+      }
+
+      .sidebar-verdict-store {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #475569;
+      }
+
+      .sidebar-verdict-payment {
+        display: inline-block;
+        background: #ffffff;
+        border: 1px solid #a7f3d0;
+        border-radius: 6px;
+        padding: 0.15rem 0.45rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #047857;
+        margin-top: 0.35rem;
+      }
+
+      .sidebar-verdict-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+      }
+
+      .btn-verdict-buy {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #0e6a45;
+        color: #ffffff;
+        padding: 0.6rem 1rem;
+        border-radius: 999px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 0.84rem;
+        transition: background 0.15s;
+        text-align: center;
+      }
+
+      .btn-verdict-buy:hover {
+        background: #084c31;
+      }
+
+      .btn-verdict-add {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        color: #0e6a45;
+        border: 1.5px solid #0e6a45;
+        padding: 0.55rem 1rem;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 0.82rem;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+
+      .btn-verdict-add:hover {
+        background: #ecfdf5;
+      }
+
+      /* 3. FILTROS EN SIDEBAR */
+      .sidebar-filters-box {
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1.25rem;
+      }
+
+      .sidebar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 0.85rem;
+        border-bottom: 1.5px solid #f1f5f9;
+        margin-bottom: 1rem;
+      }
+
+      .sidebar-title-group {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+
+      .sidebar-icon {
+        font-size: 1.1rem;
+      }
+
+      .sidebar-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+      }
+
+      .btn-clear-all-filters {
+        background: none;
+        border: none;
+        color: #0e6a45;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        transition: background 0.15s;
+      }
+
+      .btn-clear-all-filters:hover {
+        background: #f0faf5;
+        text-decoration: underline;
+      }
+
+      .btn-close-mobile-filters {
+        display: none;
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        cursor: pointer;
+        color: #64748b;
+      }
+
+      .sidebar-filters-body {
+        display: flex;
+        flex-direction: column;
+        gap: 1.1rem;
+      }
+
+      .filter-group {
+        border-bottom: 1px solid #f1f5f9;
+        padding-bottom: 0.9rem;
+      }
+
+      .filter-group:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+
+      .filter-group-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #1e293b;
+        cursor: pointer;
+        user-select: none;
+        list-style: none;
+        margin-bottom: 0.65rem;
+      }
+
+      .filter-group-title::-webkit-details-marker {
+        display: none;
+      }
+
+      .filter-chevron {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        transition: transform 0.2s;
+      }
+
+      .filter-group[open] .filter-chevron {
+        transform: rotate(180deg);
+      }
+
+      .filter-group-content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+        padding-left: 0.2rem;
+        max-height: 220px;
+        overflow-y: auto;
+      }
+
+      .filter-checkbox-label, .filter-radio-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.84rem;
+        color: #334155;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .filter-checkbox-label:hover, .filter-radio-label:hover {
+        color: #0e6a45;
+      }
+
+      .filter-checkbox, .filter-price-radio {
+        accent-color: #0e6a45;
+        cursor: pointer;
+        width: 16px;
+        height: 16px;
+      }
+
+      .filter-text {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .filter-count {
+        font-size: 0.75rem;
+        color: #94a3b8;
+      }
+
+      /* ── COLUMNA DERECHA: GRILLA DE PRODUCTOS AL LADO ── */
+      .cat-content-col {
+        min-width: 0;
+      }
+
+      .cat-control-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.85rem 1.15rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .control-bar-left {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .results-badge {
+        font-size: 0.95rem;
+        color: #1e293b;
+        font-weight: 600;
+      }
+
+      .results-badge strong {
+        color: #0e6a45;
+        font-size: 1.15rem;
+      }
+
+      .page-subtitle-muted {
+        font-size: 0.82rem;
+        color: #64748b;
+      }
+
+      .active-chips-container {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        width: 100%;
+        margin-top: 0.25rem;
+      }
+
+      :global(.active-filter-chip) {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        color: #1e293b;
+        border-radius: 999px;
+        padding: 0.22rem 0.65rem;
+        font-size: 0.76rem;
+        font-weight: 600;
+      }
+
+      :global(.active-filter-chip button) {
+        background: none;
+        border: none;
+        color: #64748b;
+        cursor: pointer;
+        font-size: 0.75rem;
+        padding: 0;
+        line-height: 1;
+      }
+
+      :global(.active-filter-chip button:hover) {
+        color: #ef4444;
+      }
+
+      :global(.btn-reset-chips) {
+        background: #fee2e2;
+        border: 1px solid #fca5a5;
+        color: #b91c1c;
+        border-radius: 999px;
+        padding: 0.22rem 0.65rem;
+        font-size: 0.76rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .control-bar-right {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .sort-label {
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: #475569;
+      }
+
+      .sort-select {
+        background: #ffffff;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 0.4rem 0.75rem;
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: #1e293b;
+        cursor: pointer;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+
+      .sort-select:focus {
+        border-color: #0e6a45;
+      }
+
+      .btn-refresh-prices {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        border: 1.5px solid #cbd5e1;
+        background: #ffffff;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+        flex-shrink: 0;
+      }
+
+      .btn-refresh-prices:hover {
+        border-color: #0e6a45;
+        background: #f0faf5;
+        transform: rotate(45deg);
+      }
+
+      /* ── Loader en tiempo real ── */
+      .cat-live-loader {
+        padding: 0.5rem 0 2rem;
+      }
+
+      .cat-live-loader-card {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        background: #f0faf5;
+        border: 1.5px solid #a7f3d0;
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .cat-live-spinner {
+        width: 36px;
+        height: 36px;
+        border: 3.5px solid #d1fae5;
+        border-top-color: #0e6a45;
+        border-radius: 50%;
+        animation: cat-spin 0.85s linear infinite;
+        flex-shrink: 0;
+      }
+
+      @keyframes cat-spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .cat-live-loading-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #065f46;
+        margin: 0 0 0.25rem;
+      }
+
+      .cat-live-loading-subtitle {
+        font-size: 0.85rem;
+        color: #047857;
+        margin: 0;
+      }
+
+      .cat-skeleton-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        gap: 1.25rem;
+      }
+
+      .cat-skeleton-card {
+        height: 330px;
+        background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+        background-size: 200% 100%;
+        animation: cat-shimmer 1.5s infinite;
+        border-radius: 16px;
+        border: 1.5px solid #e2e8f0;
+      }
+
+      @keyframes cat-shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+
+      /* ── Grilla de Tarjetas de Productos ── */
+      .product-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1.25rem;
+      }
+
+      @media (max-width: 1100px) {
+        .product-cards-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      .cat-product-card {
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1.15rem;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+        position: relative;
+      }
+
+      .cat-product-card:hover {
+        transform: translateY(-4px);
+        border-color: #0e6a45;
+        box-shadow: 0 6px 20px rgba(14, 106, 69, 0.1);
+      }
+
+      .card-top-badges {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.4rem;
+        margin-bottom: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .store-pill {
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
+        background: #f1f5f9;
+        color: #334155;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .store-pill--falabella {
+        background: #0e6a45;
+        color: #ffffff;
+      }
+
+      .store-pill--alkosto, .store-pill--ktronix {
+        background: #1e3a8a;
+        color: #ffffff;
+      }
+
+      .store-pill--exito {
+        background: #fef08a;
+        color: #854d0e;
+      }
+
+      .store-pill--jumbo {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
+      .store-pill--carulla {
+        background: #ecfdf5;
+        color: #065f46;
+      }
+
+      .store-pill--d1 {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+
+      .discount-pill {
+        font-size: 0.72rem;
+        font-weight: 800;
+        background: #ef4444;
+        color: #ffffff;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+      }
+
+      .winner-mini-badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #0e6a45;
+        background: #d1fae5;
+        padding: 0.2rem 0.5rem;
+        border-radius: 999px;
+      }
+
+      .card-thumb-wrap {
+        width: 100%;
+        height: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0.85rem;
+        padding: 0.5rem;
+        background: #fbfcfd;
+        border-radius: 10px;
+      }
+
+      .card-thumb {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+
+      .card-thumb-fallback {
+        font-size: 3rem;
+      }
+
+      .card-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 1rem;
+      }
+
+      .card-title {
+        font-size: 0.92rem;
+        font-weight: 600;
+        color: #0f172a;
+        line-height: 1.35;
+        margin: 0 0 0.35rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .card-unit-price {
+        font-size: 0.76rem;
+        color: #64748b;
+        margin-bottom: 0.4rem;
+      }
+
+      .card-pricing {
+        margin-top: auto;
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+      }
+
+      .card-current-price {
+        font-size: 1.28rem;
+        font-weight: 800;
+        color: #0e6a45;
+      }
+
+      .card-old-price {
+        font-size: 0.82rem;
+        color: #94a3b8;
+        text-decoration: line-through;
+      }
+
+      .card-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
+
+      .btn-card-buy {
+        flex: 1;
+        background: #0e6a45;
+        color: #ffffff;
+        text-align: center;
+        padding: 0.6rem 0.8rem;
+        border-radius: 999px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 0.82rem;
+        transition: background 0.15s;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .btn-card-buy:hover {
+        background: #084c31;
+      }
+
+      .btn-card-add {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 1.5px solid #cbd5e1;
+        background: #ffffff;
+        color: #0e6a45;
+        font-size: 0.95rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.15s;
+      }
+
+      .btn-card-add:hover {
+        border-color: #0e6a45;
+        background: #ecfdf5;
+        transform: scale(1.08);
+      }
+
+      .no-filter-results {
+        text-align: center;
+        padding: 3.5rem 1.5rem;
+        background: #f8fafc;
+        border: 1.5px dashed #cbd5e1;
+        border-radius: 16px;
+      }
+
+      .no-results-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .no-filter-results h3 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0 0 0.4rem;
+      }
+
+      .no-filter-results p {
+        font-size: 0.88rem;
+        color: #64748b;
+        margin: 0 0 1.25rem;
+      }
+
+      .btn-reset-filters-cta {
+        background: #0e6a45;
+        color: #ffffff;
+        border: none;
+        padding: 0.65rem 1.4rem;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        cursor: pointer;
+      }
+
+      .site-footer {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        color: #94a3b8;
+        font-size: 0.82rem;
+        border-top: 1px solid #f1f5f9;
+        margin-top: 2rem;
+      }
+
+      /* ── RESPONSIVE MÓVIL ── */
+      @media (max-width: 900px) {
+        .cat-layout-wrapper {
+          grid-template-columns: 1fr;
+        }
+
+        .mobile-filter-trigger-bar {
+          display: block;
+        }
+
+        .cat-sidebar-col {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 85%;
+          max-width: 320px;
+          height: 100vh;
+          max-height: 100vh;
+          z-index: 9999;
+          transform: translateX(-100%);
+          transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
+          background: #ffffff;
+          overflow-y: auto;
+          padding: 1rem;
+          border-radius: 0;
+        }
+
+        .cat-sidebar-col.cat-sidebar--mobile-open {
+          transform: translateX(0);
+        }
+
+        .btn-close-mobile-filters {
+          display: block;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .cat-sidebar-title {
+          font-size: 1.4rem;
+        }
+        .product-cards-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.85rem;
+        }
+        .card-thumb-wrap {
+          height: 120px;
+        }
+        .card-current-price {
+          font-size: 1.1rem;
+        }
+        .cat-control-bar {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .control-bar-right {
+          width: 100%;
+          justify-content: space-between;
+        }
+        .sort-select {
+          flex: 1;
+        }
+      }
+</style>

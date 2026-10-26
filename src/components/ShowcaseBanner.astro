@@ -1,0 +1,1030 @@
+---
+// src/components/ShowcaseBanner.astro
+// Módulo de vitrina promocional tipo banner "Encontrar de una" (Imagen 2)
+
+export interface ShowcaseDeal {
+  id: string;
+  title: string;
+  subtitle?: string;
+  badgeText: string;
+  badgeColor: 'burgundy' | 'green';
+  tagline?: string;
+  highlightText?: string;
+  regularPrice: string;
+  dealPrice: string;
+  winnerStore: string;
+  savingsText?: string;
+  query: string;
+  url: string;
+  visualType: 'balls' | 'lights' | 'santa' | 'tree';
+}
+
+const DEALS: ShowcaseDeal[] = [
+  {
+    id: 'deal-balls',
+    title: 'Elige el brillo de tu historia',
+    subtitle: 'Set x24 Bolas Navideñas Brillantes & Mate',
+    badgeText: '30% DTO.',
+    badgeColor: 'burgundy',
+    regularPrice: '49.900',
+    dealPrice: '34.930',
+    winnerStore: 'Falabella',
+    savingsText: 'Ahorras $14.970',
+    query: 'bolas de navidad',
+    url: '/categoria/decohogar/decoracion/navidad/decoracion-navidena/adornos-arbol-de-navidad',
+    visualType: 'balls',
+  },
+  {
+    id: 'deal-lights',
+    title: 'Ilumina la magia de la navidad',
+    subtitle: 'Serie LED 200 Bombillos Cálida & Multicolor',
+    badgeText: '30% DTO.',
+    badgeColor: 'green',
+    regularPrice: '59.900',
+    dealPrice: '41.930',
+    winnerStore: 'Éxito',
+    savingsText: 'Ahorras $17.970',
+    query: 'luces de navidad',
+    url: '/categoria/decohogar/decoracion/navidad/decoracion-navidena/luces-de-navidad',
+    visualType: 'lights',
+  },
+  {
+    id: 'deal-decorations',
+    title: 'Adornos de Navidad',
+    subtitle: 'Set x2 Muñecos Papá Noel y reno de 34 cm',
+    badgeText: '30% DTO.',
+    badgeColor: 'burgundy',
+    regularPrice: '102.900',
+    dealPrice: '72.030',
+    winnerStore: 'Alkosto',
+    savingsText: 'Ahorras $30.870',
+    query: 'adornos de navidad',
+    url: '/categoria/decohogar/decoracion/navidad/decoracion-navidena/adornos-navidenos',
+    visualType: 'santa',
+  },
+  {
+    id: 'deal-tree',
+    title: 'Árbol de Navidad',
+    subtitle: 'Boreal Imperial 180 cm',
+    highlightText: 'con Piñas y Berries',
+    badgeText: '30% DTO.',
+    badgeColor: 'burgundy',
+    tagline: 'La Navidad como la sueñas',
+    regularPrice: '609.900',
+    dealPrice: '426.930',
+    winnerStore: 'Falabella',
+    savingsText: 'Ahorras $182.970',
+    query: 'arbol de navidad',
+    url: '/categoria/decohogar/decoracion/navidad/decoracion-navidena/arboles-de-navidad',
+    visualType: 'tree',
+  },
+];
+---
+
+<section class="showcase-banner-section" id="featured-showcase-module" aria-label="Vitrina de temporada: Encuentra de una">
+  <!-- Adorno festivo en la esquina superior izquierda (Guirnalda de pino y frutos rojos) -->
+  <div class="showcase-garland-accent" aria-hidden="true">
+    <svg viewBox="0 0 160 80" width="160" height="80" fill="none">
+      <!-- Rama de pino principal -->
+      <path d="M-10 -10 C30 20, 80 15, 130 5" stroke="#166534" stroke-width="4" stroke-linecap="round" />
+      <path d="M-10 -10 C20 40, 60 50, 90 40" stroke="#14532d" stroke-width="3" stroke-linecap="round" />
+      <!-- Agujas de pino -->
+      <path d="M15 10 L5 25 M30 18 L25 35 M50 15 L55 32 M70 12 L80 26 M90 8 L105 18" stroke="#15803d" stroke-width="2.5" stroke-linecap="round" />
+      <path d="M20 28 L15 42 M40 35 L38 52 M60 38 L68 54 M75 36 L88 48" stroke="#22c55e" stroke-width="2" stroke-linecap="round" />
+      <!-- Piña de pino -->
+      <ellipse cx="45" cy="40" rx="7" ry="11" transform="rotate(25 45 40)" fill="#78350f" stroke="#451a03" stroke-width="1.5" />
+      <path d="M42 34 Q45 37 48 34 M40 40 Q45 43 50 40 M42 46 Q45 49 48 46" stroke="#b45309" stroke-width="1" />
+      <!-- Frutos rojos / Berries navideñas -->
+      <circle cx="28" cy="18" r="4.5" fill="#dc2626" />
+      <circle cx="27" cy="17" r="1.5" fill="#fecaca" />
+      <circle cx="35" cy="22" r="4" fill="#ef4444" />
+      <circle cx="34" cy="21" r="1.2" fill="#fecaca" />
+      <circle cx="68" cy="28" r="4.5" fill="#b91c1c" />
+      <circle cx="67" cy="27" r="1.5" fill="#fecaca" />
+      <circle cx="76" cy="25" r="4" fill="#dc2626" />
+      <circle cx="85" cy="35" r="3.5" fill="#ef4444" />
+    </svg>
+  </div>
+
+  <div class="showcase-header">
+    <div class="showcase-title-block">
+      <span class="showcase-sparkle">✨</span>
+      <h2 class="showcase-main-title">La Navidad como la sueñas</h2>
+      <span class="showcase-sparkle">✨</span>
+    </div>
+    <div class="showcase-header-actions">
+      <button type="button" class="showcase-live-btn" id="showcase-live-refresh" title="Consultar los precios más bajos en vivo de estas ofertas">
+        <span class="live-pulse-dot"></span>
+        <span>Consultar en vivo</span>
+      </button>
+      <a href="/categoria/decohogar/decoracion/navidad" class="showcase-see-all" title="Ver catálogo completo de Navidad">
+        Ver todo →
+      </a>
+    </div>
+  </div>
+
+  <div class="showcase-grid">
+    <!-- COLUMNA 1 (Izquierda): 2 Tarjetas apiladas -->
+    <div class="showcase-col-left">
+      <!-- Tarjeta 1A: Bolas de Navidad -->
+      <a href={DEALS[0].url} class="showcase-card card-stacked card-balls" data-deal-id={DEALS[0].id} data-query={DEALS[0].query} title="Ver categoría Bolas de Navidad">
+        <div class="card-bg-gradient burg"></div>
+        <div class="card-content">
+          <div class="card-badge badge-burgundy">
+            <span class="badge-snow">❄</span>
+            <strong>30%</strong>
+            <span class="badge-sub">DTO.</span>
+            <span class="badge-snow">❄</span>
+          </div>
+
+          <div class="card-text-header">
+            <h3 class="card-headline-script">{DEALS[0].title}</h3>
+            <span class="card-prod-title">{DEALS[0].subtitle}</span>
+          </div>
+
+          <div class="card-visual visual-balls">
+            <svg viewBox="0 0 160 110" width="160" height="110" fill="none">
+              <!-- Fondo cálido con luces navideñas desenfocadas -->
+              <circle cx="30" cy="30" r="18" fill="#fbbf24" opacity="0.3" filter="blur(4px)" />
+              <circle cx="130" cy="25" r="22" fill="#ef4444" opacity="0.25" filter="blur(5px)" />
+              <circle cx="80" cy="20" r="14" fill="#38bdf8" opacity="0.3" filter="blur(4px)" />
+              
+              <!-- Hilos dorados de los que cuelgan las bolas -->
+              <line x1="45" y1="0" x2="45" y2="40" stroke="#d97706" stroke-width="1.2" stroke-dasharray="2 2" />
+              <line x1="88" y1="0" x2="88" y2="30" stroke="#d97706" stroke-width="1.2" stroke-dasharray="2 2" />
+              <line x1="128" y1="0" x2="128" y2="46" stroke="#d97706" stroke-width="1.2" stroke-dasharray="2 2" />
+              
+              <!-- Bola 1 (Rojo navideño brillante central grande) -->
+              <rect x="83" y="27" width="10" height="5" rx="1" fill="#facc15" stroke="#b45309" stroke-width="0.8" />
+              <circle cx="88" cy="25" r="3" stroke="#facc15" stroke-width="1.2" />
+              <circle cx="88" cy="62" r="27" fill="url(#grad-ball-red)" />
+              <!-- Destellos y arabescos dorados -->
+              <ellipse cx="79" cy="51" rx="6" ry="12" transform="rotate(-30 79 51)" fill="#ffffff" opacity="0.45" />
+              <circle cx="75" cy="45" r="3" fill="#ffffff" opacity="0.85" />
+              <path d="M74 64 Q88 72 102 64 M76 73 Q88 80 100 73" stroke="#fef08a" stroke-width="1.4" stroke-dasharray="2.5 2" />
+
+              <!-- Bola 2 (Dorado champán izquierda) -->
+              <rect x="41" y="37" width="8" height="4.5" rx="1" fill="#facc15" stroke="#b45309" stroke-width="0.8" />
+              <circle cx="45" cy="60" r="20" fill="url(#grad-ball-gold)" />
+              <ellipse cx="38" cy="52" rx="4" ry="9" transform="rotate(-30 38 52)" fill="#ffffff" opacity="0.5" />
+              <circle cx="36" cy="48" r="2" fill="#ffffff" opacity="0.9" />
+
+              <!-- Bola 3 (Verde esmeralda derecha) -->
+              <rect x="124" y="43" width="8" height="4.5" rx="1" fill="#facc15" stroke="#b45309" stroke-width="0.8" />
+              <circle cx="128" cy="67" r="19" fill="url(#grad-ball-green)" />
+              <ellipse cx="122" cy="59" rx="4" ry="8" transform="rotate(-30 122 59)" fill="#ffffff" opacity="0.5" />
+              <circle cx="120" cy="55" r="2" fill="#ffffff" opacity="0.85" />
+
+              <defs>
+                <radialGradient id="grad-ball-red" cx="40%" cy="35%" r="65%">
+                  <stop offset="0%" stop-color="#ef4444" />
+                  <stop offset="60%" stop-color="#b91c1c" />
+                  <stop offset="100%" stop-color="#7f1d1d" />
+                </radialGradient>
+                <radialGradient id="grad-ball-gold" cx="40%" cy="35%" r="65%">
+                  <stop offset="0%" stop-color="#fef08a" />
+                  <stop offset="50%" stop-color="#eab308" />
+                  <stop offset="100%" stop-color="#a16207" />
+                </radialGradient>
+                <radialGradient id="grad-ball-green" cx="40%" cy="35%" r="65%">
+                  <stop offset="0%" stop-color="#34d399" />
+                  <stop offset="60%" stop-color="#059669" />
+                  <stop offset="100%" stop-color="#064e3b" />
+                </radialGradient>
+              </defs>
+            </svg>
+          </div>
+
+          <div class="card-bottom-bar wave-burg">
+            <div class="card-price-group">
+              <span class="price-before">Antes: ${DEALS[0].regularPrice}</span>
+              <span class="price-now">${DEALS[0].dealPrice}</span>
+              <span class="winner-pill store-falabella">{DEALS[0].winnerStore} · {DEALS[0].savingsText}</span>
+            </div>
+            <span class="card-action-btn" aria-hidden="true">
+              Ver categoría ⚡
+            </span>
+          </div>
+        </div>
+      </a>
+
+      <!-- Tarjeta 1B: Luces de Navidad -->
+      <a href={DEALS[1].url} class="showcase-card card-stacked card-lights" data-deal-id={DEALS[1].id} data-query={DEALS[1].query} title="Ver categoría Luces de Navidad">
+        <div class="card-bg-gradient grn"></div>
+        <div class="card-content">
+          <div class="card-badge badge-green">
+            <span class="badge-snow">❄</span>
+            <strong>30%</strong>
+            <span class="badge-sub">DTO.</span>
+            <span class="badge-snow">❄</span>
+          </div>
+
+          <div class="card-text-header">
+            <h3 class="card-headline-script text-pine">{DEALS[1].title}</h3>
+            <span class="card-prod-title">{DEALS[1].subtitle}</span>
+          </div>
+
+          <div class="card-visual visual-lights">
+            <svg viewBox="0 0 160 100" width="160" height="100" fill="none">
+              <!-- Fondo cálido de noche mágica con halos de luz -->
+              <circle cx="35" cy="50" r="22" fill="#fef08a" opacity="0.2" filter="blur(5px)" />
+              <circle cx="95" cy="45" r="24" fill="#38bdf8" opacity="0.18" filter="blur(5px)" />
+              <circle cx="138" cy="55" r="22" fill="#f43f5e" opacity="0.2" filter="blur(5px)" />
+
+              <!-- Cable verde festivo que ondea con elegancia -->
+              <path d="M-5 38 Q25 72 55 40 T115 44 T165 38" stroke="#166534" stroke-width="2.5" fill="none" />
+              <path d="M-5 60 Q35 88 75 58 T155 64" stroke="#14532d" stroke-width="2" fill="none" />
+
+              <!-- Bombillos LED cálidos, rojos, azules y verdes colgantes -->
+              <!-- Bombillo 1: Dorado cálido -->
+              <rect x="23" y="53" width="4" height="4" fill="#15803d" />
+              <ellipse cx="25" cy="63" rx="6" ry="8" fill="#fef08a" />
+              <circle cx="25" cy="63" r="11" fill="#facc15" opacity="0.35" />
+
+              <!-- Bombillo 2: Rojo rubí -->
+              <rect x="53" y="40" width="4" height="4" fill="#15803d" />
+              <ellipse cx="55" cy="49" rx="6" ry="8" fill="#ef4444" />
+              <circle cx="55" cy="49" r="10" fill="#dc2626" opacity="0.35" />
+
+              <!-- Bombillo 3: Azul cian hielo -->
+              <rect x="83" y="46" width="4" height="4" fill="#15803d" />
+              <ellipse cx="85" cy="56" rx="6" ry="8" fill="#38bdf8" />
+              <circle cx="85" cy="56" r="10" fill="#0284c7" opacity="0.35" />
+
+              <!-- Bombillo 4: Verde esmeralda -->
+              <rect x="113" y="42" width="4" height="4" fill="#15803d" />
+              <ellipse cx="115" cy="52" rx="6" ry="8" fill="#4ade80" />
+              <circle cx="115" cy="52" r="10" fill="#16a34a" opacity="0.35" />
+
+              <!-- Bombillo 5: Blanco cálido brillante -->
+              <rect x="143" y="46" width="4" height="4" fill="#15803d" />
+              <ellipse cx="145" cy="56" rx="6" ry="8" fill="#fef08a" />
+              <circle cx="145" cy="56" r="12" fill="#eab308" opacity="0.4" />
+
+              <!-- Destellos de estrellas mágicas de 4 puntas -->
+              <path d="M25 59 L26 63 L30 63 L27 65 L28 69 L25 66 L22 69 L23 65 L20 63 L24 63 Z" fill="#ffffff" />
+              <path d="M85 52 L86 56 L90 56 L87 58 L88 62 L85 59 L82 62 L83 58 L80 56 L84 56 Z" fill="#ffffff" />
+              <path d="M145 52 L146 56 L150 56 L147 58 L148 62 L145 59 L142 62 L143 58 L140 56 L144 56 Z" fill="#ffffff" />
+            </svg>
+          </div>
+
+          <div class="card-bottom-bar wave-green">
+            <div class="card-price-group">
+              <span class="price-before">Antes: ${DEALS[1].regularPrice}</span>
+              <span class="price-now">${DEALS[1].dealPrice}</span>
+              <span class="winner-pill store-exito">{DEALS[1].winnerStore} · {DEALS[1].savingsText}</span>
+            </div>
+            <span class="card-action-btn" aria-hidden="true">
+              Ver categoría ⚡
+            </span>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- COLUMNA 2 (Centro): 1 Tarjeta vertical alta (Set Papá Noel y Reno) -->
+    <div class="showcase-col-mid">
+      <a href={DEALS[2].url} class="showcase-card card-tall card-santa" data-deal-id={DEALS[2].id} data-query={DEALS[2].query} title="Ver categoría Adornos de Navidad">
+        <div class="card-ribbon-header">
+          <span class="ribbon-main">{DEALS[2].title}</span>
+          <span class="ribbon-sub">{DEALS[2].subtitle}</span>
+        </div>
+
+        <div class="card-content">
+          <div class="card-badge badge-burgundy badge-mid-pos">
+            <span class="badge-snow">❄</span>
+            <strong>30%</strong>
+            <span class="badge-sub">DTO.</span>
+            <span class="badge-snow">❄</span>
+          </div>
+
+          <div class="card-visual visual-santa">
+            <svg viewBox="0 0 180 240" width="180" height="240" fill="none">
+              <!-- Fondo cálido con luces navideñas bokeh -->
+              <circle cx="40" cy="50" r="26" fill="#fde047" opacity="0.25" filter="blur(6px)" />
+              <circle cx="140" cy="70" r="22" fill="#f97316" opacity="0.25" filter="blur(6px)" />
+              <circle cx="90" cy="30" r="18" fill="#fbbf24" opacity="0.3" filter="blur(5px)" />
+              <!-- Tapete circular rústico en suelo -->
+              <ellipse cx="90" cy="205" rx="75" ry="18" fill="#fef3c7" stroke="#d97706" stroke-width="1.5" stroke-dasharray="4 3" />
+
+              <!-- PAPÁ NOEL (Izquierda) -->
+              <!-- Botas -->
+              <rect x="42" y="185" width="14" height="16" rx="4" fill="#3f3f46" />
+              <rect x="60" y="185" width="14" height="16" rx="4" fill="#3f3f46" />
+              <!-- Pantalón verde oliva -->
+              <rect x="44" y="152" width="12" height="36" fill="#4d7c0f" />
+              <rect x="58" y="152" width="12" height="36" fill="#4d7c0f" />
+              <!-- Cuerpo y suéter beige rústico con bordado -->
+              <path d="M38 120 C38 110, 76 110, 76 120 L78 156 L36 156 Z" fill="#e2d9cc" stroke="#a89984" stroke-width="1.5" />
+              <path d="M48 126 L66 126 M48 136 L66 136 M48 146 L66 146" stroke="#b91c1c" stroke-width="2" stroke-dasharray="2 2" />
+              <!-- Cabeza, barba blanca copiosa y nariz -->
+              <circle cx="57" cy="98" r="15" fill="#fecaca" />
+              <!-- Barba -->
+              <path d="M42 98 C40 128, 74 128, 72 98 Z" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" />
+              <circle cx="57" cy="98" r="4.5" fill="#f87171" />
+              <circle cx="51" cy="92" r="2" fill="#1e293b" />
+              <circle cx="63" cy="92" r="2" fill="#1e293b" />
+              <!-- Gorro de cono alto rústico -->
+              <polygon points="57,42 40,86 74,86" fill="#d4a373" stroke="#b45309" stroke-width="1" />
+              <circle cx="57" cy="40" r="5" fill="#ffffff" />
+              <rect x="38" y="84" width="38" height="6" rx="3" fill="#ffffff" />
+
+              <!-- RENO (Derecha) -->
+              <!-- Botas marrones -->
+              <rect x="108" y="185" width="14" height="16" rx="4" fill="#78350f" />
+              <rect x="126" y="185" width="14" height="16" rx="4" fill="#78350f" />
+              <!-- Pantalón verde oliva -->
+              <rect x="110" y="152" width="12" height="36" fill="#4d7c0f" />
+              <rect x="124" y="152" width="12" height="36" fill="#4d7c0f" />
+              <!-- Suéter a rayas navideñas -->
+              <path d="M104 120 C104 110, 142 110, 142 120 L144 156 L102 156 Z" fill="#b91c1c" />
+              <rect x="103" y="128" width="40" height="5" fill="#fef08a" />
+              <rect x="103" y="140" width="40" height="5" fill="#ffffff" />
+              <!-- Cabeza reno suave -->
+              <ellipse cx="123" cy="96" rx="16" ry="14" fill="#b45309" />
+              <ellipse cx="123" cy="102" rx="9" ry="6" fill="#fef3c7" />
+              <!-- Nariz roja de Rudolph -->
+              <circle cx="123" cy="100" r="4" fill="#dc2626" />
+              <circle cx="117" cy="93" r="2" fill="#1e293b" />
+              <circle cx="129" cy="93" r="2" fill="#1e293b" />
+              <!-- Astas de reno -->
+              <path d="M112 85 C108 72, 100 68, 96 66 M103 74 L98 78" stroke="#451a03" stroke-width="3" stroke-linecap="round" />
+              <path d="M134 85 C138 72, 146 68, 150 66 M143 74 L148 78" stroke="#451a03" stroke-width="3" stroke-linecap="round" />
+              <!-- Gorro verde -->
+              <polygon points="123,55 110,85 136,85" fill="#15803d" />
+              <circle cx="123" cy="53" r="4" fill="#facc15" />
+            </svg>
+          </div>
+
+          <div class="card-bottom-bar wave-burg wave-tall">
+            <div class="card-price-group">
+              <span class="price-before">Antes: {DEALS[2].regularPrice}</span>
+              <span class="price-now lg">${DEALS[2].dealPrice}</span>
+              <span class="winner-pill store-alkosto">{DEALS[2].winnerStore} · {DEALS[2].savingsText}</span>
+            </div>
+            <span class="card-action-btn" aria-hidden="true">
+              Ver categoría ⚡
+            </span>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- COLUMNA 3 (Derecha): 1 Gran Tarjeta Hero (Árbol de Navidad 180cm) -->
+    <div class="showcase-col-right">
+      <a href={DEALS[3].url} class="showcase-card card-hero card-tree" data-deal-id={DEALS[3].id} data-query={DEALS[3].query} title="Ver categoría Árboles de Navidad">
+        <!-- Banners superiores estilo catálogo -->
+        <div class="hero-top-ribbons">
+          <span class="hero-tagline">{DEALS[3].tagline}</span>
+          <div class="hero-main-ribbon">
+            <h3 class="hero-product-name">{DEALS[3].title}</h3>
+            <span class="hero-product-variant">{DEALS[3].subtitle}</span>
+          </div>
+        </div>
+
+        <div class="card-content hero-content">
+          <!-- Sticker redondeado "Con Piñas y Berries" -->
+          <div class="hero-feature-sticker">
+            <span class="sticker-curved-text">con Piñas y Berries</span>
+            <div class="sticker-mini-visual">
+              <span class="mini-pinecone">🪵</span>
+              <span class="mini-berries">🍒</span>
+            </div>
+          </div>
+
+          <!-- Badge 30% DTO grande -->
+          <div class="card-badge badge-burgundy badge-hero-pos">
+            <span class="badge-snow">❄</span>
+            <strong>30%</strong>
+            <span class="badge-sub">DTO.</span>
+            <span class="badge-snow">❄</span>
+          </div>
+
+          <div class="card-visual visual-tree">
+            <svg viewBox="0 0 240 280" width="240" height="280" fill="none">
+              <!-- Sala acogedora de fondo con parquet -->
+              <rect x="0" y="240" width="240" height="40" fill="#fde68a" opacity="0.6" />
+              <line x1="0" y1="240" x2="240" y2="240" stroke="#d97706" stroke-width="1.5" />
+              <!-- Base metálica del árbol de 4 patas -->
+              <path d="M120 236 L85 258 M120 236 L155 258 M120 236 L100 262 M120 236 L140 262" stroke="#1e293b" stroke-width="4.5" stroke-linecap="round" />
+              <rect x="116" y="215" width="8" height="25" fill="#451a03" />
+
+              <!-- ÁRBOL BOREAL IMPERIAL (Follaje tupido realista con piñas y berries) -->
+              <!-- Nivel 5 (Base muy ancha y frondosa) -->
+              <path d="M120 185 L50 228 C65 224, 75 220, 85 228 C95 222, 105 220, 120 228 C135 220, 145 222, 155 228 C165 220, 175 224, 190 228 Z" fill="#14532d" />
+              <!-- Nivel 4 -->
+              <path d="M120 145 L62 192 C75 186, 85 184, 98 192 C110 185, 120 184, 132 192 C145 184, 155 186, 178 192 Z" fill="#166534" />
+              <!-- Nivel 3 -->
+              <path d="M120 105 L74 152 C85 146, 95 144, 108 152 C120 145, 130 144, 142 152 C152 146, 160 148, 166 152 Z" fill="#15803d" />
+              <!-- Nivel 2 -->
+              <path d="M120 68 L86 112 C98 107, 108 106, 120 112 C132 106, 142 107, 154 112 Z" fill="#16a34a" />
+              <!-- Nivel 1 (Punta cónica imperial) -->
+              <path d="M120 28 L98 76 C108 72, 115 70, 120 75 C125 70, 132 72, 142 76 Z" fill="#22c55e" />
+
+              <!-- Piñas nevadas distribuidas -->
+              <ellipse cx="88" cy="180" rx="5" ry="8" fill="#78350f" stroke="#fef08a" stroke-width="0.8" />
+              <ellipse cx="152" cy="172" rx="5" ry="8" fill="#78350f" stroke="#fef08a" stroke-width="0.8" />
+              <ellipse cx="108" cy="132" rx="4.5" ry="7" fill="#78350f" stroke="#fef08a" stroke-width="0.8" />
+              <ellipse cx="136" cy="98" rx="4" ry="6" fill="#78350f" stroke="#fef08a" stroke-width="0.8" />
+
+              <!-- Frutos rojos / Berries en racimos -->
+              <circle cx="82" cy="136" r="3.5" fill="#dc2626" />
+              <circle cx="86" cy="138" r="3" fill="#ef4444" />
+              <circle cx="140" cy="148" r="3.5" fill="#dc2626" />
+              <circle cx="145" cy="146" r="3" fill="#ef4444" />
+              <circle cx="102" cy="88" r="3" fill="#dc2626" />
+              <circle cx="128" cy="178" r="3.5" fill="#dc2626" />
+
+              <!-- Esferas doradas y destellos de luces micro-LED cálidas -->
+              <circle cx="120" cy="52" r="3" fill="#facc15" />
+              <circle cx="100" cy="116" r="4.5" fill="#f59e0b" stroke="#fef08a" stroke-width="1" />
+              <circle cx="142" cy="120" r="4.5" fill="#dc2626" stroke="#fecaca" stroke-width="1" />
+              <circle cx="78" cy="204" r="5" fill="#facc15" stroke="#fef08a" stroke-width="1" />
+              <circle cx="162" cy="206" r="5" fill="#dc2626" stroke="#fecaca" stroke-width="1" />
+              <circle cx="120" cy="158" r="5" fill="#f59e0b" stroke="#fef08a" stroke-width="1" />
+            </svg>
+          </div>
+
+          <div class="card-bottom-bar wave-burg wave-hero">
+            <div class="card-price-group hero-prices">
+              <span class="price-before">Antes: {DEALS[3].regularPrice}</span>
+              <span class="price-now xl">${DEALS[3].dealPrice}</span>
+              <span class="winner-pill store-falabella">{DEALS[3].winnerStore} · {DEALS[3].savingsText}</span>
+            </div>
+            <span class="card-action-btn hero-cta-btn" aria-hidden="true">
+              Ver categoría ⚡
+            </span>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .showcase-banner-section {
+    position: relative;
+    background: #faf5ee;
+    border: 1px solid #ebdccb;
+    border-radius: 18px;
+    padding: 1.25rem 1.25rem 1.5rem;
+    margin: 1.25rem 0 1.75rem;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(139, 30, 47, 0.05);
+  }
+
+  /* Guirnalda en esquina superior */
+  .showcase-garland-accent {
+    position: absolute;
+    top: -6px;
+    left: -10px;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0.95;
+  }
+
+  /* Cabecera del módulo */
+  .showcase-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 3;
+    padding-left: 5rem; /* Deja espacio al follaje de la izquierda */
+  }
+
+  .showcase-title-block {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .showcase-sparkle {
+    font-size: 1.1rem;
+    animation: pulseSparkle 2s infinite ease-in-out;
+  }
+
+  @keyframes pulseSparkle {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.2); opacity: 1; }
+  }
+
+  .showcase-main-title {
+    font-family: Fraunces, Georgia, serif;
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: #0e6a45;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .showcase-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .showcase-live-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #1e293b;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .showcase-live-btn:hover {
+    background: #e7f6ee;
+    border-color: #0e6a45;
+    color: #0e6a45;
+  }
+
+  .live-pulse-dot {
+    width: 8px;
+    height: 8px;
+    background: #22c55e;
+    border-radius: 999px;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
+    animation: livePing 1.8s infinite;
+  }
+
+  @keyframes livePing {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+  }
+
+  .showcase-see-all {
+    background: none;
+    border: none;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #b64a28;
+    cursor: pointer;
+    padding: 0.3rem 0.5rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color 0.15s ease;
+  }
+
+  .showcase-see-all:hover {
+    color: #831843;
+  }
+
+  /* Grid asimétrico: 3 columnas */
+  .showcase-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr 1.35fr;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .showcase-col-left {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .showcase-card {
+    position: relative;
+    background: #fffdfa;
+    border: 1px solid #eddcd0;
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .showcase-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(139, 30, 47, 0.12);
+    border-color: #b91c1c;
+  }
+
+  .showcase-card:active {
+    transform: scale(0.985);
+  }
+
+  /* Fondos con onda degradé */
+  .card-bg-gradient.burg {
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 35%;
+    background: linear-gradient(180deg, rgba(185, 28, 28, 0.06) 0%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .card-bg-gradient.grn {
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 35%;
+    background: linear-gradient(180deg, rgba(14, 106, 69, 0.06) 0%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .card-content {
+    position: relative;
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  /* Badge circular de descuento estilo Imagen 2 */
+  .card-badge {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    width: 64px;
+    height: 64px;
+    border-radius: 999px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    text-align: center;
+    z-index: 5;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+    border: 2px dashed rgba(255, 255, 255, 0.7);
+    line-height: 1;
+  }
+
+  .badge-burgundy {
+    background: radial-gradient(circle at 35% 35%, #b91c1c, #7f1d1d);
+  }
+
+  .badge-green {
+    background: radial-gradient(circle at 35% 35%, #059669, #064e3b);
+  }
+
+  .badge-snow {
+    font-size: 0.45rem;
+    opacity: 0.8;
+  }
+
+  .card-badge strong {
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .badge-sub {
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .badge-mid-pos {
+    top: 3.2rem;
+    left: 0.8rem;
+  }
+
+  .badge-hero-pos {
+    top: 5.5rem;
+    left: 1.1rem;
+    width: 74px;
+    height: 74px;
+  }
+
+  .badge-hero-pos strong {
+    font-size: 1.15rem;
+  }
+
+  /* Textos de cabecera en tarjetas */
+  .card-text-header {
+    margin-left: 4.8rem;
+    min-height: 52px;
+  }
+
+  .card-headline-script {
+    font-family: Fraunces, Georgia, serif;
+    font-style: italic;
+    font-size: 0.95rem;
+    color: #881337;
+    margin: 0 0 0.15rem;
+    line-height: 1.15;
+  }
+
+  .card-headline-script.text-pine {
+    color: #065f46;
+  }
+
+  .card-prod-title {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #64748b;
+    display: block;
+  }
+
+  /* Visuales SVG */
+  .card-visual {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0.3rem 0;
+  }
+
+  .visual-balls svg,
+  .visual-lights svg,
+  .visual-teddies svg,
+  .visual-tableware svg {
+    max-height: 85px;
+    width: auto;
+  }
+
+  .visual-santa svg {
+    max-height: 195px;
+    width: auto;
+  }
+
+  .visual-tree svg {
+    max-height: 230px;
+    width: auto;
+  }
+
+  /* Cinta / Ribbon de Tarjeta Santa */
+  .card-ribbon-header {
+    background: #7f1d1d;
+    color: #fff;
+    padding: 0.5rem 0.75rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    border-bottom: 2px solid #991b1b;
+  }
+
+  .ribbon-main {
+    font-family: Fraunces, serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .ribbon-sub {
+    font-size: 0.74rem;
+    color: #fecaca;
+  }
+
+  /* Banners de la Gran Tarjeta Hero (Árbol) */
+  .hero-top-ribbons {
+    padding: 0.75rem 1rem 0;
+    text-align: center;
+  }
+
+  .hero-tagline {
+    font-family: Fraunces, Georgia, serif;
+    font-size: 0.85rem;
+    font-style: italic;
+    color: #0e6a45;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  .hero-main-ribbon {
+    background: #881337;
+    color: #fff;
+    border-radius: 6px;
+    padding: 0.4rem 0.75rem;
+    display: inline-block;
+    box-shadow: 0 4px 10px rgba(136, 19, 55, 0.25);
+  }
+
+  .hero-product-name {
+    font-family: Fraunces, serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: 0.02em;
+  }
+
+  .hero-product-variant {
+    font-size: 0.78rem;
+    color: #fecdd3;
+    display: block;
+  }
+
+  /* Sticker circular "Con Piñas y Berries" */
+  .hero-feature-sticker {
+    position: absolute;
+    top: 5.8rem;
+    right: 1rem;
+    width: 68px;
+    height: 68px;
+    border-radius: 999px;
+    background: #fff;
+    border: 2px solid #b91c1c;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0.2rem;
+    z-index: 5;
+  }
+
+  .sticker-curved-text {
+    font-size: 0.58rem;
+    font-weight: 700;
+    color: #881337;
+    line-height: 1.05;
+  }
+
+  .sticker-mini-visual {
+    font-size: 0.85rem;
+    display: flex;
+    gap: 0.1rem;
+    margin-top: 0.1rem;
+  }
+
+  /* Barra inferior de precios y botón */
+  .card-bottom-bar {
+    margin-top: auto;
+    border-radius: 10px;
+    padding: 0.6rem 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #fff;
+  }
+
+  .wave-burg {
+    background: linear-gradient(135deg, #7f1d1d 0%, #4c0519 100%);
+  }
+
+  .wave-green {
+    background: linear-gradient(135deg, #065f46 0%, #022c22 100%);
+  }
+
+  .card-price-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .price-before {
+    font-size: 0.7rem;
+    text-decoration: line-through;
+    opacity: 0.75;
+  }
+
+  .price-now {
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: #fff;
+  }
+
+  .price-now.lg {
+    font-size: 1.25rem;
+  }
+
+  .price-now.xl {
+    font-size: 1.45rem;
+    color: #fef08a;
+  }
+
+  .winner-pill {
+    font-size: 0.65rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    margin-top: 0.2rem;
+    display: inline-block;
+    max-width: fit-content;
+  }
+
+  .card-action-btn {
+    background: #ffffff;
+    color: #7f1d1d;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0.45rem 0.75rem;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .card-action-btn:hover {
+    background: #fef08a;
+    transform: scale(1.04);
+  }
+
+  .hero-cta-btn {
+    background: #facc15;
+    color: #78350f;
+    font-size: 0.85rem;
+    padding: 0.55rem 0.95rem;
+  }
+
+  .hero-cta-btn:hover {
+    background: #fde047;
+  }
+
+  /* Responsive para tablet y móviles */
+  @media (max-width: 900px) {
+    .showcase-header {
+      padding-left: 0;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    .showcase-garland-accent {
+      display: none;
+    }
+    .showcase-grid {
+      grid-template-columns: 1fr;
+    }
+    .showcase-col-left {
+      order: 2;
+    }
+    .showcase-col-mid {
+      order: 3;
+    }
+    .showcase-col-right {
+      order: 1;
+    }
+    .badge-mid-pos,
+    .badge-hero-pos {
+      top: 1rem;
+      left: 1rem;
+    }
+    .hero-feature-sticker {
+      top: 1rem;
+      right: 1rem;
+    }
+  }
+</style>
+
+<script>
+  // Manejador para consultar en vivo precios en tiempo real sin recargar
+  document.addEventListener('DOMContentLoaded', () => {
+    const liveBtn = document.querySelector<HTMLButtonElement>('#showcase-live-refresh');
+    if (liveBtn) {
+      liveBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        liveBtn.disabled = true;
+        const originalText = liveBtn.innerHTML;
+        liveBtn.innerHTML = `<span>⏳ Consultando tiendas…</span>`;
+
+        const dealCards = document.querySelectorAll<HTMLElement>('.showcase-card');
+        const citySelect = document.querySelector<HTMLSelectElement>('#city');
+        const city = citySelect?.value || 'bogota';
+
+        try {
+          for (const card of Array.from(dealCards)) {
+            const query = card.dataset.query;
+            if (!query) continue;
+
+            const priceNowEl = card.querySelector<HTMLElement>('.price-now');
+            const winnerPill = card.querySelector<HTMLElement>('.winner-pill');
+
+            if (priceNowEl) {
+              priceNowEl.style.opacity = '0.5';
+            }
+
+            try {
+              const res = await fetch(`/api/buscar?q=${encodeURIComponent(query)}&ciudad=${encodeURIComponent(city)}`);
+              if (res.ok) {
+                const data = await res.json();
+                if (data.ganador && data.ganador.precio) {
+                  if (priceNowEl) {
+                    priceNowEl.textContent = `$${Number(data.ganador.precio).toLocaleString('es-CO')}`;
+                    priceNowEl.style.opacity = '1';
+                    priceNowEl.style.color = '#fef08a';
+                  }
+                  if (winnerPill && data.ganador.tienda) {
+                    winnerPill.textContent = `${data.ganador.tienda} · Precio en vivo`;
+                  }
+                }
+              }
+            } catch (cardErr) {
+              if (priceNowEl) priceNowEl.style.opacity = '1';
+            }
+          }
+        } finally {
+          liveBtn.disabled = false;
+          liveBtn.innerHTML = `<span>✅ Actualizado</span>`;
+          setTimeout(() => {
+            liveBtn.innerHTML = originalText;
+          }, 3000);
+        }
+      });
+    }
+  });
+</script>

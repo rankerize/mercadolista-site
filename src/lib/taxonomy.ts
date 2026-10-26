@@ -125,6 +125,7 @@ const RAW: Record<string, [string, string, string, string, string, 'Alto' | 'Med
   'cuidado/desodorante': ['Desodorante','Precio Desodorante en Colombia hoy · Mercado Lista','🧴 Precio Desodorante en Colombia hoy','¿Dónde está más barato el Rexona o Axe en Colombia? Compara en D1, Éxito, Jumbo.','desodorante','Medio'],
 
   // ── L2: Café ─────────────────────────────────────────────────────────────
+  'cafe/cafe':        ['Café','Precio Café en Colombia hoy · Mercado Lista','☕ Precio Café en Colombia hoy','¿Dónde está más barato el café en Colombia? Compara Sello Rojo, Águila Roja, Juan Valdez.','cafe','Alto'],
   'cafe/cafe-tipo':   ['Café','Precio Café en Colombia hoy · Mercado Lista','☕ Precio Café en Colombia hoy','¿Dónde está más barato el café en Colombia? Compara Sello Rojo, Águila Roja, Juan Valdez.','cafe','Alto'],
   'cafe/pan-tajado':  ['Pan Tajado','Precio Pan Tajado en Colombia hoy · Mercado Lista','🍞 Precio Pan Tajado en Colombia hoy','¿Dónde está más barato el pan tajado Bimbo en Colombia? Compara en D1, Éxito, Jumbo.','pan tajado','Alto'],
   'cafe/chocolate':   ['Chocolate','Precio Chocolate de Mesa en Colombia hoy','🍫 Precio Chocolate de Mesa en Colombia hoy','¿Dónde está más barato el chocolate Corona o Luker? Compara en D1, Éxito, Jumbo.','chocolate mesa','Medio'],
@@ -139,7 +140,7 @@ const RAW: Record<string, [string, string, string, string, string, 'Alto' | 'Med
 
   // ── L2: Tecnología ───────────────────────────────────────────────────────
   'tecnologia/televisores':     ['Televisores','Precio Televisores en Colombia hoy · Mercado Lista','📺 Precio Televisores en Colombia hoy','¿Dónde comprar televisor más barato en Colombia? Compara Samsung, LG en Éxito, Alkosto.','televisor','Alto'],
-  'tecnologia/celulares':       ['Celulares','Precio Celulares en Colombia hoy · Mercado Lista','📱 Precio Celulares en Colombia hoy','¿Dónde comprar celular más barato en Colombia? Compara Samsung, Xiaomi, Motorola en Éxito.','celular smartphone','Alto'],
+  'tecnologia/celulares':       ['Celulares','Precio Celulares en Colombia hoy · Mercado Lista','📱 Precio Celulares en Colombia hoy','¿Dónde comprar celular más barato en Colombia? Compara Samsung, Xiaomi, Motorola en Éxito.','celulares','Alto'],
   'tecnologia/laptops':         ['Laptops y Portátiles','Precio Laptops en Colombia hoy · Mercado Lista','💻 Precio Laptops y Portátiles en Colombia hoy','Compara precios de portátiles HP, Lenovo y Asus en Éxito, Alkosto y Falabella.','portatil laptop','Alto'],
   'tecnologia/freidoras-de-aire':['Freidoras de Aire','Precio Freidora de Aire en Colombia hoy','🍟 Precio Freidora de Aire en Colombia hoy','¿Dónde está más barata la freidora de aire en Colombia? Compara en Éxito, Alkosto.','freidora aire','Alto'],
   'tecnologia/audifonos':        ['Audífonos','Precio Audífonos en Colombia hoy · Mercado Lista','🎧 Precio Audífonos en Colombia hoy','Compara precio de audífonos inalámbricos bluetooth en Éxito, Alkosto y Falabella.','audifonos','Alto'],
@@ -148,9 +149,14 @@ const RAW: Record<string, [string, string, string, string, string, 'Alto' | 'Med
   'tecnologia/televisores/smart-tv': ['Smart TV','Precio Smart TV en Colombia hoy · Comparar','📺 Precio Smart TV en Colombia hoy','¿Dónde comprar Smart TV más barato en Colombia? Compara Samsung, LG, TCL en Éxito, Alkosto.','televisor smart tv','Alto'],
   'tecnologia/televisores/4k':       ['Televisor 4K','Precio Televisor 4K en Colombia hoy · Comparar','📺 Precio Televisor 4K en Colombia hoy','¿Dónde comprar televisor 4K más barato en Colombia? Compara Samsung, LG en Éxito, Alkosto.','televisor 4k uhd','Alto'],
   // L3: Celulares
-  'tecnologia/celulares/samsung':  ['Samsung','Precio Celular Samsung en Colombia hoy','📱 Precio Celular Samsung en Colombia hoy','¿Dónde comprar Samsung más barato en Colombia? Compara Galaxy A y S en Éxito, Alkosto.','celular samsung','Alto'],
-  'tecnologia/celulares/xiaomi':   ['Xiaomi','Precio Celular Xiaomi en Colombia hoy','📱 Precio Celular Xiaomi en Colombia hoy','¿Dónde comprar Xiaomi más barato en Colombia? Compara Redmi Note y Poco en Éxito, Alkosto.','celular xiaomi','Alto'],
-  'tecnologia/celulares/motorola': ['Motorola','Precio Celular Motorola en Colombia hoy','📱 Precio Celular Motorola en Colombia hoy','¿Dónde comprar Motorola más barato en Colombia? Compara Moto G y Edge en Éxito, Alkosto.','celular motorola','Medio'],
+  'tecnologia/celulares/apple':    ['Apple iPhone','Precio iPhone Apple en Colombia hoy · Comparar','📱 Precio iPhone Apple en Colombia hoy','¿Dónde comprar iPhone más barato en Colombia? Compara iPhone 16, 15, 14 en Falabella, Éxito y Alkosto.','iphone apple','Alto'],
+  'tecnologia/celulares/samsung':  ['Samsung Galaxy','Precio Celular Samsung en Colombia hoy','📱 Precio Celular Samsung en Colombia hoy','¿Dónde comprar Samsung más barato en Colombia? Compara Galaxy A y S en Éxito, Falabella y Alkosto.','celular samsung galaxy','Alto'],
+  'tecnologia/celulares/xiaomi':   ['Xiaomi','Precio Celular Xiaomi en Colombia hoy','📱 Precio Celular Xiaomi en Colombia hoy','¿Dónde comprar Xiaomi más barato en Colombia? Compara Redmi Note y Poco en Éxito, Alkosto y Falabella.','celular xiaomi redmi','Alto'],
+  'tecnologia/celulares/motorola': ['Motorola','Precio Celular Motorola en Colombia hoy','📱 Precio Celular Motorola en Colombia hoy','¿Dónde comprar Motorola más barato en Colombia? Compara Moto G y Edge en Éxito, Falabella y Alkosto.','celular motorola moto','Medio'],
+  'tecnologia/celulares/honor':    ['Honor','Precio Celular Honor en Colombia hoy','📱 Precio Celular Honor en Colombia hoy','¿Dónde comprar celular Honor más barato en Colombia? Compara en Éxito, Falabella y Alkosto.','celular honor magic','Medio'],
+  'tecnologia/celulares/smartwatches': ['Smartwatches','Precio Smartwatches en Colombia hoy','⌚ Precio Smartwatches y Relojes en Colombia hoy','Compara Apple Watch, Galaxy Watch y Xiaomi Band en Falabella, Éxito y Alkosto.','smartwatch reloj inteligente','Alto'],
+  'tecnologia/celulares/audifonos': ['Audífonos','Precio Audífonos para Celular en Colombia','🎧 Precio Audífonos Bluetooth para Celular hoy','Compara AirPods, Galaxy Buds y audífonos inalámbricos en Falabella y Alkosto.','audifonos bluetooth inalambricos','Alto'],
+  'tecnologia/celulares/accesorios': ['Accesorios','Precio Accesorios para Celular en Colombia','🔌 Precio Accesorios para Celular en Colombia','Compara cargadores tipo C, fundas y protectores en Falabella y Éxito.','cargador cable celular usb c','Medio'],
   // L3: Laptops
   'tecnologia/laptops/hp':     ['HP','Precio Portátil HP en Colombia hoy','💻 Precio Portátil HP en Colombia hoy','¿Dónde comprar portátil HP más barato en Colombia? Compara en Éxito, Alkosto y Falabella.','portatil hp','Alto'],
   'tecnologia/laptops/lenovo': ['Lenovo','Precio Portátil Lenovo en Colombia hoy','💻 Precio Portátil Lenovo en Colombia hoy','¿Dónde comprar portátil Lenovo más barato en Colombia? Compara en Éxito, Alkosto.','portatil lenovo','Medio'],
@@ -164,6 +170,10 @@ const RAW: Record<string, [string, string, string, string, string, 'Alto' | 'Med
   'tecnologia/televisores/smart-tv/samsung': ['Samsung','Precio Smart TV Samsung en Colombia hoy','📺 Precio Smart TV Samsung en Colombia hoy','¿Dónde comprar Smart TV Samsung más barato? Compara Crystal y QLED en Éxito, Alkosto.','televisor samsung smart tv','Alto'],
   'tecnologia/televisores/smart-tv/lg':      ['LG','Precio Smart TV LG en Colombia hoy','📺 Precio Smart TV LG en Colombia hoy','¿Dónde comprar Smart TV LG más barato en Colombia? Compara OLED y NanoCell en Éxito.','televisor lg smart tv','Medio'],
   'tecnologia/televisores/smart-tv/tcl':     ['TCL','Precio Smart TV TCL en Colombia hoy','📺 Precio Smart TV TCL en Colombia hoy','¿Dónde comprar Smart TV TCL más barato en Colombia? Compara en Éxito, Alkosto y Falabella.','televisor tcl smart tv','Medio'],
+  // L4: Apple iPhone por modelo
+  'tecnologia/celulares/apple/iphone-16': ['iPhone 16','Precio iPhone 16 en Colombia hoy','📱 Precio iPhone 16 en Colombia hoy','¿Cuánto cuesta el iPhone 16 en Colombia hoy? Compara precios en Falabella, Alkosto y Éxito.','iphone 16','Alto'],
+  'tecnologia/celulares/apple/iphone-15': ['iPhone 15','Precio iPhone 15 en Colombia hoy','📱 Precio iPhone 15 en Colombia hoy','¿Cuánto cuesta el iPhone 15 en Colombia hoy? Compara precios en Falabella, Alkosto y Éxito.','iphone 15','Alto'],
+  'tecnologia/celulares/apple/iphone-13': ['iPhone 13','Precio iPhone 13 en Colombia hoy','📱 Precio iPhone 13 en Colombia hoy','¿Cuánto cuesta el iPhone 13 en Colombia hoy? Compara precios en Falabella, Alkosto y Éxito.','iphone 13','Alto'],
   // L4: Celulares Samsung por línea
   'tecnologia/celulares/samsung/galaxy-a': ['Galaxy A','Precio Samsung Galaxy A en Colombia hoy','📱 Precio Samsung Galaxy A en Colombia hoy','¿Dónde comprar Samsung Galaxy A más barato? Compara A15, A35, A55 en Éxito, Alkosto.','samsung galaxy a','Alto'],
   'tecnologia/celulares/samsung/galaxy-s': ['Galaxy S','Precio Samsung Galaxy S en Colombia hoy','📱 Precio Samsung Galaxy S Colombia hoy','¿Dónde comprar Samsung Galaxy S más barato? Compara S24 y S25 en Éxito, Alkosto.','samsung galaxy s','Medio'],

@@ -1,0 +1,594 @@
+---
+// src/components/CategoryBanner.astro
+// Banner de categorías tipo retail (Imagen 1) para Mercado Lista
+
+export interface RetailCategory {
+  id: string;
+  name: string;
+  query: string;
+  iconType: string;
+  url: string;
+}
+
+const RETAIL_CATEGORIES: RetailCategory[] = [
+  // Fila 1 (11 categorías)
+  { id: 'celulares', name: 'Celulares', query: 'celulares', iconType: 'phone', url: '/categoria/tecnologia/telefonia/celulares-y-telefonos' },
+  { id: 'electro', name: 'Electro', query: 'lavadora refrigerador', iconType: 'electro', url: '/categoria/electrohogar' },
+  { id: 'computadores', name: 'Computadores', query: 'computador portatil', iconType: 'laptop', url: '/categoria/tecnologia/computadores' },
+  { id: 'televisores', name: 'Televisores', query: 'televisor smart tv', iconType: 'tv', url: '/categoria/tecnologia/televisores-y-video' },
+  { id: 'videojuegos', name: 'Videojuegos', query: 'consola videojuegos playstation nintendo', iconType: 'gamepad', url: '/categoria/tecnologia/zona-gamer' },
+  { id: 'audio', name: 'Audio', query: 'parlante bluetooth sonido', iconType: 'speaker', url: '/categoria/tecnologia/audio' },
+  { id: 'electrohogar', name: 'Electrohogar', query: 'freidora de aire licuadora', iconType: 'appliances', url: '/categoria/electrohogar' },
+  { id: 'smartwatch', name: 'Smartwatch', query: 'smartwatch reloj inteligente', iconType: 'smartwatch', url: '/categoria/tecnologia/smartwatch' },
+  { id: 'audifonos', name: 'Audífonos', query: 'audifonos bluetooth inalambricos', iconType: 'headphones', url: '/categoria/tecnologia/audio/audifonos' },
+  { id: 'accesorios', name: 'Accesorios', query: 'mouse teclado accesorios computacion', iconType: 'mouse', url: '/categoria/tecnologia/computadoras/accesorios-de-computacion-y-perifericos' },
+  { id: 'mercado', name: 'Mercado', query: 'leche arroz aceite', iconType: 'cart', url: '/categoria/alimentos-y-bebidas' },
+
+  // Fila 2 (11 categorías)
+  { id: 'camaras', name: 'Cámaras', query: 'camara fotografia canon nikon', iconType: 'camera', url: '/categoria/tecnologia/fotografia/camaras-profesionales' },
+  { id: 'drones', name: 'Drones', query: 'drone con camara 4k', iconType: 'drone', url: '/categoria/tecnologia/fotografia/drones-y-accesorios/drones' },
+  { id: 'muebles', name: 'Muebles', query: 'muebles closet escritorio', iconType: 'furniture', url: '/categoria/muebles-y-organizacion' },
+  { id: 'colchones', name: 'Colchones', query: 'colchon ortopedico resortes', iconType: 'mattress', url: '/categoria/dormitorio/colchones' },
+  { id: 'llantas', name: 'Llantas', query: 'llantas rin carro vehiculo', iconType: 'tire', url: '/categoria/automotriz/rines-y-llantas/llantas' },
+  { id: 'hogar', name: 'Hogar', query: 'bateria de cocina ollas sartenes', iconType: 'cookware', url: '/categoria/decohogar' },
+  { id: 'juguetes', name: 'Juguetes', query: 'juguetes peluches infantiles', iconType: 'toy', url: '/categoria/ninos-y-jugueteria' },
+  { id: 'pines', name: 'Pines', query: 'tarjetas regalo pines netflix xbox', iconType: 'giftcard', url: '/categoria/tecnologia/zona-gamer/gaming/suscripiones-y-tarjetas' },
+  { id: 'deportes', name: 'Deportes', query: 'bicicleta estatica spinning fitness', iconType: 'sports', url: '/categoria/deportes-y-aire-libre' },
+  { id: 'navidad', name: 'Navidad', query: 'arbol de navidad decoracion luces', iconType: 'xmas', url: '/categoria/decohogar/decoracion/navidad' },
+  { id: 'hiperofertas', name: 'Hiperofertas', query: 'ofertas promociones descuentos', iconType: 'discount', url: '/categoria/decohogar/decoracion/navidad' },
+];
+---
+
+<section class="retail-categories-banner" aria-label="Explorar por categorías">
+  <div class="retail-cats-header">
+    <div class="retail-cats-title-wrap">
+      <span class="retail-cats-dot"></span>
+      <h2 class="retail-cats-title">Explora por categorías</h2>
+      <span class="retail-cats-badge">+3.000 Categorías</span>
+    </div>
+    <div class="retail-cats-controls" aria-hidden="true">
+      <button type="button" class="retail-cats-arrow prev" id="retail-cats-prev" aria-label="Desplazar a la izquierda">‹</button>
+      <button type="button" class="retail-cats-arrow next" id="retail-cats-next" aria-label="Desplazar a la derecha">›</button>
+    </div>
+  </div>
+
+  <div class="retail-cats-grid" id="retail-cats-grid">
+    {RETAIL_CATEGORIES.map((cat) => (
+      <a
+        href={cat.url}
+        class="retail-cat-card"
+        data-cat-id={cat.id}
+        data-query={cat.query}
+        title={`Ver categoría ${cat.name}`}
+      >
+        <div class="retail-cat-icon">
+          {cat.iconType === 'phone' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <rect x="12" y="4" width="24" height="40" rx="6" fill="#1e293b" />
+              <rect x="14" y="6" width="20" height="36" rx="4" fill="url(#grad-phone)" />
+              <circle cx="24" cy="8" r="1.5" fill="#0f172a" />
+              <circle cx="28" cy="20" r="6" fill="#60a5fa" opacity="0.6" />
+              <circle cx="20" cy="28" r="7" fill="#818cf8" opacity="0.7" />
+              <rect x="20" y="40" width="8" height="1.5" rx="0.75" fill="#94a3b8" />
+              <defs>
+                <linearGradient id="grad-phone" x1="14" y1="6" x2="34" y2="42" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#3b82f6" />
+                  <stop offset="0.6" stop-color="#6366f1" />
+                  <stop offset="1" stop-color="#8b5cf6" />
+                </linearGradient>
+              </defs>
+            </svg>
+          )}
+
+          {cat.iconType === 'electro' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <!-- Lavadora -->
+              <rect x="4" y="10" width="18" height="28" rx="2" fill="#334155" />
+              <rect x="6" y="12" width="14" height="5" fill="#1e293b" />
+              <circle cx="13" cy="27" r="6.5" fill="#0f172a" stroke="#64748b" stroke-width="1.5" />
+              <circle cx="13" cy="27" r="3.5" fill="#38bdf8" opacity="0.7" />
+              <!-- Refrigerador -->
+              <rect x="25" y="6" width="19" height="34" rx="2.5" fill="#64748b" />
+              <line x1="25" y1="18" x2="44" y2="18" stroke="#334155" stroke-width="1.5" />
+              <rect x="27" y="10" width="1.5" height="5" rx="0.75" fill="#e2e8f0" />
+              <rect x="27" y="21" width="1.5" height="10" rx="0.75" fill="#e2e8f0" />
+              <rect x="33" y="10" width="7" height="5" rx="1" fill="#0284c7" opacity="0.4" />
+            </svg>
+          )}
+
+          {cat.iconType === 'laptop' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <!-- Pantalla -->
+              <rect x="8" y="10" width="32" height="22" rx="3" fill="#1e293b" />
+              <rect x="10" y="12" width="28" height="18" rx="1.5" fill="url(#grad-laptop)" />
+              <!-- Base -->
+              <path d="M4 33h40l-3 4H7l-3-4z" fill="#94a3b8" />
+              <rect x="20" y="33" width="8" height="1.5" rx="0.75" fill="#475569" />
+              <defs>
+                <linearGradient id="grad-laptop" x1="10" y1="12" x2="38" y2="30" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#f43f5e" />
+                  <stop offset="0.5" stop-color="#fb923c" />
+                  <stop offset="1" stop-color="#38bdf8" />
+                </linearGradient>
+              </defs>
+            </svg>
+          )}
+
+          {cat.iconType === 'tv' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <!-- Pantalla TV -->
+              <rect x="5" y="8" width="38" height="26" rx="2.5" fill="#0f172a" />
+              <rect x="7" y="10" width="34" height="22" rx="1" fill="url(#grad-tv)" />
+              <!-- Soporte -->
+              <rect x="22" y="34" width="4" height="4" fill="#64748b" />
+              <path d="M16 38h16" stroke="#475569" stroke-width="2.5" stroke-linecap="round" />
+              <defs>
+                <linearGradient id="grad-tv" x1="7" y1="10" x2="41" y2="32" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#ec4899" />
+                  <stop offset="0.5" stop-color="#8b5cf6" />
+                  <stop offset="1" stop-color="#3b82f6" />
+                </linearGradient>
+              </defs>
+            </svg>
+          )}
+
+          {cat.iconType === 'gamepad' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <!-- Control verde lima estilo Xbox -->
+              <path d="M14 14c-5 0-9 4-9 9 0 6 3 13 6 15 3 2 6-1 8-5l2-4h6l2 4c2 4 5 7 8 5 3-2 6-9 6-15 0-5-4-9-9-9H14z" fill="#84cc16" />
+              <!-- D-pad -->
+              <rect x="14" y="22" width="2.5" height="7" rx="0.5" fill="#1e293b" />
+              <rect x="11.75" y="24.25" width="7" height="2.5" rx="0.5" fill="#1e293b" />
+              <!-- Botones de acción -->
+              <circle cx="31" cy="22" r="1.5" fill="#ef4444" />
+              <circle cx="34" cy="25" r="1.5" fill="#3b82f6" />
+              <circle cx="28" cy="25" r="1.5" fill="#eab308" />
+              <circle cx="31" cy="28" r="1.5" fill="#22c55e" />
+              <!-- Thumbsticks -->
+              <circle cx="19" cy="28" r="3" fill="#1e293b" />
+              <circle cx="27" cy="30" r="3" fill="#1e293b" />
+            </svg>
+          )}
+
+          {cat.iconType === 'speaker' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <rect x="12" y="8" width="24" height="32" rx="6" fill="#0f172a" />
+              <circle cx="24" cy="18" r="6" fill="#1e293b" stroke="#06b6d4" stroke-width="2" />
+              <circle cx="24" cy="18" r="2.5" fill="#06b6d4" />
+              <circle cx="24" cy="30" r="7" fill="#1e293b" stroke="#f43f5e" stroke-width="2" />
+              <circle cx="24" cy="30" r="3" fill="#f43f5e" />
+            </svg>
+          )}
+
+          {cat.iconType === 'appliances' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <!-- Licuadora -->
+              <path d="M10 12l3 16h8l3-16H10z" fill="#bae6fd" opacity="0.8" stroke="#0284c7" stroke-width="1.5" />
+              <rect x="9" y="9" width="16" height="3" rx="1.5" fill="#e11d48" />
+              <rect x="12" y="28" width="10" height="10" rx="2" fill="#334155" />
+              <circle cx="17" cy="33" r="2" fill="#f59e0b" />
+              <!-- Plancha de vapor -->
+              <path d="M26 34h16c0-6-4-10-10-10h-6v10z" fill="#0284c7" />
+              <path d="M26 24h10c4 0 7 2 7 6H26v-6z" fill="#38bdf8" />
+              <rect x="25" y="34" width="18" height="2" fill="#64748b" />
+            </svg>
+          )}
+
+          {cat.iconType === 'smartwatch' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <!-- Correa naranja Alpine Loop -->
+              <rect x="18" y="4" width="12" height="10" rx="3" fill="#f97316" />
+              <rect x="18" y="34" width="12" height="10" rx="3" fill="#f97316" />
+              <!-- Caja Titanio -->
+              <rect x="13" y="12" width="22" height="24" rx="7" fill="#cbd5e1" stroke="#94a3b8" stroke-width="1.5" />
+              <rect x="15" y="14" width="18" height="20" rx="5" fill="#020617" />
+              <!-- Corona naranja -->
+              <rect x="35" y="18" width="2" height="6" rx="1" fill="#f97316" />
+              <!-- Hora en pantalla -->
+              <circle cx="24" cy="24" r="6" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="25 15" />
+              <circle cx="24" cy="24" r="2" fill="#38bdf8" />
+            </svg>
+          )}
+
+          {cat.iconType === 'headphones' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <!-- Diadema -->
+              <path d="M12 24c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="#1e293b" stroke-width="4" stroke-linecap="round" />
+              <!-- Auriculares -->
+              <rect x="8" y="22" width="7" height="14" rx="3.5" fill="#0f172a" />
+              <rect x="33" y="22" width="7" height="14" rx="3.5" fill="#0f172a" />
+              <rect x="10" y="24" width="3" height="10" rx="1.5" fill="#38bdf8" opacity="0.6" />
+              <rect x="35" y="24" width="3" height="10" rx="1.5" fill="#38bdf8" opacity="0.6" />
+            </svg>
+          )}
+
+          {cat.iconType === 'mouse' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <!-- Mouse ergonómico azul metálico -->
+              <rect x="15" y="8" width="18" height="32" rx="9" fill="#475569" />
+              <rect x="16" y="9" width="16" height="30" rx="8" fill="url(#grad-mouse)" />
+              <line x1="24" y1="9" x2="24" y2="21" stroke="#334155" stroke-width="1.5" />
+              <!-- Rueda de scroll -->
+              <rect x="22" y="14" width="4" height="7" rx="2" fill="#0f172a" stroke="#94a3b8" stroke-width="1" />
+              <defs>
+                <linearGradient id="grad-mouse" x1="16" y1="9" x2="32" y2="39" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#64748b" />
+                  <stop offset="1" stop-color="#334155" />
+                </linearGradient>
+              </defs>
+            </svg>
+          )}
+
+          {cat.iconType === 'cart' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <!-- Canasta de compras con productos -->
+              <path d="M8 10h5l4.5 18h18l4-14H15" stroke="#0e6a45" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+              <circle cx="19" cy="34" r="3" fill="#0e6a45" />
+              <circle cx="33" cy="34" r="3" fill="#0e6a45" />
+              <!-- Frutas/comida dentro -->
+              <circle cx="21" cy="18" r="3.5" fill="#ef4444" />
+              <rect x="25" y="14" width="5" height="8" rx="1" fill="#38bdf8" />
+              <circle cx="32" cy="19" r="3" fill="#eab308" />
+            </svg>
+          )}
+
+          {cat.iconType === 'camera' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <!-- Cuerpo cámara DSLR -->
+              <rect x="8" y="15" width="32" height="23" rx="4" fill="#1e293b" />
+              <path d="M16 15l2-4h12l2 4H16z" fill="#0f172a" />
+              <!-- Lente profesional -->
+              <circle cx="24" cy="27" r="8.5" fill="#0f172a" stroke="#64748b" stroke-width="2" />
+              <circle cx="24" cy="27" r="5" fill="#38bdf8" opacity="0.8" />
+              <circle cx="26" cy="25" r="1.5" fill="#ffffff" opacity="0.9" />
+              <!-- Botón disparador -->
+              <rect x="11" y="12" width="4" height="3" rx="1" fill="#ef4444" />
+            </svg>
+          )}
+
+          {cat.iconType === 'drone' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <!-- Cuerpo central drone -->
+              <ellipse cx="24" cy="24" rx="7" ry="5" fill="#1e293b" />
+              <circle cx="24" cy="24" r="2.5" fill="#38bdf8" />
+              <!-- Brazos -->
+              <line x1="12" y1="14" x2="36" y2="34" stroke="#475569" stroke-width="2.5" stroke-linecap="round" />
+              <line x1="36" y1="14" x2="12" y2="34" stroke="#475569" stroke-width="2.5" stroke-linecap="round" />
+              <!-- Hélices -->
+              <circle cx="11" cy="13" r="4.5" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3 3" />
+              <circle cx="37" cy="13" r="4.5" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3 3" />
+              <circle cx="11" cy="35" r="4.5" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3 3" />
+              <circle cx="37" cy="35" r="4.5" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3 3" />
+            </svg>
+          )}
+
+          {cat.iconType === 'furniture' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <!-- Closet / Armario de madera -->
+              <rect x="10" y="6" width="28" height="36" rx="2" fill="#d4a373" stroke="#8d5b4c" stroke-width="1.5" />
+              <line x1="24" y1="6" x2="24" y2="34" stroke="#8d5b4c" stroke-width="1.5" />
+              <line x1="10" y1="34" x2="38" y2="34" stroke="#8d5b4c" stroke-width="1.5" />
+              <!-- Manijas -->
+              <circle cx="21" cy="20" r="1.2" fill="#582f0e" />
+              <circle cx="27" cy="20" r="1.2" fill="#582f0e" />
+              <rect x="18" y="37" width="12" height="1.5" rx="0.75" fill="#582f0e" />
+            </svg>
+          )}
+
+          {cat.iconType === 'mattress' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <!-- Colchón en perspectiva -->
+              <path d="M8 24l16-8 16 8-16 8L8 24z" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" />
+              <!-- Base somier -->
+              <path d="M8 24v8l16 8 16-8v-8l-16 8L8 24z" fill="#1e293b" />
+              <!-- Líneas de acolchado -->
+              <path d="M16 20l16 8M24 16l8 4" stroke="#94a3b8" stroke-width="1" stroke-dasharray="2 2" />
+            </svg>
+          )}
+
+          {cat.iconType === 'tire' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <!-- Llanta con rin de aleación -->
+              <circle cx="24" cy="24" r="18" fill="#1e293b" stroke="#0f172a" stroke-width="2" />
+              <circle cx="24" cy="24" r="12" fill="#94a3b8" />
+              <circle cx="24" cy="24" r="4" fill="#0f172a" />
+              <!-- Rayos rin -->
+              <line x1="24" y1="12" x2="24" y2="36" stroke="#475569" stroke-width="2" />
+              <line x1="12" y1="24" x2="36" y2="24" stroke="#475569" stroke-width="2" />
+              <line x1="15" y1="15" x2="33" y2="33" stroke="#475569" stroke-width="2" />
+              <line x1="33" y1="15" x2="15" y2="33" stroke="#475569" stroke-width="2" />
+            </svg>
+          )}
+
+          {cat.iconType === 'cookware' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <!-- Olla con tapa -->
+              <rect x="11" y="20" width="26" height="16" rx="4" fill="#64748b" />
+              <path d="M13 20h22l-2-4H15l-2 4z" fill="#94a3b8" />
+              <circle cx="24" cy="14" r="2" fill="#1e293b" />
+              <!-- Asas -->
+              <path d="M7 23h4M37 23h4" stroke="#334155" stroke-width="2" stroke-linecap="round" />
+              <rect x="13" y="24" width="22" height="2" fill="#cbd5e1" opacity="0.6" />
+            </svg>
+          )}
+
+          {cat.iconType === 'toy' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <!-- Peluche azul adorable -->
+              <!-- Orejas grandes -->
+              <ellipse cx="12" cy="14" rx="6" ry="9" transform="rotate(-30 12 14)" fill="#38bdf8" />
+              <ellipse cx="12" cy="14" rx="3.5" ry="6" transform="rotate(-30 12 14)" fill="#f472b6" />
+              <ellipse cx="36" cy="14" rx="6" ry="9" transform="rotate(30 36 14)" fill="#38bdf8" />
+              <ellipse cx="36" cy="14" rx="3.5" ry="6" transform="rotate(30 36 14)" fill="#f472b6" />
+              <!-- Cabeza y cuerpo -->
+              <circle cx="24" cy="22" r="10" fill="#0284c7" />
+              <circle cx="24" cy="34" r="8" fill="#0284c7" />
+              <!-- Ojos grandes y nariz -->
+              <circle cx="20" cy="21" r="2.5" fill="#0f172a" />
+              <circle cx="21" cy="20" r="1" fill="#ffffff" />
+              <circle cx="28" cy="21" r="2.5" fill="#0f172a" />
+              <circle cx="29" cy="20" r="1" fill="#ffffff" />
+              <ellipse cx="24" cy="25" rx="2" ry="1.2" fill="#0f172a" />
+            </svg>
+          )}
+
+          {cat.iconType === 'giftcard' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <!-- Tarjetas digitales en abanico -->
+              <rect x="8" y="14" width="22" height="26" rx="3" transform="rotate(-15 8 14)" fill="#e11d48" />
+              <rect x="16" y="10" width="22" height="26" rx="3" fill="#10b981" />
+              <rect x="22" y="14" width="22" height="26" rx="3" transform="rotate(15 22 14)" fill="#f59e0b" />
+              <rect x="19" y="18" width="16" height="4" rx="1" fill="#ffffff" opacity="0.9" />
+            </svg>
+          )}
+
+          {cat.iconType === 'sports' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <!-- Bicicleta de spinning estática -->
+              <circle cx="16" cy="32" r="7" stroke="#dc2626" stroke-width="3" fill="#1e293b" />
+              <circle cx="34" cy="32" r="5" stroke="#475569" stroke-width="2.5" fill="#1e293b" />
+              <path d="M16 32l10-14h6" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round" />
+              <path d="M26 18l6 14" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round" />
+              <!-- Manillar y sillín -->
+              <path d="M30 14h4v3" stroke="#dc2626" stroke-width="2" stroke-linecap="round" />
+              <path d="M23 15h5" stroke="#0f172a" stroke-width="3" stroke-linecap="round" />
+              <!-- Base suelo -->
+              <line x1="8" y1="39" x2="40" y2="39" stroke="#334155" stroke-width="3" stroke-linecap="round" />
+            </svg>
+          )}
+
+          {cat.iconType === 'xmas' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <!-- Árbol de navidad -->
+              <path d="M24 6l6 8h-4l6 9h-5l7 11H14l7-11h-5l6-9h-4l6-8z" fill="#15803d" />
+              <!-- Tronco -->
+              <rect x="22" y="34" width="4" height="6" fill="#78350f" />
+              <!-- Estrella dorada -->
+              <polygon points="24,4 25.5,8 29.5,8 26.5,10.5 27.5,14.5 24,12 20.5,14.5 21.5,10.5 18.5,8 22.5,8" fill="#facc15" />
+              <!-- Esferas rojas -->
+              <circle cx="21" cy="20" r="1.5" fill="#ef4444" />
+              <circle cx="28" cy="25" r="1.5" fill="#ef4444" />
+              <circle cx="19" cy="30" r="1.5" fill="#facc15" />
+              <circle cx="26" cy="31" r="1.5" fill="#38bdf8" />
+            </svg>
+          )}
+
+          {cat.iconType === 'discount' && (
+            <svg viewBox="0 0 48 48" width="36" height="36" fill="none">
+              <!-- Icono 3D % Ofertas -->
+              <rect x="10" y="10" width="28" height="28" rx="8" transform="rotate(8 24 24)" fill="url(#grad-sale)" />
+              <text x="17" y="32" font-size="20" font-weight="900" fill="#ffffff" font-family="Outfit, sans-serif">%</text>
+              <defs>
+                <linearGradient id="grad-sale" x1="10" y1="10" x2="38" y2="38" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#ef4444" />
+                  <stop offset="1" stop-color="#b91c1c" />
+                </linearGradient>
+              </defs>
+            </svg>
+          )}
+        </div>
+        <span class="retail-cat-label">{cat.name}</span>
+      </a>
+    ))}
+  </div>
+</section>
+
+<style>
+  .retail-categories-banner {
+    margin: 1.25rem 0 0.5rem;
+    position: relative;
+  }
+
+  .retail-cats-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding: 0 0.25rem;
+  }
+
+  .retail-cats-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .retail-cats-dot {
+    width: 8px;
+    height: 8px;
+    background: #0e6a45;
+    border-radius: 999px;
+    display: inline-block;
+  }
+
+  .retail-cats-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--ink, #1d1a16);
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .retail-cats-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: #e7f6ee;
+    color: #0e6a45;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid rgba(14, 106, 69, 0.2);
+  }
+
+  .retail-cats-controls {
+    display: flex;
+    gap: 0.35rem;
+  }
+
+  .retail-cats-arrow {
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    border: 1px solid var(--line, #e3d9c8);
+    background: #fff;
+    color: var(--ink, #1d1a16);
+    font-size: 1.1rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .retail-cats-arrow:hover {
+    background: #0e6a45;
+    color: #fff;
+    border-color: #0e6a45;
+  }
+
+  /* Grid con 2 filas de 11 columnas con scroll horizontal suave */
+  .retail-cats-grid {
+    display: grid;
+    grid-template-rows: repeat(2, 94px);
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(88px, 94px);
+    gap: 0.6rem;
+    overflow-x: auto;
+    padding: 0.25rem 0.25rem 0.75rem;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  .retail-cats-grid::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .retail-cats-grid::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+  }
+
+  .retail-cat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f0f5ff;
+    border: 1px solid #dbeafe;
+    border-radius: 12px;
+    padding: 0.5rem 0.35rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.16s ease-in-out;
+    user-select: none;
+    outline: none;
+    width: 100%;
+    height: 100%;
+  }
+
+  .retail-cat-card:hover {
+    background: #e0edff;
+    border-color: #3b82f6;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.14);
+  }
+
+  .retail-cat-card:active,
+  .retail-cat-card.is-active {
+    background: #e7f6ee;
+    border-color: #0e6a45;
+    transform: scale(0.97);
+  }
+
+  .retail-cat-card.is-active .retail-cat-label {
+    color: #0e6a45;
+    font-weight: 700;
+  }
+
+  .retail-cat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 42px;
+    width: 42px;
+    margin-bottom: 0.3rem;
+  }
+
+  .retail-cat-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #1e293b;
+    text-align: center;
+    line-height: 1.15;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 640px) {
+    .retail-cats-grid {
+      grid-template-rows: repeat(2, 86px);
+      grid-auto-columns: minmax(78px, 82px);
+      gap: 0.45rem;
+    }
+    .retail-cat-icon {
+      height: 36px;
+      width: 36px;
+      margin-bottom: 0.2rem;
+    }
+    .retail-cat-icon svg {
+      width: 30px;
+      height: 30px;
+    }
+    .retail-cat-label {
+      font-size: 0.72rem;
+    }
+    .retail-cats-badge {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  // Manejo de botones de flecha para desplazamiento
+  document.addEventListener('DOMContentLoaded', () => {
+    const grid = document.querySelector<HTMLElement>('#retail-cats-grid');
+    const prevBtn = document.querySelector<HTMLButtonElement>('#retail-cats-prev');
+    const nextBtn = document.querySelector<HTMLButtonElement>('#retail-cats-next');
+
+    if (grid && prevBtn && nextBtn) {
+      prevBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        grid.scrollBy({ left: -280, behavior: 'smooth' });
+      });
+      nextBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        grid.scrollBy({ left: 280, behavior: 'smooth' });
+      });
+    }
+  });
+</script>

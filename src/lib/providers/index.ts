@@ -32,16 +32,16 @@ function shortError(storeName: string, error: unknown): string {
   return `${storeName}: ${msg.slice(0, 140)}`;
 }
 
-export async function searchStores(query: string, city: City): Promise<StoreOutcome[]> {
+export async function searchStores(query: string, city: City, limit = 16): Promise<StoreOutcome[]> {
   const tasks = STORES.map(async (store): Promise<StoreOutcome> => {
     try {
       let offers: Offer[] = [];
       if (store.type === 'vtex') {
-        offers = await searchVtex(store, query, city);
+        offers = await searchVtex(store, query, city, limit);
       } else if (store.type === 'algolia') {
-        offers = await searchAlgolia(store, query);
+        offers = await searchAlgolia(store, query, limit);
       } else if (store.type === 'falabella') {
-        offers = await searchFalabella(store, query);
+        offers = await searchFalabella(store, query, limit);
       }
       return {
         store_id: store.id,

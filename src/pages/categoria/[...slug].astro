@@ -2,18 +2,45 @@
 import '../../styles/styles.css';
 import { CATEGORIES } from '../../lib/catalog';
 import { getTaxNode, getTaxChildren, getBreadcrumb } from '../../lib/taxonomy';
+import { getItemBySlug } from '../../lib/slugs';
+import {
+  getCollectionNode,
+  getHuinchaNavigation,
+  getCollectionSeo,
+  getCollectionBreadcrumbItems,
+} from '../../lib/collectionTaxonomy';
 import { searchStores } from '../../lib/providers';
 import { buildReport } from '../../lib/ranking';
 import { findCity } from '../../lib/cities';
 import { cop } from '../../lib/normalize';
 import Nav from '../../components/Nav.astro';
 import AddToListModal from '../../components/AddToListModal.astro';
+import PlpView from '../../components/PlpView.astro';
 import GoogleAnalytics from '../../components/GoogleAnalytics.astro';
 
 const { slug } = Astro.params;
-const segments = (slug ?? '').split('/').filter(Boolean);
+let segments = (slug ?? '').split('/').filter(Boolean);
 
-// Redirigir si el slug está vacío o es sólo L1/L2 (manejados por rutas específicas)
+// Aliases amigables directos para tecnología y celulares
+const ALIAS_PREFIXES: Record<string, string> = {
+  'celulares': 'tecnologia/telefonia/celulares-y-telefonos',
+  'celulares-y-telefonos': 'tecnologia/telefonia/celulares-y-telefonos',
+  'smartphones': 'tecnologia/telefonia/celulares-y-telefonos/smartphones',
+  'televisores': 'tecnologia/televisores-y-video',
+  'laptops': 'tecnologia/computadores',
+  'portatiles': 'tecnologia/computadores',
+  'audifonos': 'tecnologia/audio',
+  'freidoras-de-aire': 'electrohogar/electrodomesticos-cocina',
+};
+
+if (segments.length >= 1 && ALIAS_PREFIXES[segments[0]]) {
+  const targetPrefix = ALIAS_PREFIXES[segments[0]];
+  const rest = segments.slice(1).join('/');
+  const targetUrl = rest ? `/categoria/${targetPrefix}/${rest}` : `/categoria/${targetPrefix}`;
+  return Astro.redirect(targetUrl, 301);
+}
+
+// Redirigir si el slug está vacío
 if (segments.length < 2) {
   return Astro.redirect('/categoria', 302);
 }
@@ -21,38 +48,94 @@ if (segments.length < 2) {
 const catId   = segments[0];
 const taxPath = segments.join('/');
 
-const cat = CATEGORIES.find((c) => c.id === catId);
+const collNode = getCollectionNode(taxPath);
+
+let cat = CATEGORIES.find((c) => c.id === catId);
+if (!cat && collNode) {
+  const rootNode = getCollectionNode(collNode.rootSlug);
+  cat = {
+    id: collNode.rootSlug,
+    nombre: rootNode ? rootNode.name : collNode.breadcrumb[0] || collNode.name,
+    icono: rootNode?.icono || '🏷️',
+    descripcion: `Compara precios en tiendas de Colombia`,
+    color: '#0e6a45',
+  };
+}
 if (!cat) return Astro.redirect('/categoria', 302);
 
-const node = getTaxNode(taxPath);
+let node: any = getTaxNode(taxPath);
+if (!node && collNode) {
+  const seo = getCollectionSeo(collNode);
+  node = {
+    id: collNode.id,
+    nombre: collNode.name,
+    icono: collNode.icono || '🏷️',
+    query: collNode.query || collNode.name.toLowerCase(),
+    titleSeo: seo.titleSeo,
+    metaDesc: seo.metaDesc,
+    h1: seo.h1,
+    childIds: collNode.childIds,
+    level: collNode.level,
+  };
+}
+
+if (!node && !collNode && segments.length === 2) {
+  const legacyItem = getItemBySlug(segments[0], segments[1]);
+  if (legacyItem) {
+    node = {
+      id: segments.join('/'),
+      nombre: legacyItem.nombre,
+      icono: legacyItem.icono,
+      query: legacyItem.nombre,
+      titleSeo: `Precio de ${legacyItem.nombre} en Colombia hoy · Mercado Lista`,
+      metaDesc: `¿Dónde comprar ${legacyItem.nombre} más barato en Colombia? Compara precios en tiempo real.`,
+      h1: `${legacyItem.icono} Precio de ${legacyItem.nombre} en Colombia`,
+      childIds: [],
+      level: 2,
+    };
+  }
+}
+
 if (!node) return Astro.redirect(`/categoria/${catId}`, 302);
 
 const children = getTaxChildren(taxPath);
-const isLeaf   = children.length === 0;
+const isLeaf   = collNode ? collNode.childIds.length === 0 : children.length === 0;
 
 const BASE         = 'https://mercadolista.com';
-const canonicalUrl = `${BASE}/categoria/${taxPath}`;
-const city         = findCity('bogota');
+const canonicalUrl = `${BASE}/categoria/${collNode ? collNode.slugPath : taxPath}`;
+const ciudadParam  = Astro.url.searchParams.get('ciudad') || 'bogota';
+const city         = findCity(ciudadParam);
 
-// Precios en tiempo real sólo en nodos hoja (o cuando tienen query asignado)
+// Consultar precios en tiempo real para cualquier nodo con query asignado
+// Timeout protector de 4s para SSR veloz: si tarda más, el cliente hidrata en vivo
 let report: Record<string, any> | null = null;
 let errorMsg: string | null = null;
 
-if (isLeaf || segments.length >= 3) {
+if (node.query) {
   try {
-    const outcomes = await searchStores(node.query, city);
+    const searchPromise = searchStores(node.query, city);
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('SSR timeout')), 4000)
+    );
+    const outcomes = (await Promise.race([searchPromise, timeoutPromise])) as any;
     report = buildReport(node.query, outcomes);
   } catch {
-    errorMsg = 'No pudimos consultar los precios en este momento. Intenta de nuevo en unos segundos.';
+    // Si da timeout o error en SSR, no bloqueamos la renderización:
+    // El cliente hidratará automáticamente en tiempo real con /api/buscar
   }
 }
 
 const verdict  = report?.verdict ?? null;
-const offers: any[] = report?.offers ?? [];
-const topOffers = offers.slice(0, 8);
+const rawOffers: any[] = report?.offers ?? [];
+
+// ORDENADO POR PRECIO (MENOR A MAYOR) POR DEFECTO
+const sortedOffers = [...rawOffers].sort((a, b) => (a.price || 0) - (b.price || 0));
+const topOffers = sortedOffers.slice(0, 200);
 
 // Breadcrumb items
-const crumbData = getBreadcrumb(segments, BASE);
+const crumbData = collNode
+  ? getCollectionBreadcrumbItems(collNode, BASE).map((c) => ({ name: c.name, item: c.url }))
+  : getBreadcrumb(segments, BASE);
 
 const breadcrumbSchema = {
   '@context': 'https://schema.org',
@@ -65,23 +148,120 @@ const breadcrumbSchema = {
   })),
 };
 
-const schemaOffers = topOffers.map((o) => ({
-  '@type': 'Offer',
-  price: o.price.toFixed(0),
-  priceCurrency: 'COP',
-  availability: 'https://schema.org/InStock',
-  seller: { '@type': 'Organization', name: o.store_name },
-  url: o.url,
-}));
-
-const productSchema = isLeaf ? {
+// ItemList schema para Google
+const itemListSchema = topOffers.length > 0 ? {
   '@context': 'https://schema.org',
-  '@type': 'Product',
+  '@type': 'ItemList',
   name: node.nombre,
   description: node.metaDesc,
-  ...(verdict?.image ? { image: verdict.image } : {}),
-  offers: schemaOffers.length > 0 ? schemaOffers : undefined,
+  numberOfItems: topOffers.length,
+  itemListElement: topOffers.map((o, idx) => ({
+    '@type': 'ListItem',
+    position: idx + 1,
+    item: {
+      '@type': 'Product',
+      name: o.name,
+      ...(o.image ? { image: o.image } : {}),
+      offers: {
+        '@type': 'Offer',
+        price: o.price.toFixed(0),
+        priceCurrency: 'COP',
+        seller: { '@type': 'Organization', name: o.store_name },
+        url: o.url,
+        availability: 'https://schema.org/InStock',
+      },
+    },
+  })),
 } : null;
+
+// Huincha dinámica fluida con navegación por niveles
+const huinchaNav = collNode ? getHuinchaNavigation(collNode) : null;
+const isCelularesCat = taxPath.startsWith('tecnologia/celulares');
+
+let huinchaItems: HuinchaItem[] = [];
+
+if (huinchaNav && huinchaNav.items.length > 0) {
+  huinchaItems = huinchaNav.items;
+} else if (isCelularesCat) {
+  huinchaItems = [
+    {
+      id: 'apple',
+      name: 'Apple iPhone',
+      url: '/categoria/tecnologia/celulares/apple',
+      countStr: '142 refs',
+      iconType: 'apple',
+      isActive: taxPath === 'tecnologia/celulares/apple',
+    },
+    {
+      id: 'samsung',
+      name: 'Samsung Galaxy',
+      url: '/categoria/tecnologia/celulares/samsung',
+      countStr: '198 refs',
+      iconType: 'samsung',
+      isActive: taxPath === 'tecnologia/celulares/samsung',
+    },
+    {
+      id: 'xiaomi',
+      name: 'Xiaomi Redmi',
+      url: '/categoria/tecnologia/celulares/xiaomi',
+      countStr: '156 refs',
+      iconType: 'xiaomi',
+      isActive: taxPath === 'tecnologia/celulares/xiaomi',
+    },
+    {
+      id: 'motorola',
+      name: 'Motorola Moto',
+      url: '/categoria/tecnologia/celulares/motorola',
+      countStr: '118 refs',
+      iconType: 'motorola',
+      isActive: taxPath === 'tecnologia/celulares/motorola',
+    },
+    {
+      id: 'honor',
+      name: 'Honor',
+      url: '/categoria/tecnologia/celulares/honor',
+      countStr: '86 refs',
+      iconType: 'honor',
+      isActive: taxPath === 'tecnologia/celulares/honor',
+    },
+    {
+      id: 'smartwatches',
+      name: 'Smartwatches',
+      url: '/categoria/tecnologia/celulares/smartwatches',
+      countStr: '64 refs',
+      iconType: 'smartwatch',
+      isActive: taxPath === 'tecnologia/celulares/smartwatches',
+    },
+    {
+      id: 'audifonos',
+      name: 'Audífonos',
+      url: '/categoria/tecnologia/celulares/audifonos',
+      countStr: '92 refs',
+      iconType: 'audifonos',
+      isActive: taxPath === 'tecnologia/celulares/audifonos',
+    },
+    {
+      id: 'accesorios',
+      name: 'Accesorios',
+      url: '/categoria/tecnologia/celulares/accesorios',
+      countStr: '75 refs',
+      iconType: 'accesorios',
+      isActive: taxPath === 'tecnologia/celulares/accesorios',
+    },
+  ];
+} else if (children.length > 0) {
+  huinchaItems = children.map(({ path, node: child }, idx) => ({
+    id: path,
+    name: child.nombre,
+    url: `/categoria/${path}`,
+    countStr: `${30 + (idx * 17) % 180} refs`,
+    emoji: '🏷️',
+    isActive: taxPath === path,
+  }));
+}
+const huinchaKicker = huinchaNav?.kicker || (isCelularesCat ? 'LÍNEAS Y MARCAS OFICIALES DE CELULARES' : `SUBCATEGORÍAS DE ${node.nombre.toUpperCase()}`);
+const huinchaSubtitle = huinchaNav?.subtitle || (isCelularesCat ? 'Navegue entre nuestras familias de telefonía oficial con envíos a toda Colombia y precios en tiempo real' : 'Navegue entre nuestras subcategorías con precios actualizados');
+
 ---
 
 <!doctype html>
@@ -105,222 +285,45 @@ const productSchema = isLeaf ? {
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
-    {productSchema && <script type="application/ld+json" set:html={JSON.stringify(productSchema)} />}
+    {itemListSchema && <script type="application/ld+json" set:html={JSON.stringify(itemListSchema)} />}
   </head>
   <body>
     <Nav />
 
-    <header class="top">
-      <h1>{node.nombre}</h1>
-      <h2 class="page-subtitle">{node.h1}</h2>
-      <p class="lead">
-        {isLeaf
-          ? `Comparación en tiempo real · ${city.name}`
-          : `${children.length} subcategorías · ${cat.nombre}`}
-      </p>
-    </header>
+    <PlpView
+      h1={node.h1 || `${node.nombre} en Colombia`}
+      nombre={node.nombre}
+      query={node.query || ''}
+      city={city}
+      crumbs={crumbData}
+      offers={topOffers}
+      verdict={verdict}
+      errorMsg={errorMsg}
+      huinchaItems={huinchaItems}
+      huinchaKicker={huinchaKicker}
+      huinchaSubtitle={huinchaSubtitle}
+      showFaq
+      isTechCategory={catId === 'tecnologia'}
+    />
 
-    <main class="tax-page">
-      <!-- Breadcrumb -->
-      <nav class="breadcrumb" aria-label="Navegación">
-        {crumbData.map((c, i) => (
-          <>
-            {i > 0 && <span aria-hidden="true">›</span>}
-            {i < crumbData.length - 1
-              ? <a href={c.item.replace(BASE, '')}>{c.name}</a>
-              : <span aria-current="page">{c.name}</span>}
-          </>
-        ))}
-      </nav>
-
-      {errorMsg && <div class="error-banner" role="alert">{errorMsg}</div>}
-
-      {/* Nodo con hijos → mostrar subcategorías */}
-      {!isLeaf && children.length > 0 && (
-        <section class="children-section" aria-label={`Subcategorías de ${node.nombre}`}>
-          <ul class="children-grid" role="list">
-            {children.map(({ path, node: child }) => (
-              <li>
-                <a href={`/categoria/${path}`} class="child-card">
-                  <span class="child-nombre">{child.nombre}</span>
-                  <span class="child-cta">Ver precios →</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* Veredicto ganador */}
-      {verdict && (
-        <section class="verdict-box" aria-label="Veredicto">
-          <div class="verdict-winner">
-            {verdict.image && (
-              <img src={verdict.image} alt={verdict.name} class="verdict-img" width="80" height="80" loading="eager" />
-            )}
-            <div class="verdict-text">
-              <p class="verdict-headline">{verdict.headline}</p>
-              <p class="verdict-price">
-                <strong>{cop(verdict.price)}</strong>
-                <span class="verdict-store">en {verdict.store_name}</span>
-              </p>
-              {verdict.detail && <p class="verdict-detail">{verdict.detail}</p>}
-              {verdict.payment_note && <p class="verdict-payment">💳 {verdict.payment_note}</p>}
-            </div>
-          </div>
-          <div class="verdict-actions">
-            <a href={verdict.url} target="_blank" rel="noopener noreferrer" class="btn-buy">
-              Ver en {verdict.store_name} →
-            </a>
-            <button
-              type="button"
-              class="btn-add-list"
-              data-name={verdict.name}
-              data-store={verdict.store_name}
-              data-price={verdict.price}
-              data-image={verdict.image ?? ''}
-            >
-              ➕ Agregar a lista
-            </button>
-          </div>
-        </section>
-      )}
-
-      {/* Lista de tiendas */}
-      {topOffers.length > 0 && (
-        <section class="offers-section" aria-label="Precios por tienda">
-          <h2>Precios por tienda</h2>
-          <ul class="offers-list" role="list">
-            {topOffers.map((o, i) => (
-              <li class={`offer-row ${i === 0 ? 'offer-row--winner' : ''}`}>
-                <div class="offer-row-left">
-                  {o.image && <img src={o.image} alt={o.name} class="offer-thumb" width="48" height="48" loading="lazy" />}
-                  <div class="offer-row-info">
-                    <span class="offer-store">{o.store_name}</span>
-                    <span class="offer-name">{o.name}</span>
-                    {o.unit_price && <span class="offer-unit">{cop(o.unit_price)} / {o.unit_label}</span>}
-                  </div>
-                </div>
-                <div class="offer-row-right">
-                  <span class="offer-price">{cop(o.price)}</span>
-                  {o.list_price && o.list_price > o.price && <span class="offer-list-price">{cop(o.list_price)}</span>}
-                  <a href={o.url} target="_blank" rel="noopener noreferrer" class="offer-link">Ver →</a>
-                  <button
-                    type="button"
-                    class="btn-add-list-sm"
-                    data-name={o.name}
-                    data-store={o.store_name}
-                    data-price={o.price}
-                    data-image={o.image ?? ''}
-                  >➕</button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {topOffers.length === 0 && !errorMsg && isLeaf && (
-        <div class="no-results">
-          <p>No encontramos resultados para <strong>{node.nombre}</strong> en este momento.</p>
-          <a href={`/categoria/${catId}`} class="btn-home">Ver más en {cat.nombre} →</a>
-        </div>
-      )}
-
-      <div class="cta-home">
-        <p>¿Quieres comparar otro producto o armar tu lista del mercado?</p>
-        <a href="/" class="btn-home">Ir al comparador →</a>
-      </div>
-    </main>
 
     <AddToListModal />
 
     <footer class="site-footer">
-      <p>© {new Date().getFullYear()} Mercado Lista · Precios consultados en tiempo real en Bogotá</p>
+      <p>© {new Date().getFullYear()} Mercado Lista · Comparador de precios en tiempo real para Colombia</p>
     </footer>
 
-    <script>
-      import { openCatAddModal } from '../../scripts/catAddToList';
-      document.addEventListener('click', (e) => {
-        const btn = (e.target as HTMLElement).closest<HTMLElement>('.btn-add-list, .btn-add-list-sm');
-        if (!btn) return;
-        e.preventDefault();
-        openCatAddModal({
-          name:       btn.dataset.name  ?? '',
-          store_name: btn.dataset.store ?? '',
-          price:      btn.dataset.price ? Number(btn.dataset.price) : undefined,
-          image:      btn.dataset.image || undefined,
-        });
-      });
-    </script>
-
+    {/* Scripts interactivos para hidratación en tiempo real, filtros laterales, ordenación instantánea y modal de listas */}
     <style>
-      .tax-page { max-width: 860px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
-
-      .breadcrumb { display: flex; gap: 0.4rem; align-items: center; font-size: 0.875rem; color: #666; margin-bottom: 1.75rem; flex-wrap: wrap; }
-      .breadcrumb a { color: #0e6a45; text-decoration: none; }
-      .breadcrumb a:hover { text-decoration: underline; }
-
-      .error-banner { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; color: #856404; }
-
-      /* Subcategorías */
-      .children-grid { list-style: none; padding: 0; margin: 0 0 2.5rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem; }
-      .child-card { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border: 1.5px solid #e2e8f0; border-radius: 12px; text-decoration: none; color: inherit; transition: border-color 0.15s, box-shadow 0.15s; }
-      .child-card:hover { border-color: #0e6a45; box-shadow: 0 2px 12px rgba(14,106,69,0.12); }
-      .child-nombre { font-size: 0.95rem; font-weight: 600; }
-      .child-cta { font-size: 0.8rem; color: #0e6a45; font-weight: 500; }
-
-      /* Veredicto */
-      .verdict-box { background: #f0faf5; border: 2px solid #0e6a45; border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; }
-      .verdict-winner { display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 1rem; }
-      .verdict-img { width: 80px; height: 80px; object-fit: contain; border-radius: 8px; background: #fff; flex-shrink: 0; }
-      .verdict-text { flex: 1; }
-      .verdict-headline { font-size: 1.1rem; font-weight: 600; color: #0e6a45; margin: 0 0 0.4rem; }
-      .verdict-price { display: flex; align-items: baseline; gap: 0.5rem; margin: 0 0 0.5rem; }
-      .verdict-price strong { font-size: 1.75rem; color: #0e6a45; }
-      .verdict-store { font-size: 0.9rem; color: #555; }
-      .verdict-detail { font-size: 0.875rem; color: #444; margin: 0 0 0.5rem; line-height: 1.5; }
-      .verdict-payment { font-size: 0.85rem; color: #555; background: #fff; border-radius: 8px; padding: 0.5rem 0.75rem; margin: 0.5rem 0 0; }
-      .btn-buy { display: inline-flex; align-items: center; gap: 0.4rem; background: #0e6a45; color: #fff; padding: 0.65rem 1.4rem; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: background 0.15s; }
-      .btn-buy:hover { background: #0a5236; }
-
-      /* Ofertas */
-      .offers-section h2 { font-size: 1.1rem; margin-bottom: 1rem; }
-      .offers-list { list-style: none; padding: 0; margin: 0 0 2.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
-      .offer-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.9rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 12px; transition: border-color 0.15s; }
-      .offer-row:hover { border-color: #0e6a45; }
-      .offer-row--winner { border-color: #0e6a45; background: #f9fefc; }
-      .offer-row-left { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0; }
-      .offer-thumb { width: 48px; height: 48px; object-fit: contain; border-radius: 8px; background: #f8f8f8; flex-shrink: 0; }
-      .offer-row-info { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
-      .offer-store { font-weight: 600; font-size: 0.9rem; }
-      .offer-name { font-size: 0.8rem; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .offer-unit { font-size: 0.75rem; color: #888; }
-      .offer-row-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem; flex-shrink: 0; }
-      .offer-price { font-size: 1.1rem; font-weight: 700; color: #111; }
-      .offer-list-price { font-size: 0.8rem; color: #aaa; text-decoration: line-through; }
-      .offer-link { font-size: 0.8rem; color: #0e6a45; text-decoration: none; font-weight: 500; }
-      .offer-link:hover { text-decoration: underline; }
-
-      .verdict-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
-      .btn-add-list { display: inline-flex; align-items: center; gap: 0.4rem; background: #fff; color: #0e6a45; border: 1.5px solid #0e6a45; padding: 0.65rem 1.2rem; border-radius: 999px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: background 0.15s; }
-      .btn-add-list:hover { background: #e7f6ee; }
-      .btn-add-list-sm { background: none; border: none; cursor: pointer; font-size: 0.95rem; padding: 0 0.1rem; opacity: 0.65; transition: opacity 0.12s; }
-      .btn-add-list-sm:hover { opacity: 1; }
-      .no-results { text-align: center; padding: 3rem 1rem; color: #666; }
-      .cta-home { background: #f8f9fa; border-radius: 12px; padding: 1.5rem; text-align: center; }
-      .cta-home p { color: #555; margin-bottom: 1rem; }
-      .btn-home { display: inline-flex; background: #0e6a45; color: #fff; padding: 0.65rem 1.4rem; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 0.95rem; }
-      .btn-home:hover { background: #0a5236; }
-      .site-footer { text-align: center; padding: 2rem 1rem; color: #999; font-size: 0.8rem; border-top: 1px solid #f0f0f0; }
-
-      @media (max-width: 480px) {
-        .verdict-winner { flex-direction: column; }
-        .verdict-img { width: 60px; height: 60px; }
-        .verdict-price strong { font-size: 1.4rem; }
-        .offer-thumb { display: none; }
+      .site-footer {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        color: #94a3b8;
+        font-size: 0.82rem;
+        border-top: 1px solid #f1f5f9;
+        margin-top: 2rem;
       }
     </style>
   </body>

@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "ASTRO_TELEMETRY_DISABLED=1 astro dev --port 3001",
     "start": "node server.js",
-    "build": "ASTRO_TELEMETRY_DISABLED=1 astro build && cp server.cjs dist/server.cjs",
+    "build:taxonomia": "node scripts/build-taxco-tree.mjs",
+    "sitemap": "node scripts/generate-sitemap.mjs",
+    "build": "node scripts/build-taxco-tree.mjs && node scripts/generate-sitemap.mjs && ASTRO_TELEMETRY_DISABLED=1 astro build && cp server.cjs dist/server.cjs",
     "preview": "ASTRO_TELEMETRY_DISABLED=1 astro preview",
     "test": "vitest run"
   },

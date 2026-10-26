@@ -1,5 +1,6 @@
 import type { Offer, StoreOutcome } from './types';
 import { CATEGORIES, offerMatchesCategory } from './catalog';
+import { findBestCategoryHelp } from './collectionTaxonomy';
 import {
   categoryMatches,
   cop,
@@ -160,12 +161,12 @@ export function buildUnitReport(
     categoryMatches(query, offer.categories),
   ]);
 
-  let strict = scored.filter((item) => item[1] + 1e-9 >= threshold);
+  let strict = scored.filter((item) => item[1] > 0 && item[1] + 1e-9 >= threshold);
   let relaxed = false;
   if (strict.length === 0 && scored.length > 0) {
     relaxed = true;
     strict = scored.filter((item) => item[1] >= 0.5);
-    if (strict.length === 0) strict = scored;
+    if (strict.length === 0) strict = scored.filter((item) => item[1] > 0);
   }
 
   const measured: [Offer, number, boolean, MeasuredOfferData][] = [];
@@ -264,6 +265,8 @@ export function buildUnitReport(
     selectedCategory,
   ].filter(Boolean);
 
+  const categoryHelp = findBestCategoryHelp(query);
+
   return {
     query,
     relaxed,
@@ -271,6 +274,7 @@ export function buildUnitReport(
     unmeasured,
     empty_detail: emptyDetail,
     filter_label: filterParts.length > 0 ? filterParts.join(' · ') : null,
+    category_suggestion: categoryHelp,
     verdict,
     offers: shown.map(([offer, score, m]) => offerPayload(offer, score, m)),
     stores: outcomes.map((outcome) => ({
