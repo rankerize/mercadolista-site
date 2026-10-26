@@ -131,7 +131,7 @@ const rawOffers: any[] = report?.offers ?? [];
 
 // ORDENADO POR PRECIO (MENOR A MAYOR) POR DEFECTO
 const sortedOffers = [...rawOffers].sort((a, b) => (a.price || 0) - (b.price || 0));
-const topOffers = sortedOffers.slice(0, 32);
+const topOffers = sortedOffers.slice(0, 200);
 
 // Detección de marca auxiliar
 function detectBrand(name: string): string {
@@ -686,6 +686,8 @@ if (huinchaNav && huinchaNav.items.length > 0) {
             })}
           </div>
 
+          <nav class="offers-pager" id="product-pager" aria-label="Páginas de productos" hidden></nav>
+
           {/* Estado de sin resultados */}
           <div class="no-filter-results" id="no-filter-results" style="display: none;">
             <div class="no-results-icon">🔎</div>
@@ -721,10 +723,15 @@ if (huinchaNav && huinchaNav.items.length > 0) {
       const query = pageContainer?.dataset.query || '';
       let currentCity = pageContainer?.dataset.city || 'bogota';
       const initialCount = Number(pageContainer?.dataset.initialCount || 0);
+      // Grilla: 4 columnas × 5 filas = 20 productos por página
+      const PLP_PAGE_SIZE = 20;
+      let currentPage = 1;
+      let lastFilterKey = '';
 
       // Elementos del DOM
       const sidebar = document.getElementById('cat-sidebar');
       const grid = document.getElementById('product-cards-grid');
+      const pager = document.getElementById('product-pager');
       const liveLoader = document.getElementById('cat-live-loader');
       const sortSelect = document.getElementById('sort-select') as HTMLSelectElement | null;
       const citySelect = document.getElementById('cat-city-select') as HTMLSelectElement | null;
@@ -796,7 +803,7 @@ if (huinchaNav && huinchaNav.items.length > 0) {
         if (!grid) return;
         const rawOffers = report.offers || [];
         const sorted = [...rawOffers].sort((a: any, b: any) => (a.price || 0) - (b.price || 0));
-        const topOffers = sorted.slice(0, 32);
+        const topOffers = sorted.slice(0, 200);
 
         // Actualizar contadores
         if (visibleCountEl) visibleCountEl.textContent = String(topOffers.length);
@@ -983,6 +990,7 @@ if (huinchaNav && huinchaNav.items.length > 0) {
         if (liveLoader) liveLoader.style.display = 'none';
         if (noResultsBox) noResultsBox.style.display = 'none';
         grid.style.display = 'grid';
+        currentPage = 1;
 
         applyFiltersAndSort();
       }
@@ -1003,6 +1011,39 @@ if (huinchaNav && huinchaNav.items.length > 0) {
           if (liveLoader) liveLoader.style.display = 'none';
           if (noResultsBox) noResultsBox.style.display = 'block';
         }
+      }
+
+      function renderPlpPager(pages: number, total: number) {
+        if (!pager) return;
+        pager.replaceChildren();
+        pager.hidden = pages <= 1;
+        if (pages <= 1) return;
+
+        const goTo = (target: number) => {
+          currentPage = target;
+          applyFiltersAndSort();
+          grid?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
+        const prev = document.createElement('button');
+        prev.type = 'button';
+        prev.className = 'btn-page';
+        prev.textContent = '← Anterior';
+        prev.disabled = currentPage === 1;
+        prev.addEventListener('click', () => goTo(currentPage - 1));
+
+        const info = document.createElement('span');
+        info.className = 'pager-info';
+        info.textContent = `Página ${currentPage} de ${pages} · ${total} productos`;
+
+        const next = document.createElement('button');
+        next.type = 'button';
+        next.className = 'btn-page';
+        next.textContent = 'Siguiente →';
+        next.disabled = currentPage === pages;
+        next.addEventListener('click', () => goTo(currentPage + 1));
+
+        pager.append(prev, info, next);
       }
 
       function applyFiltersAndSort() {
@@ -1084,7 +1125,22 @@ if (huinchaNav && huinchaNav.items.length > 0) {
 
         cards.forEach((card) => grid.appendChild(card));
 
-        // 6. Actualizar contador
+        // 5b. Paginación sobre las tarjetas que pasaron los filtros
+        const matched = cards.filter((card) => card.style.display !== 'none');
+        const pages = Math.max(1, Math.ceil(matched.length / PLP_PAGE_SIZE));
+        const filterKey = [selectedStores.join('|'), selectedBrands.join('|'), priceVal, String(onlyDiscounts), sortVal].join('#');
+        if (filterKey !== lastFilterKey) {
+          currentPage = 1;
+          lastFilterKey = filterKey;
+        }
+        currentPage = Math.min(currentPage, pages);
+        matched.forEach((card, index) => {
+          const inPage = index >= (currentPage - 1) * PLP_PAGE_SIZE && index < currentPage * PLP_PAGE_SIZE;
+          card.style.display = inPage ? 'flex' : 'none';
+        });
+        renderPlpPager(pages, matched.length);
+
+        // 7. Actualizar contador
         if (visibleCountEl) visibleCountEl.textContent = String(visibleCount);
 
         // 7. Mostrar estado de sin resultados si aplica
@@ -1218,7 +1274,8 @@ if (huinchaNav && huinchaNav.items.length > 0) {
 
     <style>
       .cat-page-container {
-        max-width: 1320px;
+        width: 100%;
+        max-width: none;
         margin: 0 auto;
         padding: 1.25rem 1rem 4.5rem;
       }
@@ -1852,8 +1909,14 @@ if (huinchaNav && huinchaNav.items.length > 0) {
       /* ── Grilla de Tarjetas de Productos ── */
       .product-cards-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 1.25rem;
+      }
+
+      @media (max-width: 1100px) {
+        .product-cards-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
       }
 
       .cat-product-card {
@@ -2144,7 +2207,7 @@ if (huinchaNav && huinchaNav.items.length > 0) {
           font-size: 1.4rem;
         }
         .product-cards-grid {
-          grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 0.85rem;
         }
         .card-thumb-wrap {
