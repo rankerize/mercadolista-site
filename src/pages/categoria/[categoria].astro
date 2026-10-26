@@ -91,7 +91,7 @@ const query = collNode?.query || cat.nombre.toLowerCase();
 let liveOffers: any[] = [];
 
 try {
-  const outcomes = await searchStores(query, city, { limit: 20 });
+  const outcomes = await searchStores(query, city, 20);
   const report = buildReport(query, outcomes);
   const rawOffers = report?.offers ?? [];
   liveOffers = [...rawOffers].sort((a, b) => (a.price || 0) - (b.price || 0)).slice(0, 48);
