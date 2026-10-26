@@ -29,6 +29,18 @@ const data = (raw?.default || raw) as {
   pathToId: Record<string, string>;
 };
 
+// Términos de búsqueda que reemplazan el generado por el árbol TaxCo
+const QUERY_OVERRIDES: Record<string, string> = {
+  'tecnologia/telefonia/celulares-y-telefonos': 'celulares',
+};
+
+for (const [slugPath, query] of Object.entries(QUERY_OVERRIDES)) {
+  const id = data.pathToId[slugPath];
+  if (id && data.nodes[id]) {
+    data.nodes[id].query = query;
+  }
+}
+
 // Aliases para compatibilidad con las 8 categorías históricas
 const LEGACY_ALIASES: Record<string, string> = {
   lacteos: 'alimentos-y-bebidas',

@@ -1058,11 +1058,18 @@ function setMode(next: ModeKey) {
   status.textContent = '';
 }
 
+function searchPageUrl(query: string): string {
+  const ciudad = citySelect.value || 'bogota';
+  return `/search/?query=${encodeURIComponent(query)}&ciudad=${encodeURIComponent(ciudad)}`;
+}
+
 async function search(query: string) {
   const config = MODES[mode];
   submit.disabled = true;
   status.textContent = config.status.replaceAll('{ciudad}', cityName());
   results.hidden = true;
+  // Los resultados aparecen debajo de las categorías: llevamos la vista hasta ahí
+  status.scrollIntoView({ behavior: 'smooth', block: 'start' });
   try {
     const cityQuery = mode === 'intl' ? '' : `&ciudad=${encodeURIComponent(citySelect.value || 'bogota')}`;
     const minRaw = unitMin.value.trim().replace(',', '.');
@@ -1759,7 +1766,12 @@ form.addEventListener('submit', (event) => {
     }
   }
 
-  // 3. Búsqueda en tiempo real en la app si no es categoría fija
+  // 3. Búsqueda libre: resultados en la PLP de búsqueda
+  if (mode === 'local') {
+    window.location.href = searchPageUrl(query);
+    return;
+  }
+
   search(query);
 });
 
@@ -2225,6 +2237,8 @@ if (qParam && qParam.trim().length >= 2) {
     const matchedProd = findProductMatch(cleanQ);
     if (matchedProd) {
       window.location.replace(getProductUrl(matchedProd));
+    } else if (mode === 'local') {
+      window.location.replace(searchPageUrl(cleanQ));
     } else {
       queryInput.value = cleanQ;
       search(cleanQ);
