@@ -33,16 +33,13 @@ addUrl('/perfil', '0.8', 'weekly');
 addUrl('/privacidad', '0.5', 'monthly');
 addUrl('/terminos', '0.5', 'monthly');
 
-// 2. Taxonomía TaxCo (3,266 nodos - indexar L1, L2, L3 y hojas de catálogo)
+// 2. Taxonomía TaxCo (3,266 nodos - indexar el 100% de categorías)
 const taxcoPath = path.join(rootDir, 'src', 'data', 'taxco-tree.json');
 if (fs.existsSync(taxcoPath)) {
   const taxco = JSON.parse(fs.readFileSync(taxcoPath, 'utf8'));
   for (const node of Object.values(taxco.nodes)) {
-    // Indexar L1, L2, L3 siempre; L4/L5 si son categorías estratégicas
-    if (node.level <= 3) {
-      const priority = node.level === 1 ? '0.9' : (node.level === 2 ? '0.8' : '0.7');
-      addUrl(`/categoria/${node.slugPath}`, priority, 'daily');
-    }
+    const priority = node.level === 1 ? '1.0' : (node.level === 2 ? '0.9' : (node.level === 3 ? '0.8' : (node.level === 4 ? '0.7' : '0.6')));
+    addUrl(`/categoria/${node.slugPath}`, priority, 'daily');
   }
 }
 

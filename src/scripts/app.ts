@@ -28,6 +28,7 @@ import {
   getCategoryUrl,
 } from '../lib/slugs';
 import { escapeHtml } from '../lib/normalize';
+import { findBestCategoryHelp } from '../lib/collectionTaxonomy';
 
 const form = document.querySelector<HTMLFormElement>('#search-form')!;
 const queryInput = document.querySelector<HTMLInputElement>('#query')!;
@@ -376,6 +377,27 @@ function render(report: any) {
   results.hidden = false;
   results.append(cityNote(report));
 
+  if (report.category_suggestion) {
+    const sug = report.category_suggestion;
+    const banner = el('aside', 'category-auto-help-banner');
+    banner.setAttribute('role', 'region');
+    banner.setAttribute('aria-label', `Sugerencia de categoría: ${sug.name}`);
+    banner.innerHTML = `
+      <div class="category-auto-help-main">
+        <span class="category-auto-help-icon">${sug.icono || '🏷️'}</span>
+        <div class="category-auto-help-text">
+          <div class="category-auto-help-tag">📂 Sección sugerida</div>
+          <strong class="category-auto-help-title">Categoría oficial de ${escapeHtml(sug.name)}</strong>
+          <p class="category-auto-help-desc">${escapeHtml(sug.description || `Explora toda la sección de ${sug.name} organizada por tipo y tienda en Colombia.`)}</p>
+        </div>
+      </div>
+      <a href="${sug.url}" class="category-auto-help-link">
+        Ver categoría ${escapeHtml(sug.name)} →
+      </a>
+    `;
+    results.append(banner);
+  }
+
   if (!report.verdict) {
     results.append(el('section', 'panel', 'No encontré precios parecidos a esa búsqueda.'));
     renderStores(report.stores);
@@ -523,6 +545,28 @@ function renderUnit(report: any) {
   results.replaceChildren();
   results.hidden = false;
   results.append(cityNote(report));
+
+  if (report.category_suggestion) {
+    const sug = report.category_suggestion;
+    const banner = el('aside', 'category-auto-help-banner');
+    banner.setAttribute('role', 'region');
+    banner.setAttribute('aria-label', `Sugerencia de categoría: ${sug.name}`);
+    banner.innerHTML = `
+      <div class="category-auto-help-main">
+        <span class="category-auto-help-icon">${sug.icono || '🏷️'}</span>
+        <div class="category-auto-help-text">
+          <div class="category-auto-help-tag">📂 Sección sugerida</div>
+          <strong class="category-auto-help-title">Categoría oficial de ${escapeHtml(sug.name)}</strong>
+          <p class="category-auto-help-desc">${escapeHtml(sug.description || `Explora toda la sección de ${sug.name} organizada por tipo y tienda en Colombia.`)}</p>
+        </div>
+      </div>
+      <a href="${sug.url}" class="category-auto-help-link">
+        Ver categoría ${escapeHtml(sug.name)} →
+      </a>
+    `;
+    results.append(banner);
+  }
+
   if (!report.verdict) {
     results.append(el('section', 'panel', report.empty_detail || 'No encontré productos con cantidad, peso o volumen para comparar.'));
     renderStores(report.stores);
@@ -1231,9 +1275,10 @@ function setupQueryAutocomplete() {
       return;
     }
 
+    const bestCat = findBestCategoryHelp(q);
     const catMatches = searchCategories(q, 2);
     const matches = searchCatalog(q, 6);
-    if (!catMatches.length && !matches.length) {
+    if (!bestCat && !catMatches.length && !matches.length) {
       closeDropdown();
       return;
     }
@@ -1243,8 +1288,33 @@ function setupQueryAutocomplete() {
 
     let itemIndex = 0;
 
+    // 0. Auto-ayuda de categoría oficial sugerida (ej. Huevos, Leche, Arroz)
+    if (bestCat) {
+      const bestCatEl = document.createElement('div');
+      bestCatEl.className = 'autocomplete-item autocomplete-item-category autocomplete-category-highlight';
+      bestCatEl.dataset.index = String(itemIndex++);
+      bestCatEl.innerHTML = `
+        <div class="autocomplete-item-left">
+          <span class="autocomplete-item-icon">${bestCat.icono || '🏷️'}</span>
+          <span class="autocomplete-item-text">
+            <strong>${escapeHtml(bestCat.name)}</strong>
+            <em style="font-size: 0.8rem; color: var(--muted);">${bestCat.parentName ? 'en ' + escapeHtml(bestCat.parentName) : 'Sección oficial'}</em>
+          </span>
+        </div>
+        <span class="autocomplete-item-cat" style="background: #e7f6ee; color: #0e6a45; font-weight: 700;">Ver categoría →</span>
+      `;
+      bestCatEl.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        closeDropdown();
+        window.location.href = bestCat.url;
+      });
+      queryAutocomplete.append(bestCatEl);
+    }
+
     // 1. Sugerencias de categorías completas
     catMatches.forEach((cat) => {
+      // Evitar duplicar si bestCat ya apunta a esta misma categoría
+      if (bestCat && (bestCat.slugPath === cat.id || bestCat.url === getCategoryUrl(cat.id))) return;
       const catEl = document.createElement('div');
       catEl.className = 'autocomplete-item autocomplete-item-category';
       catEl.dataset.index = String(itemIndex++);

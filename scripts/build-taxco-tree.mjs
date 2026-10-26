@@ -74,6 +74,72 @@ const ROOT_ICONS = {
   'tecnologia': '📺',
 };
 
+function buildPunctualQuery(name, breadcrumb) {
+  let cleanName = (name || '').trim().toLowerCase();
+  const parents = (breadcrumb || []).map(p => p.trim().toLowerCase());
+  const parent = parents.length > 1 ? parents[parents.length - 2] : '';
+
+  // Mapeo puntual para categorías estratégicas de alta demanda
+  const SPECIAL_MAP = {
+    'arboles de navidad': 'arbol de navidad',
+    'adornos árbol de navidad': 'bolas adornos arbol navidad',
+    'adornos arbol de navidad': 'bolas adornos arbol navidad',
+    'adornos navideños': 'adornos de navidad',
+    'adornos navidenos': 'adornos de navidad',
+    'luces de navidad': 'luces de navidad',
+    'pesebres': 'pesebres de navidad',
+    'smartphones': 'celulares smartphones',
+    'prepago': 'celulares prepago',
+    'in-ear': 'audifonos in-ear',
+    'on-ear': 'audifonos on-ear',
+    'over-ear': 'audifonos over-ear',
+    'soundbar': 'barra de sonido soundbar',
+    'drones': 'drone con camara',
+    'split': 'aire acondicionado split',
+    'purificadores': 'purificador de aire',
+    'freidoras': 'freidora de aire air fryer',
+    'computadores portátiles': 'computador portatil',
+    'computadores portatiles': 'computador portatil',
+    'desktops': 'computador de escritorio pc',
+    'tablets': 'tablet pantalla',
+    'smartband': 'pulsera smartband reloj',
+    'reloj inteligente': 'reloj inteligente smartwatch',
+    'nintendo': 'nintendo switch consola juegos',
+    'playstation': 'playstation consola juegos ps5',
+    'xbox': 'xbox consola juegos series',
+    'llantas': 'llantas para carro',
+    'neveras': 'neveras refrigeradores',
+    'nevecones': 'nevecon refrigerador',
+    'lavadoras': 'lavadoras secadoras',
+    'aspiradoras': 'aspiradora robot polvo',
+    'microondas': 'horno microondas',
+    'sanduchera': 'sanduchera waflera tostadora',
+    'licuadoras': 'licuadora vaso vidrio oster',
+    'colchones': 'colchon ortopedico resortes',
+  };
+
+  if (SPECIAL_MAP[cleanName]) {
+    return SPECIAL_MAP[cleanName];
+  }
+
+  // Si el nombre es muy corto o genérico (1 sola palabra), contextualizar con el padre si este no está ya incluido
+  const words = cleanName.split(/\s+/).filter(Boolean);
+  if (words.length === 1 && parent) {
+    const parentWords = parent.split(/\s+/);
+    const parentMain = parentWords[parentWords.length - 1];
+    if (!cleanName.includes(parentMain) && parentMain.length > 3) {
+      cleanName = `${parentMain} ${cleanName}`;
+    }
+  }
+
+  // Si está bajo navidad y no tiene navidad en el nombre
+  if (parents.some(p => p.includes('navidad')) && !cleanName.includes('navidad')) {
+    cleanName = `${cleanName} navidad`;
+  }
+
+  return cleanName.replace(/[\s_]+/g, ' ').trim();
+}
+
 for (let i = 1; i < lines.length; i++) {
   const row = parseCSVLine(lines[i]);
   const catId = (row[1] || '').trim();
@@ -92,6 +158,7 @@ for (let i = 1; i < lines.length; i++) {
   const levels = [n1, n2, n3, n4, n5].filter(Boolean);
   const slugPath = levels.map(toSlug).join('/');
   const rootSlug = toSlug(n1);
+  const breadcrumb = breadcrumbRaw.split('|').map(s => s.trim()).filter(Boolean);
 
   nodes[catId] = {
     id: catId,
@@ -101,9 +168,9 @@ for (let i = 1; i < lines.length; i++) {
     slugPath,
     rootSlug,
     level: levels.length,
-    breadcrumb: breadcrumbRaw.split('|').map(s => s.trim()).filter(Boolean),
+    breadcrumb,
     icono: ROOT_ICONS[rootSlug] || '🏷️',
-    query: name.toLowerCase(),
+    query: buildPunctualQuery(name, breadcrumb),
     childIds: [],
   };
 

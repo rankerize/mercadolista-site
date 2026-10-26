@@ -7,34 +7,35 @@ export interface RetailCategory {
   name: string;
   query: string;
   iconType: string;
+  url: string;
 }
 
 const RETAIL_CATEGORIES: RetailCategory[] = [
   // Fila 1 (11 categorías)
-  { id: 'celulares', name: 'Celulares', query: 'celulares', iconType: 'phone' },
-  { id: 'electro', name: 'Electro', query: 'lavadora refrigerador', iconType: 'electro' },
-  { id: 'computadores', name: 'Computadores', query: 'computador portatil', iconType: 'laptop' },
-  { id: 'televisores', name: 'Televisores', query: 'televisor smart tv', iconType: 'tv' },
-  { id: 'videojuegos', name: 'Videojuegos', query: 'consola videojuegos playstation nintendo', iconType: 'gamepad' },
-  { id: 'audio', name: 'Audio', query: 'parlante bluetooth sonido', iconType: 'speaker' },
-  { id: 'electrohogar', name: 'Electrohogar', query: 'freidora de aire licuadora', iconType: 'appliances' },
-  { id: 'smartwatch', name: 'Smartwatch', query: 'smartwatch reloj inteligente', iconType: 'smartwatch' },
-  { id: 'audifonos', name: 'Audífonos', query: 'audifonos bluetooth inalambricos', iconType: 'headphones' },
-  { id: 'accesorios', name: 'Accesorios', query: 'mouse teclado accesorios computacion', iconType: 'mouse' },
-  { id: 'mercado', name: 'Mercado', query: 'leche arroz aceite', iconType: 'cart' },
+  { id: 'celulares', name: 'Celulares', query: 'celulares', iconType: 'phone', url: '/categoria/tecnologia/telefonia/celulares-y-telefonos' },
+  { id: 'electro', name: 'Electro', query: 'lavadora refrigerador', iconType: 'electro', url: '/categoria/electrohogar' },
+  { id: 'computadores', name: 'Computadores', query: 'computador portatil', iconType: 'laptop', url: '/categoria/tecnologia/computadores' },
+  { id: 'televisores', name: 'Televisores', query: 'televisor smart tv', iconType: 'tv', url: '/categoria/tecnologia/televisores-y-video' },
+  { id: 'videojuegos', name: 'Videojuegos', query: 'consola videojuegos playstation nintendo', iconType: 'gamepad', url: '/categoria/tecnologia/zona-gamer' },
+  { id: 'audio', name: 'Audio', query: 'parlante bluetooth sonido', iconType: 'speaker', url: '/categoria/tecnologia/audio' },
+  { id: 'electrohogar', name: 'Electrohogar', query: 'freidora de aire licuadora', iconType: 'appliances', url: '/categoria/electrohogar' },
+  { id: 'smartwatch', name: 'Smartwatch', query: 'smartwatch reloj inteligente', iconType: 'smartwatch', url: '/categoria/tecnologia/smartwatch' },
+  { id: 'audifonos', name: 'Audífonos', query: 'audifonos bluetooth inalambricos', iconType: 'headphones', url: '/categoria/tecnologia/audio/audifonos' },
+  { id: 'accesorios', name: 'Accesorios', query: 'mouse teclado accesorios computacion', iconType: 'mouse', url: '/categoria/tecnologia/computadoras/accesorios-de-computacion-y-perifericos' },
+  { id: 'mercado', name: 'Mercado', query: 'leche arroz aceite', iconType: 'cart', url: '/categoria/alimentos-y-bebidas' },
 
   // Fila 2 (11 categorías)
-  { id: 'camaras', name: 'Cámaras', query: 'camara fotografia canon nikon', iconType: 'camera' },
-  { id: 'drones', name: 'Drones', query: 'drone con camara 4k', iconType: 'drone' },
-  { id: 'muebles', name: 'Muebles', query: 'muebles closet escritorio', iconType: 'furniture' },
-  { id: 'colchones', name: 'Colchones', query: 'colchon ortopedico resortes', iconType: 'mattress' },
-  { id: 'llantas', name: 'Llantas', query: 'llantas rin carro vehiculo', iconType: 'tire' },
-  { id: 'hogar', name: 'Hogar', query: 'bateria de cocina ollas sartenes', iconType: 'cookware' },
-  { id: 'juguetes', name: 'Juguetes', query: 'juguetes peluches infantiles', iconType: 'toy' },
-  { id: 'pines', name: 'Pines', query: 'tarjetas regalo pines netflix xbox', iconType: 'giftcard' },
-  { id: 'deportes', name: 'Deportes', query: 'bicicleta estatica spinning fitness', iconType: 'sports' },
-  { id: 'navidad', name: 'Navidad', query: 'arbol de navidad decoracion luces', iconType: 'xmas' },
-  { id: 'hiperofertas', name: 'Hiperofertas', query: 'ofertas promociones descuentos', iconType: 'discount' },
+  { id: 'camaras', name: 'Cámaras', query: 'camara fotografia canon nikon', iconType: 'camera', url: '/categoria/tecnologia/fotografia/camaras-profesionales' },
+  { id: 'drones', name: 'Drones', query: 'drone con camara 4k', iconType: 'drone', url: '/categoria/tecnologia/fotografia/drones-y-accesorios/drones' },
+  { id: 'muebles', name: 'Muebles', query: 'muebles closet escritorio', iconType: 'furniture', url: '/categoria/muebles-y-organizacion' },
+  { id: 'colchones', name: 'Colchones', query: 'colchon ortopedico resortes', iconType: 'mattress', url: '/categoria/dormitorio/colchones' },
+  { id: 'llantas', name: 'Llantas', query: 'llantas rin carro vehiculo', iconType: 'tire', url: '/categoria/automotriz/rines-y-llantas/llantas' },
+  { id: 'hogar', name: 'Hogar', query: 'bateria de cocina ollas sartenes', iconType: 'cookware', url: '/categoria/decohogar' },
+  { id: 'juguetes', name: 'Juguetes', query: 'juguetes peluches infantiles', iconType: 'toy', url: '/categoria/ninos-y-jugueteria' },
+  { id: 'pines', name: 'Pines', query: 'tarjetas regalo pines netflix xbox', iconType: 'giftcard', url: '/categoria/tecnologia/zona-gamer/gaming/suscripiones-y-tarjetas' },
+  { id: 'deportes', name: 'Deportes', query: 'bicicleta estatica spinning fitness', iconType: 'sports', url: '/categoria/deportes-y-aire-libre' },
+  { id: 'navidad', name: 'Navidad', query: 'arbol de navidad decoracion luces', iconType: 'xmas', url: '/categoria/decohogar/decoracion/navidad' },
+  { id: 'hiperofertas', name: 'Hiperofertas', query: 'ofertas promociones descuentos', iconType: 'discount', url: '/categoria/decohogar/decoracion/navidad' },
 ];
 ---
 
@@ -43,7 +44,7 @@ const RETAIL_CATEGORIES: RetailCategory[] = [
     <div class="retail-cats-title-wrap">
       <span class="retail-cats-dot"></span>
       <h2 class="retail-cats-title">Explora por categorías</h2>
-      <span class="retail-cats-badge">Comparación instantánea</span>
+      <span class="retail-cats-badge">+3.000 Categorías</span>
     </div>
     <div class="retail-cats-controls" aria-hidden="true">
       <button type="button" class="retail-cats-arrow prev" id="retail-cats-prev" aria-label="Desplazar a la izquierda">‹</button>
@@ -53,12 +54,12 @@ const RETAIL_CATEGORIES: RetailCategory[] = [
 
   <div class="retail-cats-grid" id="retail-cats-grid">
     {RETAIL_CATEGORIES.map((cat) => (
-      <button
-        type="button"
+      <a
+        href={cat.url}
         class="retail-cat-card"
         data-cat-id={cat.id}
         data-query={cat.query}
-        title={`Buscar ofertas en ${cat.name}`}
+        title={`Ver categoría ${cat.name}`}
       >
         <div class="retail-cat-icon">
           {cat.iconType === 'phone' && (
@@ -387,7 +388,7 @@ const RETAIL_CATEGORIES: RetailCategory[] = [
           )}
         </div>
         <span class="retail-cat-label">{cat.name}</span>
-      </button>
+      </a>
     ))}
   </div>
 </section>
@@ -573,56 +574,21 @@ const RETAIL_CATEGORIES: RetailCategory[] = [
 </style>
 
 <script>
-  // Manejo de eventos de clic en categorías y botones de flecha
+  // Manejo de botones de flecha para desplazamiento
   document.addEventListener('DOMContentLoaded', () => {
     const grid = document.querySelector<HTMLElement>('#retail-cats-grid');
     const prevBtn = document.querySelector<HTMLButtonElement>('#retail-cats-prev');
     const nextBtn = document.querySelector<HTMLButtonElement>('#retail-cats-next');
 
     if (grid && prevBtn && nextBtn) {
-      prevBtn.addEventListener('click', () => {
+      prevBtn.addEventListener('click', (e) => {
+        e.preventDefault();
         grid.scrollBy({ left: -280, behavior: 'smooth' });
       });
-      nextBtn.addEventListener('click', () => {
+      nextBtn.addEventListener('click', (e) => {
+        e.preventDefault();
         grid.scrollBy({ left: 280, behavior: 'smooth' });
       });
     }
-
-    const cards = document.querySelectorAll<HTMLButtonElement>('.retail-cat-card');
-    cards.forEach((card) => {
-      card.addEventListener('click', () => {
-        const query = card.dataset.query;
-        if (!query) return;
-
-        // Feedback visual
-        cards.forEach((c) => c.classList.remove('is-active'));
-        card.classList.add('is-active');
-
-        // Cambiar a pestaña local si está en otra
-        const tabLocal = document.querySelector<HTMLButtonElement>('#tab-local');
-        if (tabLocal && !tabLocal.classList.contains('is-active')) {
-          tabLocal.click();
-        }
-
-        // Asignar al input y disparar búsqueda
-        const queryInput = document.querySelector<HTMLInputElement>('#query');
-        const form = document.querySelector<HTMLFormElement>('#search-form');
-        if (queryInput && form) {
-          queryInput.value = query;
-          // Disparar submit
-          form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-
-          // Desplazamiento suave al área de resultados
-          setTimeout(() => {
-            const statusEl = document.querySelector('#status');
-            const resultsEl = document.querySelector('#results');
-            const target = (resultsEl && !resultsEl.hasAttribute('hidden')) ? resultsEl : statusEl;
-            if (target) {
-              target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-          }, 150);
-        }
-      });
-    });
   });
 </script>

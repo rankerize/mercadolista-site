@@ -7,12 +7,14 @@ import {
   unitPrice,
   saleMeasure,
   escapeHtml,
+  isAccessoryMismatch,
 } from '../src/lib/normalize';
 import { findCity } from '../src/lib/cities';
 import { storeCatalog } from '../src/lib/providers';
 import { buildReport } from '../src/lib/ranking';
 import { buildUnitReport } from '../src/lib/units';
 import { searchCategories, CATEGORIES } from '../src/lib/catalog';
+import { findBestCategoryHelp } from '../src/lib/collectionTaxonomy';
 import {
   toSlug,
   findCategoryMatch,
@@ -63,6 +65,29 @@ describe('Comparador Core Normalization Tests', () => {
     expect(escapeHtml("Pedro & María's")).toBe('Pedro &amp; María&#39;s');
     expect(escapeHtml('')).toBe('');
   });
+
+  it('filters out accessory mismatches such as acomodador de huevos when searching for food staples', () => {
+    // Cuando el usuario busca "huevos", los accesorios/organizadores deben detectarse como mismatch
+    expect(isAccessoryMismatch('huevos', 'Acomodador de huevos para nevera organizador')).toBe(true);
+    expect(isAccessoryMismatch('huevos', 'Organizador de huevos acrílico rodante')).toBe(true);
+    expect(isAccessoryMismatch('huevos', 'Huevera plástica para refrigerador')).toBe(true);
+    expect(isAccessoryMismatch('huevos', 'Separador de yemas de huevos en silicona')).toBe(true);
+    expect(isAccessoryMismatch('huevos', 'Porta huevos 24 unidades')).toBe(true);
+    expect(isAccessoryMismatch('huevos', 'Batidor de huevos manual en acero')).toBe(true);
+
+    // Los productos reales de huevos NO deben ser mismatch
+    expect(isAccessoryMismatch('huevos', 'Huevos AA x30 Kikes')).toBe(false);
+    expect(isAccessoryMismatch('huevos', 'Huevos rojos campesinos x30')).toBe(false);
+    expect(isAccessoryMismatch('huevos', 'Bandeja de huevos AAA x30 Santa Reyes')).toBe(false);
+
+    // Si el usuario explícitamente busca el accesorio ("organizador de huevos"), debe permitirse
+    expect(isAccessoryMismatch('organizador de huevos', 'Acomodador de huevos para nevera organizador')).toBe(false);
+    expect(isAccessoryMismatch('huevera', 'Huevera plástica para refrigerador')).toBe(false);
+
+    // Verificación de relevancia: acomodador de huevos debe tener relevancia 0
+    expect(relevance('huevos', 'Acomodador de huevos para nevera')).toBe(0.0);
+    expect(relevance('huevos', 'Huevos AA x30 Kikes')).toBe(1.0);
+  });
 });
 
 describe('Catalogs and Reports', () => {
@@ -98,6 +123,75 @@ describe('Catalogs and Reports', () => {
     expect(report.verdict).toBeDefined();
     expect(report.verdict.store_name).toBe('Jumbo');
     expect(report.verdict.price).toBe(4500);
+  });
+
+  it('builds comparison report prioritizing real eggs over accessories and suggests the exact category', () => {
+    const eggOrganizer: Offer = {
+      store_id: 'exito',
+      store_name: 'Éxito',
+      name: 'Acomodador de huevos para nevera acrílico',
+      brand: 'Generico',
+      price: 8000,
+      list_price: null,
+      image: null,
+      url: 'https://www.exito.com/organizador-huevos/p',
+      ean: null,
+      categories: ['Hogar', 'Organización'],
+    };
+
+    const realEggs: Offer = {
+      store_id: 'd1',
+      store_name: 'D1',
+      name: 'Huevos rojos tipo AA x30 unidades',
+      brand: 'D1',
+      price: 15500,
+      list_price: null,
+      image: null,
+      url: 'https://www.d1.com.co/huevos/p',
+      ean: '7702000000001',
+      categories: ['Supermercado', 'Huevos y Lácteos'],
+    };
+
+    const outcome: StoreOutcome = {
+      store_id: 'd1',
+      store_name: 'D1',
+      kind: 'supermercado',
+      offers: [eggOrganizer, realEggs],
+    };
+
+    const report = buildReport('huevos', [outcome]);
+    // El veredicto debe ser para los huevos reales ($15.500) y NUNCA para el acomodador ($8.000)
+    expect(report.verdict).toBeDefined();
+    expect(report.verdict.price).toBe(15500);
+    expect(report.verdict.name).toContain('Huevos');
+    expect(report.verdict.name).not.toContain('Acomodador');
+
+    // La lista de ofertas debe excluir el acomodador
+    expect(report.offers.some((o: { name: string }) => o.name.includes('Acomodador'))).toBe(false);
+
+    // Debe incluir sugerencia de auto-ayuda a la categoría oficial de Huevos
+    expect(report.category_suggestion).toBeDefined();
+    expect(report.category_suggestion.name).toBe('Huevos');
+    expect(report.category_suggestion.url).toBe('/categoria/alimentos-y-bebidas/lacteos-y-frescos/huevos');
+    expect(report.category_suggestion.icono).toBe('🥚');
+  });
+
+  it('resolves best category auto-help for staple searches', () => {
+    const huevos = findBestCategoryHelp('huevos');
+    expect(huevos?.name).toBe('Huevos');
+    expect(huevos?.url).toBe('/categoria/alimentos-y-bebidas/lacteos-y-frescos/huevos');
+
+    const leche = findBestCategoryHelp('leche colanta');
+    expect(leche?.name).toBe('Leches líquidas');
+    expect(leche?.url).toBe('/categoria/alimentos-y-bebidas/lacteos-y-frescos/leches-liquidas');
+
+    const arroz = findBestCategoryHelp('arroz diana');
+    expect(arroz?.name).toBe('Arroz');
+    expect(arroz?.url).toBe('/categoria/alimentos-y-bebidas/despensa/arroz-legumbres-y-semillas/arroz');
+
+    const tv = findBestCategoryHelp('televisor 55');
+    expect(tv?.name).toBe('Televisores y Video');
+    expect(tv?.url).toBe('/categoria/tecnologia/televisores-y-video');
   });
 
   it('filters unit comparison by measure and category', () => {
@@ -442,5 +536,36 @@ describe('TaxCo Enterprise Collection Taxonomy Tests', () => {
     expect(getCategoryEmoji('Smartwatch')).toBe('⌚');
     expect(getCategoryEmoji('Lácteos y frescos')).toBe('🧀');
     expect(getCategoryEmoji('Carnes')).toBe('🥩');
+  });
+
+  it('provides drawer departments of Level 1 with short-tail subcategories', async () => {
+    const { getDrawerDepartments } = await import('../src/lib/collectionTaxonomy');
+    const departments = getDrawerDepartments();
+
+    expect(departments.length).toBeGreaterThanOrEqual(15);
+
+    // Verificar Tecnología y sus subcategorías short-tail
+    const tec = departments.find((d) => d.slugPath === 'tecnologia');
+    expect(tec).toBeDefined();
+    expect(tec?.name).toBe('Tecnología');
+    expect(tec?.icono).toBe('📺');
+    expect(tec?.url).toBe('/categoria/tecnologia');
+
+    const tecSubNames = tec!.subcategories.map((s) => s.name);
+    expect(tecSubNames).toContain('Celulares y Smartphones');
+    expect(tecSubNames).toContain('Computadores y Portátiles');
+    expect(tecSubNames).toContain('Televisores y Smart TV');
+    expect(tecSubNames).toContain('Audífonos y Audio');
+
+    // Verificar que todas las subcategorías tienen URLs canónicas que inician con /categoria/
+    for (const d of departments) {
+      expect(d.url).toMatch(/^\/categoria\//);
+      expect(d.subcategories.length).toBeGreaterThan(0);
+      for (const s of d.subcategories) {
+        expect(s.url).toMatch(/^\/categoria\//);
+        expect(s.name.length).toBeGreaterThan(0);
+        expect(s.icono.length).toBeGreaterThan(0);
+      }
+    }
   });
 });

@@ -636,10 +636,10 @@ header.top.hero .hero-copy {
 
 .search {
   margin-top: 0.8rem;
-  padding: 1rem;
+  padding: 0.85rem;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 1.25rem;
+  border-radius: 1.35rem;
   box-shadow: var(--shadow);
 }
 
@@ -648,6 +648,280 @@ header.top.hero .hero-copy {
   margin: 0 0.2rem 0.45rem;
   font-size: 0.85rem;
   font-weight: 600;
+}
+
+/* ─── Barra de Búsqueda Unificada (Ciudad + Producto en 1 sola fila) ────── */
+.search-bar-unified {
+  display: flex;
+  align-items: stretch;
+  background: #ffffff;
+  border: 1.5px solid #d9e2dc;
+  border-radius: 1.15rem;
+  padding: 0.35rem 0.45rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.search-bar-unified:focus-within {
+  border-color: #0e6a45;
+  box-shadow: 0 4px 20px rgba(14, 106, 69, 0.12);
+}
+
+/* Selector de Ciudad (desplegable lindo) */
+.city-picker {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 200px;
+  flex-shrink: 0;
+  padding: 0.35rem 0.75rem 0.35rem 0.65rem;
+  border-radius: 0.85rem;
+  background: #f8faf9;
+  transition: background 0.12s;
+  position: relative;
+}
+
+.city-picker:hover {
+  background: #f0f7f3;
+}
+
+.city-picker[hidden] {
+  display: none !important;
+}
+
+.city-picker__label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0 !important;
+  line-height: 1;
+}
+
+.city-picker__icon {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.city-picker__tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #0e6a45;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.city-picker__select-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.city-picker__select-wrap select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  border: none !important;
+  background: transparent !important;
+  padding: 0 1.3rem 0 0 !important;
+  min-height: auto !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  color: #1e293b !important;
+  cursor: pointer;
+  outline: none !important;
+  box-shadow: none !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.city-picker__arrow {
+  position: absolute;
+  right: 0.1rem;
+  pointer-events: none;
+  color: #0e6a45;
+}
+
+/* Divisor elegante entre Ciudad y Producto */
+.search-bar-unified__divider {
+  width: 1px;
+  background: #e2e8f0;
+  margin: 0.45rem 0.5rem;
+  flex-shrink: 0;
+}
+
+.city-picker[hidden] + .search-bar-unified__divider {
+  display: none !important;
+}
+
+/* Bloque Producto */
+.search-product {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding-left: 0.4rem;
+}
+
+.search-product[hidden] {
+  display: none !important;
+}
+
+.search-product__inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.search-product__label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0 !important;
+  line-height: 1;
+}
+
+.search-product__icon {
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.search-product__tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.search-product__input-wrap {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.search-product__input-wrap input[type="search"] {
+  width: 100%;
+  border: none !important;
+  background: transparent !important;
+  padding: 0 2.2rem 0 0 !important;
+  min-height: auto !important;
+  font-size: 0.98rem !important;
+  color: #1e293b !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.search-product__input-wrap input[type="search"]::placeholder {
+  color: #94a3b8;
+  font-size: 0.92rem;
+}
+
+.search-product__input-wrap .search-camera-btn {
+  position: absolute;
+  right: 0.25rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.2rem;
+  font-size: 1.15rem;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.search-product__input-wrap .search-camera-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* Botón Comparar */
+.search-btn-submit {
+  border: none;
+  background: #0e6a45;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border-radius: 0.85rem;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.12s, box-shadow 0.15s;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(14, 106, 69, 0.2);
+}
+
+.search-btn-submit:hover {
+  background: #0a4f33;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(14, 106, 69, 0.3);
+}
+
+.search-btn-submit:disabled {
+  opacity: 0.6;
+  cursor: wait;
+  transform: none;
+}
+
+/* Cuando se oculta el buscador (ej. pestaña Lista de Compras), el selector de ciudad se muestra amplio */
+.search-bar-unified:has(#single-search[hidden]) {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.search-bar-unified:has(#single-search[hidden]) .city-picker {
+  width: 100%;
+  border: 1px solid var(--line);
+  padding: 0.65rem 1rem;
+}
+
+.search-bar-unified:has(#single-search[hidden]) .search-bar-unified__divider {
+  display: none !important;
+}
+
+/* Adaptabilidad móvil */
+@media (max-width: 680px) {
+  .search-bar-unified {
+    flex-direction: column;
+    padding: 0.65rem;
+    gap: 0.6rem;
+    border-radius: 1rem;
+  }
+  .search-bar-unified__divider {
+    display: none;
+  }
+  .city-picker {
+    width: 100%;
+    background: #f8faf9;
+    border: 1px solid #edf2ef;
+    padding: 0.55rem 0.8rem;
+  }
+  .search-product {
+    flex-direction: column;
+    align-items: stretch;
+    padding-left: 0;
+    gap: 0.6rem;
+  }
+  .search-product__inner {
+    background: #f8faf9;
+    border: 1px solid #edf2ef;
+    border-radius: 0.85rem;
+    padding: 0.55rem 0.8rem;
+  }
+  .search-btn-submit {
+    width: 100%;
+    min-height: 46px;
+  }
 }
 
 .city-row { margin-bottom: 0.85rem; }
@@ -893,21 +1167,8 @@ button {
 #submit:disabled { opacity: 0.6; cursor: wait; }
 
 .examples {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin-top: 0.8rem;
+  display: none !important;
 }
-
-.examples button {
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--muted);
-  border-radius: 999px;
-  padding: 0.35rem 0.75rem;
-}
-
-.examples button:hover { border-color: var(--pine); color: var(--pine-deep); }
 
 .status {
   min-height: 1.4rem;
@@ -1992,6 +2253,113 @@ html { scroll-behavior: smooth; }
   padding: 0.15rem 0.45rem;
   border-radius: 4px;
   text-transform: capitalize;
+}
+
+.autocomplete-item.autocomplete-category-highlight {
+  background: #f4faf6;
+  border-left: 3px solid #0e6a45;
+}
+
+.autocomplete-item.autocomplete-category-highlight:hover,
+.autocomplete-item.autocomplete-category-highlight.is-selected {
+  background: #e7f6ee;
+}
+
+/* ─── Banner de Auto-Ayuda de Categoría ──────────────────────────────────── */
+.category-auto-help-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+  border: 1.5px solid #86efac;
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  margin: 0.85rem 0 1.25rem 0;
+  box-shadow: 0 4px 14px rgba(14, 106, 69, 0.08);
+  animation: slideUp 0.2s ease;
+}
+
+.category-auto-help-main {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.category-auto-help-icon {
+  font-size: 2.2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.category-auto-help-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.category-auto-help-tag {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #0e6a45;
+  background: #dcfce7;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  margin-bottom: 0.2rem;
+}
+
+.category-auto-help-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #14532d;
+  line-height: 1.3;
+}
+
+.category-auto-help-desc {
+  font-size: 0.85rem;
+  color: #4b5563;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.category-auto-help-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  background: #0e6a45;
+  color: #ffffff !important;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.65rem 1.15rem;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.15s ease, transform 0.1s ease;
+  flex-shrink: 0;
+}
+
+.category-auto-help-link:hover {
+  background: #09472e;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .category-auto-help-banner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.85rem;
+    padding: 0.9rem 1rem;
+  }
+  .category-auto-help-link {
+    width: 100%;
+    text-align: center;
+  }
 }
 
 /* ─── Etiquetas de autor y colaboradores en listas compartidas ───────────── */

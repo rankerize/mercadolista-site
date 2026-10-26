@@ -15,6 +15,7 @@ export interface ShowcaseDeal {
   winnerStore: string;
   savingsText?: string;
   query: string;
+  url: string;
   visualType: 'balls' | 'lights' | 'santa' | 'tree';
 }
 
@@ -30,6 +31,7 @@ const DEALS: ShowcaseDeal[] = [
     winnerStore: 'Falabella',
     savingsText: 'Ahorras $14.970',
     query: 'bolas de navidad',
+    url: '/categoria/decohogar/decoracion/navidad/decoracion-navidena/adornos-arbol-de-navidad',
     visualType: 'balls',
   },
   {
@@ -43,6 +45,7 @@ const DEALS: ShowcaseDeal[] = [
     winnerStore: 'Éxito',
     savingsText: 'Ahorras $17.970',
     query: 'luces de navidad',
+    url: '/categoria/decohogar/decoracion/navidad/decoracion-navidena/luces-de-navidad',
     visualType: 'lights',
   },
   {
@@ -56,6 +59,7 @@ const DEALS: ShowcaseDeal[] = [
     winnerStore: 'Alkosto',
     savingsText: 'Ahorras $30.870',
     query: 'adornos de navidad',
+    url: '/categoria/decohogar/decoracion/navidad/decoracion-navidena/adornos-navidenos',
     visualType: 'santa',
   },
   {
@@ -71,6 +75,7 @@ const DEALS: ShowcaseDeal[] = [
     winnerStore: 'Falabella',
     savingsText: 'Ahorras $182.970',
     query: 'arbol de navidad',
+    url: '/categoria/decohogar/decoracion/navidad/decoracion-navidena/arboles-de-navidad',
     visualType: 'tree',
   },
 ];
@@ -112,9 +117,9 @@ const DEALS: ShowcaseDeal[] = [
         <span class="live-pulse-dot"></span>
         <span>Consultar en vivo</span>
       </button>
-      <button type="button" class="showcase-see-all" data-query="navidad decoracion arbol luces">
+      <a href="/categoria/decohogar/decoracion/navidad" class="showcase-see-all" title="Ver catálogo completo de Navidad">
         Ver todo →
-      </button>
+      </a>
     </div>
   </div>
 
@@ -122,7 +127,7 @@ const DEALS: ShowcaseDeal[] = [
     <!-- COLUMNA 1 (Izquierda): 2 Tarjetas apiladas -->
     <div class="showcase-col-left">
       <!-- Tarjeta 1A: Bolas de Navidad -->
-      <article class="showcase-card card-stacked card-balls" data-deal-id={DEALS[0].id} data-query={DEALS[0].query}>
+      <a href={DEALS[0].url} class="showcase-card card-stacked card-balls" data-deal-id={DEALS[0].id} data-query={DEALS[0].query} title="Ver categoría Bolas de Navidad">
         <div class="card-bg-gradient burg"></div>
         <div class="card-content">
           <div class="card-badge badge-burgundy">
@@ -196,15 +201,15 @@ const DEALS: ShowcaseDeal[] = [
               <span class="price-now">${DEALS[0].dealPrice}</span>
               <span class="winner-pill store-falabella">{DEALS[0].winnerStore} · {DEALS[0].savingsText}</span>
             </div>
-            <button type="button" class="card-action-btn" aria-label="Comparar de una">
-              Comparar ⚡
-            </button>
+            <span class="card-action-btn" aria-hidden="true">
+              Ver categoría ⚡
+            </span>
           </div>
         </div>
-      </article>
+      </a>
 
       <!-- Tarjeta 1B: Luces de Navidad -->
-      <article class="showcase-card card-stacked card-lights" data-deal-id={DEALS[1].id} data-query={DEALS[1].query}>
+      <a href={DEALS[1].url} class="showcase-card card-stacked card-lights" data-deal-id={DEALS[1].id} data-query={DEALS[1].query} title="Ver categoría Luces de Navidad">
         <div class="card-bg-gradient grn"></div>
         <div class="card-content">
           <div class="card-badge badge-green">
@@ -269,17 +274,17 @@ const DEALS: ShowcaseDeal[] = [
               <span class="price-now">${DEALS[1].dealPrice}</span>
               <span class="winner-pill store-exito">{DEALS[1].winnerStore} · {DEALS[1].savingsText}</span>
             </div>
-            <button type="button" class="card-action-btn" aria-label="Comparar de una">
-              Comparar ⚡
-            </button>
+            <span class="card-action-btn" aria-hidden="true">
+              Ver categoría ⚡
+            </span>
           </div>
         </div>
-      </article>
+      </a>
     </div>
 
     <!-- COLUMNA 2 (Centro): 1 Tarjeta vertical alta (Set Papá Noel y Reno) -->
     <div class="showcase-col-mid">
-      <article class="showcase-card card-tall card-santa" data-deal-id={DEALS[2].id} data-query={DEALS[2].query}>
+      <a href={DEALS[2].url} class="showcase-card card-tall card-santa" data-deal-id={DEALS[2].id} data-query={DEALS[2].query} title="Ver categoría Adornos de Navidad">
         <div class="card-ribbon-header">
           <span class="ribbon-main">{DEALS[2].title}</span>
           <span class="ribbon-sub">{DEALS[2].subtitle}</span>
@@ -357,17 +362,17 @@ const DEALS: ShowcaseDeal[] = [
               <span class="price-now lg">${DEALS[2].dealPrice}</span>
               <span class="winner-pill store-alkosto">{DEALS[2].winnerStore} · {DEALS[2].savingsText}</span>
             </div>
-            <button type="button" class="card-action-btn" aria-label="Comparar de una">
-              Comparar ⚡
-            </button>
+            <span class="card-action-btn" aria-hidden="true">
+              Ver categoría ⚡
+            </span>
           </div>
         </div>
-      </article>
+      </a>
     </div>
 
     <!-- COLUMNA 3 (Derecha): 1 Gran Tarjeta Hero (Árbol de Navidad 180cm) -->
     <div class="showcase-col-right">
-      <article class="showcase-card card-hero card-tree" data-deal-id={DEALS[3].id} data-query={DEALS[3].query}>
+      <a href={DEALS[3].url} class="showcase-card card-hero card-tree" data-deal-id={DEALS[3].id} data-query={DEALS[3].query} title="Ver categoría Árboles de Navidad">
         <!-- Banners superiores estilo catálogo -->
         <div class="hero-top-ribbons">
           <span class="hero-tagline">{DEALS[3].tagline}</span>
@@ -446,12 +451,12 @@ const DEALS: ShowcaseDeal[] = [
               <span class="price-now xl">${DEALS[3].dealPrice}</span>
               <span class="winner-pill store-falabella">{DEALS[3].winnerStore} · {DEALS[3].savingsText}</span>
             </div>
-            <button type="button" class="card-action-btn hero-cta-btn" aria-label="Comparar de una">
-              Comparar en vivo ⚡
-            </button>
+            <span class="card-action-btn hero-cta-btn" aria-hidden="true">
+              Ver categoría ⚡
+            </span>
           </div>
         </div>
-      </article>
+      </a>
     </div>
   </div>
 </section>
@@ -598,6 +603,8 @@ const DEALS: ShowcaseDeal[] = [
     display: flex;
     flex-direction: column;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    text-decoration: none;
+    color: inherit;
   }
 
   .showcase-card:hover {
@@ -964,43 +971,13 @@ const DEALS: ShowcaseDeal[] = [
 </style>
 
 <script>
-  // Manejador interactivo para consultar en vivo y disparar búsquedas
+  // Manejador para consultar en vivo precios en tiempo real sin recargar
   document.addEventListener('DOMContentLoaded', () => {
-    // 1. Clic en las tarjetas o botones para buscar en tiempo real
-    const cards = document.querySelectorAll<HTMLElement>('.showcase-card, .showcase-see-all');
-    cards.forEach((card) => {
-      card.addEventListener('click', (e) => {
-        const query = card.dataset.query;
-        if (!query) return;
-
-        // Cambiar a pestaña local si está en otra
-        const tabLocal = document.querySelector<HTMLButtonElement>('#tab-local');
-        if (tabLocal && !tabLocal.classList.contains('is-active')) {
-          tabLocal.click();
-        }
-
-        const queryInput = document.querySelector<HTMLInputElement>('#query');
-        const form = document.querySelector<HTMLFormElement>('#search-form');
-        if (queryInput && form) {
-          queryInput.value = query;
-          form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-
-          setTimeout(() => {
-            const statusEl = document.querySelector('#status');
-            const resultsEl = document.querySelector('#results');
-            const target = (resultsEl && !resultsEl.hasAttribute('hidden')) ? resultsEl : statusEl;
-            if (target) {
-              target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-          }, 150);
-        }
-      });
-    });
-
-    // 2. Botón "Consultar en vivo" que actualiza las tarjetas con precios reales del comparador
     const liveBtn = document.querySelector<HTMLButtonElement>('#showcase-live-refresh');
     if (liveBtn) {
-      liveBtn.addEventListener('click', async () => {
+      liveBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         liveBtn.disabled = true;
         const originalText = liveBtn.innerHTML;
         liveBtn.innerHTML = `<span>⏳ Consultando tiendas…</span>`;
@@ -1037,7 +1014,6 @@ const DEALS: ShowcaseDeal[] = [
                 }
               }
             } catch (cardErr) {
-              // Si alguna consulta falla individualmente, mantener el valor inicial
               if (priceNowEl) priceNowEl.style.opacity = '1';
             }
           }

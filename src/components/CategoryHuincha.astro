@@ -208,56 +208,58 @@ const {
       track.addEventListener('scroll', updateButtons, { passive: true });
       updateButtons();
 
-      // Arrastre fluido con mouse para escritorio (drag-to-scroll suave)
+      // Arrastre con mouse en escritorio sin bloquear los clics en los enlaces
       let isDown = false;
       let startX = 0;
       let startScrollLeft = 0;
-      let dragged = false;
+      let hasDragged = false;
+      let justDragged = false;
 
       track.addEventListener('mousedown', (e) => {
-        // Solo botón principal
-        if (e.button !== 0) return;
+        if (e.button !== 0) return; // Solo botón izquierdo
         isDown = true;
-        dragged = false;
-        track.classList.add('is-dragging');
-        startX = e.pageX - track.offsetLeft;
+        hasDragged = false;
+        justDragged = false;
+        startX = e.pageX;
         startScrollLeft = track.scrollLeft;
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        const diff = e.pageX - startX;
+        // Solo considerar arrastre si supera un umbral claro de movimiento (10px)
+        if (Math.abs(diff) > 10) {
+          hasDragged = true;
+          justDragged = true;
+          track.classList.add('is-dragging');
+          track.scrollLeft = startScrollLeft - diff;
+        }
       });
 
       window.addEventListener('mouseup', () => {
         if (!isDown) return;
         isDown = false;
         track.classList.remove('is-dragging');
-        // Mantener flag un breve instante para evitar click accidental
-        setTimeout(() => {
-          dragged = false;
-        }, 50);
-      });
-
-      track.addEventListener('mouseleave', () => {
-        if (isDown) {
-          isDown = false;
-          track.classList.remove('is-dragging');
+        if (hasDragged) {
+          // Mantener el bloqueo de clic brevemente tras soltar el arrastre
+          setTimeout(() => {
+            justDragged = false;
+            hasDragged = false;
+          }, 80);
+        } else {
+          justDragged = false;
+          hasDragged = false;
         }
       });
 
-      track.addEventListener('mousemove', (e) => {
-        if (!isDown) return;
-        e.preventDefault();
-        const x = e.pageX - track.offsetLeft;
-        const walk = (x - startX) * 1.35; // Factor de fluidez
-        if (Math.abs(walk) > 6) {
-          dragged = true;
-        }
-        track.scrollLeft = startScrollLeft - walk;
-      });
-
-      // Suprimir clics accidentales si el usuario estaba arrastrando la huincha
-      track.querySelectorAll('a').forEach((link) => {
+      // Asegurar que los clics normales naveguen siempre a la subcategoría
+      track.querySelectorAll<HTMLAnchorElement>('.huincha-card').forEach((link) => {
         link.addEventListener('click', (e) => {
-          if (dragged) {
+          if (justDragged || hasDragged) {
             e.preventDefault();
             e.stopPropagation();
+            justDragged = false;
+            hasDragged = false;
           }
         });
       });
@@ -369,10 +371,6 @@ const {
   .huincha-track.is-dragging {
     cursor: grabbing;
     scroll-behavior: auto;
-  }
-
-  .huincha-track.is-dragging .huincha-card {
-    pointer-events: none;
   }
 
   .huincha-track::-webkit-scrollbar {

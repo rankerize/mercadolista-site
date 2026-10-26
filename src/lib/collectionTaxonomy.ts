@@ -641,3 +641,252 @@ export function findBestCategoryHelp(query: string): CategoryHelp | null {
   return null;
 }
 
+export interface DrawerSubcategory {
+  name: string;
+  slugPath: string;
+  url: string;
+  icono: string;
+}
+
+export interface DrawerDepartment {
+  id: string;
+  name: string;
+  slugPath: string;
+  icono: string;
+  url: string;
+  subcategories: DrawerSubcategory[];
+}
+
+const CURATED_DRAWER_DEPARTMENTS: Array<{
+  name: string;
+  slugPath: string;
+  icono: string;
+  subcategories: Array<{ name: string; slugPath: string; icono: string }>;
+}> = [
+  {
+    name: 'Tecnología',
+    slugPath: 'tecnologia',
+    icono: '📺',
+    subcategories: [
+      { name: 'Celulares y Smartphones', slugPath: 'tecnologia/telefonia/celulares-y-telefonos', icono: '📱' },
+      { name: 'Computadores y Portátiles', slugPath: 'tecnologia/computadores', icono: '💻' },
+      { name: 'Televisores y Smart TV', slugPath: 'tecnologia/televisores-y-video', icono: '📺' },
+      { name: 'Audífonos y Audio', slugPath: 'tecnologia/audio', icono: '🎧' },
+      { name: 'Smartwatch y Relojes', slugPath: 'tecnologia/smartwatch', icono: '⌚' },
+      { name: 'Videojuegos y Consolas', slugPath: 'tecnologia/zona-gamer', icono: '🎮' },
+      { name: 'Cámaras y Fotografía', slugPath: 'tecnologia/fotografia', icono: '📷' },
+      { name: 'Smart Home y Domótica', slugPath: 'tecnologia/smart-home', icono: '🏠' },
+    ],
+  },
+  {
+    name: 'Electrohogar',
+    slugPath: 'electrohogar',
+    icono: '⚡',
+    subcategories: [
+      { name: 'Neveras y Refrigeración', slugPath: 'electrohogar/linea-blanca/refrigeracion', icono: '🧊' },
+      { name: 'Lavadoras y Secadoras', slugPath: 'electrohogar/linea-blanca/lavado', icono: '🧺' },
+      { name: 'Freidoras de Aire y Cocina', slugPath: 'electrohogar/electrodomesticos-cocina', icono: '🍳' },
+      { name: 'Aires Acondicionados y Clima', slugPath: 'electrohogar/climatizacion', icono: '❄️' },
+      { name: 'Aspiradoras y Limpieza', slugPath: 'electrohogar/aspirado-y-limpieza', icono: '🧹' },
+    ],
+  },
+  {
+    name: 'Alimentos y Bebidas',
+    slugPath: 'alimentos-y-bebidas',
+    icono: '🥫',
+    subcategories: [
+      { name: 'Lácteos, Huevos y Quesos', slugPath: 'alimentos-y-bebidas/lacteos-y-frescos', icono: '🥛' },
+      { name: 'Despensa, Arroz y Aceites', slugPath: 'alimentos-y-bebidas/despensa', icono: '🌾' },
+      { name: 'Carnes, Pollo y Res', slugPath: 'alimentos-y-bebidas/carnes', icono: '🥩' },
+      { name: 'Frutas y Verduras', slugPath: 'alimentos-y-bebidas/frutas-y-verduras', icono: '🍎' },
+      { name: 'Café, Chocolate y Desayunos', slugPath: 'alimentos-y-bebidas/desayunos', icono: '☕' },
+      { name: 'Bebidas, Cervezas y Licores', slugPath: 'alimentos-y-bebidas/bebidas-y-licores', icono: '🍺' },
+      { name: 'Panadería y Arepas', slugPath: 'alimentos-y-bebidas/panaderia-y-pasteleria', icono: '🥖' },
+      { name: 'Snacks, Dulces y Galletas', slugPath: 'alimentos-y-bebidas/dulces-y-snacks', icono: '🍫' },
+    ],
+  },
+  {
+    name: 'Aseo y Limpieza',
+    slugPath: 'aseo-y-limpieza',
+    icono: '🧼',
+    subcategories: [
+      { name: 'Detergentes y Cuidado Ropa', slugPath: 'aseo-y-limpieza/lavado-y-planchado', icono: '🧼' },
+      { name: 'Papel Higiénico y Toallas', slugPath: 'aseo-y-limpieza/papeles', icono: '🧻' },
+      { name: 'Lavalozas y Desinfectantes', slugPath: 'aseo-y-limpieza/lavalozas-y-limpiadores', icono: '🧽' },
+      { name: 'Limpieza Pisos y Baños', slugPath: 'aseo-y-limpieza/limpieza-de-pisos-y-superficies', icono: '🧹' },
+      { name: 'Utensilios de Aseo', slugPath: 'aseo-y-limpieza/utensilios-de-aseo', icono: '🗑️' },
+    ],
+  },
+  {
+    name: 'Belleza, Higiene y Salud',
+    slugPath: 'belleza-higiene-y-salud',
+    icono: '💄',
+    subcategories: [
+      { name: 'Cuidado Capilar y Shampoo', slugPath: 'belleza-higiene-y-salud/cuidado-capilar', icono: '🧴' },
+      { name: 'Cuidado Facial y Bloqueadores', slugPath: 'belleza-higiene-y-salud/cuidado-de-la-piel', icono: '☀️' },
+      { name: 'Perfumes y Fragancias', slugPath: 'belleza-higiene-y-salud/perfumes', icono: '🌸' },
+      { name: 'Maquillaje', slugPath: 'belleza-higiene-y-salud/maquillaje', icono: '💄' },
+      { name: 'Cuidado Personal y Dental', slugPath: 'belleza-higiene-y-salud/cuidado-personal', icono: '🪥' },
+    ],
+  },
+  {
+    name: 'Deportes y Aire Libre',
+    slugPath: 'deportes-y-aire-libre',
+    icono: '⚽',
+    subcategories: [
+      { name: 'Bicicletas y Ciclismo', slugPath: 'deportes-y-aire-libre/ciclismo', icono: '🚲' },
+      { name: 'Fitness y Gimnasio en casa', slugPath: 'deportes-y-aire-libre/fitness-y-gimnasio-en-casa', icono: '🏋️' },
+      { name: 'Camping y Senderismo', slugPath: 'deportes-y-aire-libre/camping', icono: '⛺' },
+      { name: 'Deportes de Cancha', slugPath: 'deportes-y-aire-libre/deportes-colectivos', icono: '⚽' },
+      { name: 'Tenis y Raquetas', slugPath: 'deportes-y-aire-libre/deportes-de-raqueta', icono: '🎾' },
+      { name: 'Ropa Deportiva', slugPath: 'deportes-y-aire-libre/ropa-deportiva', icono: '🎽' },
+    ],
+  },
+  {
+    name: 'Dormitorio',
+    slugPath: 'dormitorio',
+    icono: '🛏️',
+    subcategories: [
+      { name: 'Colchones', slugPath: 'dormitorio/colchones', icono: '🛏️' },
+      { name: 'Camas y Bases', slugPath: 'dormitorio/camas', icono: '🪵' },
+      { name: 'Ropa de Cama y Almohadas', slugPath: 'dormitorio/ropa-de-cama', icono: '☁️' },
+    ],
+  },
+  {
+    name: 'Muebles y Organización',
+    slugPath: 'muebles-y-organizacion',
+    icono: '🪑',
+    subcategories: [
+      { name: 'Sofás, Salas y Sillones', slugPath: 'muebles-y-organizacion/muebles', icono: '🛋️' },
+      { name: 'Sillas y Escritorios', slugPath: 'muebles-y-organizacion/organizacion', icono: '🪑' },
+      { name: 'Closets y Armarios', slugPath: 'muebles-y-organizacion/organizacion', icono: '🚪' },
+    ],
+  },
+  {
+    name: 'Decohogar',
+    slugPath: 'decohogar',
+    icono: '🖼️',
+    subcategories: [
+      { name: 'Iluminación y Lámparas', slugPath: 'decohogar/iluminacion', icono: '💡' },
+      { name: 'Decoración del Hogar', slugPath: 'decohogar/decoracion', icono: '🖼️' },
+      { name: 'Menaje y Cocina', slugPath: 'decohogar/menaje', icono: '🍽️' },
+    ],
+  },
+  {
+    name: 'Calzado y Tenis',
+    slugPath: 'calzado-y-tenis',
+    icono: '👟',
+    subcategories: [
+      { name: 'Tenis Deportivos y Urbanos', slugPath: 'calzado-y-tenis/tenis', icono: '👟' },
+      { name: 'Zapatos Hombre y Mujer', slugPath: 'calzado-y-tenis/zapatos', icono: '👞' },
+      { name: 'Botas de Lluvia', slugPath: 'calzado-y-tenis/botas-de-lluvia', icono: '🥾' },
+    ],
+  },
+  {
+    name: 'Moda',
+    slugPath: 'moda',
+    icono: '👗',
+    subcategories: [
+      { name: 'Ropa Hombre', slugPath: 'moda/hombre', icono: '👔' },
+      { name: 'Ropa Mujer', slugPath: 'moda/mujer', icono: '👗' },
+    ],
+  },
+  {
+    name: 'Accesorios Moda',
+    slugPath: 'accesorios-moda',
+    icono: '👜',
+    subcategories: [
+      { name: 'Bolsos y Morrales', slugPath: 'accesorios-moda/bolsos', icono: '👜' },
+      { name: 'Gafas de Sol', slugPath: 'accesorios-moda/gafas', icono: '🕶️' },
+      { name: 'Relojes', slugPath: 'accesorios-moda/relojes', icono: '⌚' },
+      { name: 'Gorras y Gorros', slugPath: 'accesorios-moda/gorras-y-gorros', icono: '🧢' },
+      { name: 'Joyas', slugPath: 'accesorios-moda/joyas', icono: '💍' },
+    ],
+  },
+  {
+    name: 'Niños y Juguetería',
+    slugPath: 'ninos-y-jugueteria',
+    icono: '🧸',
+    subcategories: [
+      { name: 'Juguetes', slugPath: 'ninos-y-jugueteria/juguetes', icono: '🧸' },
+      { name: 'Rodados para Niños', slugPath: 'ninos-y-jugueteria/rodados-para-ninos', icono: '🛴' },
+      { name: 'Escolares y Útiles', slugPath: 'ninos-y-jugueteria/escolares', icono: '🎒' },
+    ],
+  },
+  {
+    name: 'Mundo Bebé',
+    slugPath: 'mundo-bebe',
+    icono: '🍼',
+    subcategories: [
+      { name: 'Coches y Sillas', slugPath: 'mundo-bebe/coches-y-sillas', icono: '🚼' },
+      { name: 'Higiene y Cuidado Bebé', slugPath: 'mundo-bebe/higiene-y-salud', icono: '🍼' },
+      { name: 'Dormitorio Bebé', slugPath: 'mundo-bebe/dormitorio-bebe', icono: '🛏️' },
+    ],
+  },
+  {
+    name: 'Mascotas',
+    slugPath: 'mascotas',
+    icono: '🐾',
+    subcategories: [
+      { name: 'Gatos y Perros', slugPath: 'mascotas/gatos', icono: '🐱' },
+      { name: 'Aves y Animales', slugPath: 'mascotas/aves', icono: '🐦' },
+    ],
+  },
+  {
+    name: 'Herramientas y Construcción',
+    slugPath: 'herramientas-y-maquinas',
+    icono: '🛠️',
+    subcategories: [
+      { name: 'Herramientas y Máquinas', slugPath: 'herramientas-y-maquinas', icono: '🛠️' },
+      { name: 'Pinturas', slugPath: 'pinturas', icono: '🎨' },
+      { name: 'Materiales de Construcción', slugPath: 'construccion', icono: '🧱' },
+      { name: 'Electricidad', slugPath: 'electricidad', icono: '💡' },
+    ],
+  },
+  {
+    name: 'Automotriz',
+    slugPath: 'automotriz',
+    icono: '🚗',
+    subcategories: [
+      { name: 'Llantas y Rines', slugPath: 'automotriz/rines-y-llantas/llantas', icono: '🛞' },
+      { name: 'Accesorios para Motos', slugPath: 'automotriz/accesorios-para-motos', icono: '🏍️' },
+      { name: 'Accesorios para Carro', slugPath: 'automotriz/accesorios-para-carro', icono: '🚗' },
+      { name: 'Audio y Pantallas', slugPath: 'automotriz/audio-y-video-para-carros', icono: '📻' },
+    ],
+  },
+  {
+    name: 'Libros y Papelería',
+    slugPath: 'libros-papeleria-y-celebraciones',
+    icono: '📚',
+    subcategories: [
+      { name: 'Libros', slugPath: 'libros-papeleria-y-celebraciones/libros', icono: '📖' },
+      { name: 'Artículos de Papelería', slugPath: 'libros-papeleria-y-celebraciones/articulos-de-escritorio-y-papeleria', icono: '✏️' },
+      { name: 'Fiestas y Celebraciones', slugPath: 'libros-papeleria-y-celebraciones/fiestas-y-celebraciones', icono: '🎈' },
+    ],
+  },
+];
+
+/**
+ * Retorna las categorías de primer nivel (Departamentos) junto con sus
+ * subcategorías de segundo nivel o de último nivel que sean short-tail de alta demanda.
+ */
+export function getDrawerDepartments(): DrawerDepartment[] {
+  return CURATED_DRAWER_DEPARTMENTS.map((dept) => {
+    const rootId = data.pathToId[dept.slugPath] || dept.slugPath;
+    return {
+      id: rootId,
+      name: dept.name,
+      slugPath: dept.slugPath,
+      icono: dept.icono,
+      url: `/categoria/${dept.slugPath}`,
+      subcategories: dept.subcategories.map((sub) => ({
+        name: sub.name,
+        slugPath: sub.slugPath,
+        url: `/categoria/${sub.slugPath}`,
+        icono: sub.icono,
+      })),
+    };
+  });
+}
+
+

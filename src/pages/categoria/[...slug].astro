@@ -104,18 +104,25 @@ const isLeaf   = collNode ? collNode.childIds.length === 0 : children.length ===
 
 const BASE         = 'https://mercadolista.com';
 const canonicalUrl = `${BASE}/categoria/${collNode ? collNode.slugPath : taxPath}`;
-const city         = findCity('bogota');
+const ciudadParam  = Astro.url.searchParams.get('ciudad') || 'bogota';
+const city         = findCity(ciudadParam);
 
 // Consultar precios en tiempo real para cualquier nodo con query asignado
+// Timeout protector de 4s para SSR veloz: si tarda más, el cliente hidrata en vivo
 let report: Record<string, any> | null = null;
 let errorMsg: string | null = null;
 
 if (node.query) {
   try {
-    const outcomes = await searchStores(node.query, city);
+    const searchPromise = searchStores(node.query, city);
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('SSR timeout')), 4000)
+    );
+    const outcomes = (await Promise.race([searchPromise, timeoutPromise])) as any;
     report = buildReport(node.query, outcomes);
   } catch {
-    errorMsg = 'No pudimos consultar los precios en este momento. Intenta de nuevo en unos segundos.';
+    // Si da timeout o error en SSR, no bloqueamos la renderización:
+    // El cliente hidratará automáticamente en tiempo real con /api/buscar
   }
 }
 
@@ -321,7 +328,7 @@ if (huinchaNav && huinchaNav.items.length > 0) {
   <body>
     <Nav />
 
-    <main class="cat-page-container">
+    <main class="cat-page-container" id="cat-page-container" data-query={node.query || ''} data-city={city.id} data-initial-count={topOffers.length}>
       {/* ── Miga de pan (Breadcrumb) ─────────────────────────────────── */}
       <nav class="breadcrumb-nav" aria-label="Navegación de miga de pan">
         <ol class="breadcrumb-list">
@@ -379,53 +386,55 @@ if (huinchaNav && huinchaNav.items.length > 0) {
             </div>
             <h1 class="cat-sidebar-title">{node.h1 || `${node.nombre} en Colombia`}</h1>
             <p class="cat-sidebar-meta">
-              <strong>Resultados ({topOffers.length} ofertas)</strong>
+              <strong>Resultados (<span id="sidebar-count-number">{topOffers.length}</span> ofertas)</strong>
             </p>
           </div>
 
           {/* 2. VEREDICTO COMPACTO SOBRE LOS FILTROS */}
-          {verdict && (
-            <div class="sidebar-verdict-card" aria-label="Menor precio detectado en Colombia">
-              <div class="verdict-pill-header">
-                <span class="verdict-trophy">🏆</span>
-                <span class="verdict-tag">MENOR PRECIO HOY</span>
-              </div>
+          <div id="sidebar-verdict-slot">
+            {verdict && (
+              <div class="sidebar-verdict-card" aria-label="Menor precio detectado en Colombia">
+                <div class="verdict-pill-header">
+                  <span class="verdict-trophy">🏆</span>
+                  <span class="verdict-tag">MENOR PRECIO HOY</span>
+                </div>
 
-              <div class="sidebar-verdict-body">
-                {verdict.image && (
-                  <div class="sidebar-verdict-img-wrap">
-                    <img src={verdict.image} alt={verdict.name} class="sidebar-verdict-img" width="68" height="68" loading="eager" />
-                  </div>
-                )}
-                <div class="sidebar-verdict-details">
-                  <h2 class="sidebar-verdict-name" title={verdict.name}>{verdict.headline}</h2>
-                  <div class="sidebar-verdict-pricing">
-                    <strong class="sidebar-verdict-price">{cop(verdict.price)}</strong>
-                    <span class="sidebar-verdict-store">en {verdict.store_name}</span>
-                  </div>
-                  {verdict.payment_note && (
-                    <span class="sidebar-verdict-payment">💳 {verdict.payment_note}</span>
+                <div class="sidebar-verdict-body">
+                  {verdict.image && (
+                    <div class="sidebar-verdict-img-wrap">
+                      <img src={verdict.image} alt={verdict.name} class="sidebar-verdict-img" width="68" height="68" loading="eager" />
+                    </div>
                   )}
+                  <div class="sidebar-verdict-details">
+                    <h2 class="sidebar-verdict-name" title={verdict.name}>{verdict.headline}</h2>
+                    <div class="sidebar-verdict-pricing">
+                      <strong class="sidebar-verdict-price">{cop(verdict.price)}</strong>
+                      <span class="sidebar-verdict-store">en {verdict.store_name}</span>
+                    </div>
+                    {verdict.payment_note && (
+                      <span class="sidebar-verdict-payment">💳 {verdict.payment_note}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div class="sidebar-verdict-actions">
+                  <a href={verdict.url} target="_blank" rel="noopener noreferrer" class="btn-verdict-buy">
+                    Ver en {verdict.store_name} →
+                  </a>
+                  <button
+                    type="button"
+                    class="btn-verdict-add"
+                    data-name={verdict.name}
+                    data-store={verdict.store_name}
+                    data-price={verdict.price}
+                    data-image={verdict.image ?? ''}
+                  >
+                    ➕ Agregar a lista
+                  </button>
                 </div>
               </div>
-
-              <div class="sidebar-verdict-actions">
-                <a href={verdict.url} target="_blank" rel="noopener noreferrer" class="btn-verdict-buy">
-                  Ver en {verdict.store_name} →
-                </a>
-                <button
-                  type="button"
-                  class="btn-verdict-add"
-                  data-name={verdict.name}
-                  data-store={verdict.store_name}
-                  data-price={verdict.price}
-                  data-image={verdict.image ?? ''}
-                >
-                  ➕ Agregar a lista
-                </button>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* 3. FILTROS TÉCNICOS / COMERCIALES */}
           <div class="sidebar-filters-box">
@@ -444,50 +453,54 @@ if (huinchaNav && huinchaNav.items.length > 0) {
 
             <div class="sidebar-filters-body">
               {/* Filtro: Tienda */}
-              {storeNames.length > 0 && (
-                <details class="filter-group" open>
-                  <summary class="filter-group-title">
-                    <span>Tiendas ({storeNames.length})</span>
-                    <span class="filter-chevron">▾</span>
-                  </summary>
-                  <div class="filter-group-content">
-                    {storeNames.map((sName) => (
-                      <label class="filter-checkbox-label">
-                        <input
-                          type="checkbox"
-                          class="filter-checkbox filter-store-check"
-                          value={sName}
-                        />
-                        <span class="filter-text">{sName}</span>
-                        <span class="filter-count">({storeCounts[sName]})</span>
-                      </label>
-                    ))}
-                  </div>
-                </details>
-              )}
+              <div id="sidebar-stores-slot">
+                {storeNames.length > 0 && (
+                  <details class="filter-group" open>
+                    <summary class="filter-group-title">
+                      <span>Tiendas ({storeNames.length})</span>
+                      <span class="filter-chevron">▾</span>
+                    </summary>
+                    <div class="filter-group-content">
+                      {storeNames.map((sName) => (
+                        <label class="filter-checkbox-label">
+                          <input
+                            type="checkbox"
+                            class="filter-checkbox filter-store-check"
+                            value={sName}
+                          />
+                          <span class="filter-text">{sName}</span>
+                          <span class="filter-count">({storeCounts[sName]})</span>
+                        </label>
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </div>
 
               {/* Filtro: Marcas */}
-              {brandNames.length > 0 && (
-                <details class="filter-group" open>
-                  <summary class="filter-group-title">
-                    <span>Marcas ({brandNames.length})</span>
-                    <span class="filter-chevron">▾</span>
-                  </summary>
-                  <div class="filter-group-content">
-                    {brandNames.map((bName) => (
-                      <label class="filter-checkbox-label">
-                        <input
-                          type="checkbox"
-                          class="filter-checkbox filter-brand-check"
-                          value={bName}
-                        />
-                        <span class="filter-text">{bName}</span>
-                        <span class="filter-count">({brandCounts[bName]})</span>
-                      </label>
-                    ))}
-                  </div>
-                </details>
-              )}
+              <div id="sidebar-brands-slot">
+                {brandNames.length > 0 && (
+                  <details class="filter-group" open>
+                    <summary class="filter-group-title">
+                      <span>Marcas ({brandNames.length})</span>
+                      <span class="filter-chevron">▾</span>
+                    </summary>
+                    <div class="filter-group-content">
+                      {brandNames.map((bName) => (
+                        <label class="filter-checkbox-label">
+                          <input
+                            type="checkbox"
+                            class="filter-checkbox filter-brand-check"
+                            value={bName}
+                          />
+                          <span class="filter-text">{bName}</span>
+                          <span class="filter-count">({brandCounts[bName]})</span>
+                        </label>
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </div>
 
               {/* Filtro: Rango de Precio */}
               <details class="filter-group" open>
@@ -551,6 +564,22 @@ if (huinchaNav && huinchaNav.items.length > 0) {
             </div>
 
             <div class="control-bar-right">
+              <label for="cat-city-select" class="sort-label">📍 Ciudad:</label>
+              <select id="cat-city-select" class="sort-select">
+                <option value="bogota" selected={city.id === 'bogota'}>Bogotá</option>
+                <option value="medellin" selected={city.id === 'medellin'}>Medellín</option>
+                <option value="cali" selected={city.id === 'cali'}>Cali</option>
+                <option value="barranquilla" selected={city.id === 'barranquilla'}>Barranquilla</option>
+                <option value="cartagena" selected={city.id === 'cartagena'}>Cartagena</option>
+                <option value="bucaramanga" selected={city.id === 'bucaramanga'}>Bucaramanga</option>
+                <option value="pereira" selected={city.id === 'pereira'}>Pereira</option>
+                <option value="manizales" selected={city.id === 'manizales'}>Manizales</option>
+                <option value="cucuta" selected={city.id === 'cucuta'}>Cúcuta</option>
+                <option value="ibague" selected={city.id === 'ibague'}>Ibagué</option>
+                <option value="santa-marta" selected={city.id === 'santa-marta'}>Santa Marta</option>
+                <option value="villavicencio" selected={city.id === 'villavicencio'}>Villavicencio</option>
+              </select>
+
               <label for="sort-select" class="sort-label">Ordenar:</label>
               <select id="sort-select" class="sort-select">
                 <option value="price-asc" selected>Precio: Menor a Mayor (Recomendado)</option>
@@ -558,86 +587,107 @@ if (huinchaNav && huinchaNav.items.length > 0) {
                 <option value="discount-desc">Mayor Descuento %</option>
                 <option value="name-asc">Nombre: A - Z</option>
               </select>
+
+              <button type="button" class="btn-refresh-prices" id="btn-refresh-prices" title="Actualizar precios en tiempo real" aria-label="Actualizar precios en tiempo real">
+                🔄
+              </button>
+            </div>
+          </div>
+
+          {/* Loader animado en tiempo real */}
+          <div class="cat-live-loader" id="cat-live-loader" style={topOffers.length > 0 ? "display: none;" : "display: block;"}>
+            <div class="cat-live-loader-card">
+              <div class="cat-live-spinner"></div>
+              <div class="cat-live-loader-text">
+                <h3 class="cat-live-loading-title">Consultando precios en tiempo real…</h3>
+                <p class="cat-live-loading-subtitle">Buscando "{node.query}" en Éxito, Carulla, Jumbo, Olímpica, D1, Alkosto y Falabella</p>
+              </div>
+            </div>
+            <div class="cat-skeleton-grid">
+              <div class="cat-skeleton-card"></div>
+              <div class="cat-skeleton-card"></div>
+              <div class="cat-skeleton-card"></div>
+              <div class="cat-skeleton-card"></div>
+              <div class="cat-skeleton-card"></div>
+              <div class="cat-skeleton-card"></div>
             </div>
           </div>
 
           {/* Grilla de Productos */}
-          {topOffers.length > 0 ? (
-            <div class="product-cards-grid" id="product-cards-grid" role="list">
-              {topOffers.map((o, idx) => {
-                const hasDiscount = o.list_price && o.list_price > o.price;
-                const discountPct = hasDiscount ? Math.round(((o.list_price - o.price) / o.list_price) * 100) : 0;
-                const brand = detectBrand(o.name);
-                const isWinner = idx === 0;
+          <div class="product-cards-grid" id="product-cards-grid" role="list" style={topOffers.length === 0 ? "display: none;" : "display: grid;"}>
+            {topOffers.map((o, idx) => {
+              const hasDiscount = o.list_price && o.list_price > o.price;
+              const discountPct = hasDiscount ? Math.round(((o.list_price - o.price) / o.list_price) * 100) : 0;
+              const brand = detectBrand(o.name);
+              const isWinner = idx === 0;
 
-                return (
-                  <article
-                    class="cat-product-card"
-                    data-store={o.store_name}
-                    data-brand={brand}
-                    data-price={o.price}
-                    data-discount={discountPct}
-                    data-name={o.name}
-                    role="listitem"
-                  >
-                    <div class="card-top-badges">
-                      <span class={`store-pill store-pill--${o.store_name.toLowerCase().replace(/[^a-z0-9]/g, '')}`}>
-                        {o.store_name}
-                      </span>
-                      {hasDiscount && discountPct > 0 && (
-                        <span class="discount-pill">-{discountPct}%</span>
-                      )}
-                      {isWinner && (
-                        <span class="winner-mini-badge">★ Menor precio</span>
+              return (
+                <article
+                  class="cat-product-card"
+                  data-store={o.store_name}
+                  data-brand={brand}
+                  data-price={o.price}
+                  data-discount={discountPct}
+                  data-name={o.name}
+                  role="listitem"
+                >
+                  <div class="card-top-badges">
+                    <span class={`store-pill store-pill--${o.store_name.toLowerCase().replace(/[^a-z0-9]/g, '')}`}>
+                      {o.store_name}
+                    </span>
+                    {hasDiscount && discountPct > 0 && (
+                      <span class="discount-pill">-{discountPct}%</span>
+                    )}
+                    {isWinner && (
+                      <span class="winner-mini-badge">★ Menor precio</span>
+                    )}
+                  </div>
+
+                  <div class="card-thumb-wrap">
+                    {o.image ? (
+                      <img src={o.image} alt={o.name} class="card-thumb" width="140" height="140" loading="lazy" />
+                    ) : (
+                      <div class="card-thumb-fallback">📱</div>
+                    )}
+                  </div>
+
+                  <div class="card-content">
+                    <h3 class="card-title" title={o.name}>{o.name}</h3>
+                    {o.unit_price && (
+                      <div class="card-unit-price">{cop(o.unit_price)} / {o.unit_label}</div>
+                    )}
+
+                    <div class="card-pricing">
+                      <span class="card-current-price">{cop(o.price)}</span>
+                      {hasDiscount && (
+                        <span class="card-old-price">{cop(o.list_price)}</span>
                       )}
                     </div>
+                  </div>
 
-                    <div class="card-thumb-wrap">
-                      {o.image ? (
-                        <img src={o.image} alt={o.name} class="card-thumb" width="140" height="140" loading="lazy" />
-                      ) : (
-                        <div class="card-thumb-fallback">📱</div>
-                      )}
-                    </div>
-
-                    <div class="card-content">
-                      <h3 class="card-title" title={o.name}>{o.name}</h3>
-                      {o.unit_price && (
-                        <div class="card-unit-price">{cop(o.unit_price)} / {o.unit_label}</div>
-                      )}
-
-                      <div class="card-pricing">
-                        <span class="card-current-price">{cop(o.price)}</span>
-                        {hasDiscount && (
-                          <span class="card-old-price">{cop(o.list_price)}</span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div class="card-actions">
-                      <a href={o.url} target="_blank" rel="noopener noreferrer" class="btn-card-buy">
-                        Ver en {o.store_name} →
-                      </a>
-                      <button
-                        type="button"
-                        class="btn-card-add"
-                        data-name={o.name}
-                        data-store={o.store_name}
-                        data-price={o.price}
-                        data-image={o.image ?? ''}
-                        title="Añadir a mi lista de compras activa"
-                      >
-                        ➕
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          ) : null}
+                  <div class="card-actions">
+                    <a href={o.url} target="_blank" rel="noopener noreferrer" class="btn-card-buy">
+                      Ver en {o.store_name} →
+                    </a>
+                    <button
+                      type="button"
+                      class="btn-card-add"
+                      data-name={o.name}
+                      data-store={o.store_name}
+                      data-price={o.price}
+                      data-image={o.image ?? ''}
+                      title="Añadir a mi lista de compras activa"
+                    >
+                      ➕
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
 
           {/* Estado de sin resultados */}
-          <div class="no-filter-results" id="no-filter-results" style={topOffers.length > 0 ? "display: none;" : "display: block;"}>
+          <div class="no-filter-results" id="no-filter-results" style="display: none;">
             <div class="no-results-icon">🔎</div>
             <h3>No encontramos resultados con los filtros actuales</h3>
             <p>Intenta desmarcar algunos filtros o restablecer la búsqueda.</p>
@@ -661,32 +711,33 @@ if (huinchaNav && huinchaNav.items.length > 0) {
       <p>© {new Date().getFullYear()} Mercado Lista · Comparador de precios en tiempo real para Colombia</p>
     </footer>
 
-    {/* Scripts interactivos para filtros laterales, ordenación instantánea y modal de listas */}
+    {/* Scripts interactivos para hidratación en tiempo real, filtros laterales, ordenación instantánea y modal de listas */}
     <script>
       import { openCatAddModal } from '../../scripts/catAddToList';
+      import { escapeHtml } from '../../lib/normalize';
 
-      // Modal para agregar a lista
-      document.addEventListener('click', (e) => {
-        const btn = (e.target as HTMLElement).closest<HTMLElement>('.btn-verdict-add, .btn-card-add');
-        if (!btn) return;
-        e.preventDefault();
-        openCatAddModal({
-          name:       btn.dataset.name  ?? '',
-          store_name: btn.dataset.store ?? '',
-          price:      btn.dataset.price ? Number(btn.dataset.price) : undefined,
-          image:      btn.dataset.image || undefined,
-        });
-      });
+      // Contenedor principal con metadatos
+      const pageContainer = document.getElementById('cat-page-container');
+      const query = pageContainer?.dataset.query || '';
+      let currentCity = pageContainer?.dataset.city || 'bogota';
+      const initialCount = Number(pageContainer?.dataset.initialCount || 0);
 
-      // LÓGICA DE FILTROS A LA IZQUIERDA + ORDENACIÓN POR PRECIO
+      // Elementos del DOM
       const sidebar = document.getElementById('cat-sidebar');
       const grid = document.getElementById('product-cards-grid');
+      const liveLoader = document.getElementById('cat-live-loader');
       const sortSelect = document.getElementById('sort-select') as HTMLSelectElement | null;
+      const citySelect = document.getElementById('cat-city-select') as HTMLSelectElement | null;
+      const refreshBtn = document.getElementById('btn-refresh-prices');
       const visibleCountEl = document.getElementById('visible-count-number');
+      const sidebarCountEl = document.getElementById('sidebar-count-number');
       const activeChipsEl = document.getElementById('active-chips-container');
       const clearBtn = document.getElementById('btn-clear-filters');
       const noResultsBox = document.getElementById('no-filter-results');
       const resetCtaBtn = document.getElementById('btn-reset-filters-cta');
+      const verdictSlot = document.getElementById('sidebar-verdict-slot');
+      const storesSlot = document.getElementById('sidebar-stores-slot');
+      const brandsSlot = document.getElementById('sidebar-brands-slot');
 
       // Móvil
       const openMobileBtn = document.getElementById('btn-open-mobile-filters');
@@ -702,6 +753,256 @@ if (huinchaNav && huinchaNav.items.length > 0) {
         closeMobileBtn.addEventListener('click', () => {
           sidebar.classList.remove('cat-sidebar--mobile-open');
         });
+      }
+
+      // Modal para agregar a lista
+      document.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLElement>('.btn-verdict-add, .btn-card-add');
+        if (!btn) return;
+        e.preventDefault();
+        openCatAddModal({
+          name:       btn.dataset.name  ?? '',
+          store_name: btn.dataset.store ?? '',
+          price:      btn.dataset.price ? Number(btn.dataset.price) : undefined,
+          image:      btn.dataset.image || undefined,
+        });
+      });
+
+      function detectBrand(name: string): string {
+        const n = (name || '').toLowerCase();
+        if (n.includes('iphone') || n.includes('apple')) return 'Apple';
+        if (n.includes('samsung') || n.includes('galaxy')) return 'Samsung';
+        if (n.includes('xiaomi') || n.includes('redmi') || n.includes('poco')) return 'Xiaomi';
+        if (n.includes('motorola') || n.includes('moto ')) return 'Motorola';
+        if (n.includes('honor')) return 'Honor';
+        if (n.includes('huawei')) return 'Huawei';
+        if (n.includes('oppo')) return 'Oppo';
+        if (n.includes('realme')) return 'Realme';
+        if (n.includes('infinix')) return 'Infinix';
+        if (n.includes('tecno')) return 'Tecno';
+        if (n.includes('lg')) return 'LG';
+        if (n.includes('sony')) return 'Sony';
+        if (n.includes('hp')) return 'HP';
+        if (n.includes('lenovo')) return 'Lenovo';
+        if (n.includes('asus')) return 'Asus';
+        return 'Otras marcas';
+      }
+
+      function formatCop(val: number): string {
+        return '$ ' + Math.round(val).toLocaleString('es-CO');
+      }
+
+      function renderOffers(report: any) {
+        if (!grid) return;
+        const rawOffers = report.offers || [];
+        const sorted = [...rawOffers].sort((a: any, b: any) => (a.price || 0) - (b.price || 0));
+        const topOffers = sorted.slice(0, 32);
+
+        // Actualizar contadores
+        if (visibleCountEl) visibleCountEl.textContent = String(topOffers.length);
+        if (sidebarCountEl) sidebarCountEl.textContent = String(topOffers.length);
+
+        if (topOffers.length === 0) {
+          if (liveLoader) liveLoader.style.display = 'none';
+          if (grid) grid.style.display = 'none';
+          if (noResultsBox) noResultsBox.style.display = 'block';
+          return;
+        }
+
+        // Renderizar veredicto ganador
+        if (verdictSlot) {
+          const v = report.verdict;
+          if (v) {
+            verdictSlot.innerHTML = `
+              <div class="sidebar-verdict-card" aria-label="Menor precio detectado en Colombia">
+                <div class="verdict-pill-header">
+                  <span class="verdict-trophy">🏆</span>
+                  <span class="verdict-tag">MENOR PRECIO HOY</span>
+                </div>
+                <div class="sidebar-verdict-body">
+                  ${v.image ? `
+                    <div class="sidebar-verdict-img-wrap">
+                      <img src="${escapeHtml(v.image)}" alt="${escapeHtml(v.name)}" class="sidebar-verdict-img" width="68" height="68" loading="eager" />
+                    </div>` : ''}
+                  <div class="sidebar-verdict-details">
+                    <h2 class="sidebar-verdict-name" title="${escapeHtml(v.name)}">${escapeHtml(v.headline || v.name)}</h2>
+                    <div class="sidebar-verdict-pricing">
+                      <strong class="sidebar-verdict-price">${formatCop(v.price)}</strong>
+                      <span class="sidebar-verdict-store">en ${escapeHtml(v.store_name)}</span>
+                    </div>
+                    ${v.payment_note ? `<span class="sidebar-verdict-payment">💳 ${escapeHtml(v.payment_note)}</span>` : ''}
+                  </div>
+                </div>
+                <div class="sidebar-verdict-actions">
+                  <a href="${escapeHtml(v.url)}" target="_blank" rel="noopener noreferrer" class="btn-verdict-buy">
+                    Ver en ${escapeHtml(v.store_name)} →
+                  </a>
+                  <button
+                    type="button"
+                    class="btn-verdict-add"
+                    data-name="${escapeHtml(v.name)}"
+                    data-store="${escapeHtml(v.store_name)}"
+                    data-price="${v.price}"
+                    data-image="${escapeHtml(v.image || '')}"
+                  >
+                    ➕ Agregar a lista
+                  </button>
+                </div>
+              </div>
+            `;
+          } else {
+            verdictSlot.innerHTML = '';
+          }
+        }
+
+        // Conteo para filtros laterales
+        const storeCounts: Record<string, number> = {};
+        const brandCounts: Record<string, number> = {};
+        topOffers.forEach((o: any) => {
+          storeCounts[o.store_name] = (storeCounts[o.store_name] || 0) + 1;
+          const brand = detectBrand(o.name);
+          brandCounts[brand] = (brandCounts[brand] || 0) + 1;
+        });
+
+        // Reconstruir filtro de tiendas
+        if (storesSlot) {
+          const sNames = Object.keys(storeCounts).sort();
+          if (sNames.length > 0) {
+            storesSlot.innerHTML = `
+              <details class="filter-group" open>
+                <summary class="filter-group-title">
+                  <span>Tiendas (${sNames.length})</span>
+                  <span class="filter-chevron">▾</span>
+                </summary>
+                <div class="filter-group-content">
+                  ${sNames.map((sName) => `
+                    <label class="filter-checkbox-label">
+                      <input type="checkbox" class="filter-checkbox filter-store-check" value="${escapeHtml(sName)}" />
+                      <span class="filter-text">${escapeHtml(sName)}</span>
+                      <span class="filter-count">(${storeCounts[sName]})</span>
+                    </label>
+                  `).join('')}
+                </div>
+              </details>
+            `;
+          } else {
+            storesSlot.innerHTML = '';
+          }
+        }
+
+        // Reconstruir filtro de marcas
+        if (brandsSlot) {
+          const bNames = Object.keys(brandCounts).sort((a, b) => brandCounts[b] - brandCounts[a]);
+          if (bNames.length > 0) {
+            brandsSlot.innerHTML = `
+              <details class="filter-group" open>
+                <summary class="filter-group-title">
+                  <span>Marcas (${bNames.length})</span>
+                  <span class="filter-chevron">▾</span>
+                </summary>
+                <div class="filter-group-content">
+                  ${bNames.map((bName) => `
+                    <label class="filter-checkbox-label">
+                      <input type="checkbox" class="filter-checkbox filter-brand-check" value="${escapeHtml(bName)}" />
+                      <span class="filter-text">${escapeHtml(bName)}</span>
+                      <span class="filter-count">(${brandCounts[bName]})</span>
+                    </label>
+                  `).join('')}
+                </div>
+              </details>
+            `;
+          } else {
+            brandsSlot.innerHTML = '';
+          }
+        }
+
+        // Renderizar tarjetas de productos
+        grid.innerHTML = topOffers.map((o: any, idx: number) => {
+          const hasDiscount = o.list_price && o.list_price > o.price;
+          const discountPct = hasDiscount ? Math.round(((o.list_price - o.price) / o.list_price) * 100) : 0;
+          const brand = detectBrand(o.name);
+          const isWinner = idx === 0;
+          const storePillClass = `store-pill store-pill--${o.store_name.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+
+          return `
+            <article
+              class="cat-product-card"
+              data-store="${escapeHtml(o.store_name)}"
+              data-brand="${escapeHtml(brand)}"
+              data-price="${o.price}"
+              data-discount="${discountPct}"
+              data-name="${escapeHtml(o.name)}"
+              role="listitem"
+            >
+              <div class="card-top-badges">
+                <span class="${storePillClass}">${escapeHtml(o.store_name)}</span>
+                ${hasDiscount && discountPct > 0 ? `<span class="discount-pill">-${discountPct}%</span>` : ''}
+                ${isWinner ? `<span class="winner-mini-badge">★ Menor precio</span>` : ''}
+              </div>
+
+              <div class="card-thumb-wrap">
+                ${o.image ? `
+                  <img src="${escapeHtml(o.image)}" alt="${escapeHtml(o.name)}" class="card-thumb" width="140" height="140" loading="lazy" />
+                ` : `
+                  <div class="card-thumb-fallback">📱</div>
+                `}
+              </div>
+
+              <div class="card-content">
+                <h3 class="card-title" title="${escapeHtml(o.name)}">${escapeHtml(o.name)}</h3>
+                ${o.unit_price ? `
+                  <div class="card-unit-price">${formatCop(o.unit_price)} / ${escapeHtml(o.unit_label || '')}</div>
+                ` : ''}
+
+                <div class="card-pricing">
+                  <span class="card-current-price">${formatCop(o.price)}</span>
+                  ${hasDiscount ? `<span class="card-old-price">${formatCop(o.list_price)}</span>` : ''}
+                </div>
+              </div>
+
+              <div class="card-actions">
+                <a href="${escapeHtml(o.url)}" target="_blank" rel="noopener noreferrer" class="btn-card-buy">
+                  Ver en ${escapeHtml(o.store_name)} →
+                </a>
+                <button
+                  type="button"
+                  class="btn-card-add"
+                  data-name="${escapeHtml(o.name)}"
+                  data-store="${escapeHtml(o.store_name)}"
+                  data-price="${o.price}"
+                  data-image="${escapeHtml(o.image || '')}"
+                  title="Añadir a mi lista de compras activa"
+                >
+                  ➕
+                </button>
+              </div>
+            </article>
+          `;
+        }).join('');
+
+        if (liveLoader) liveLoader.style.display = 'none';
+        if (noResultsBox) noResultsBox.style.display = 'none';
+        grid.style.display = 'grid';
+
+        applyFiltersAndSort();
+      }
+
+      async function fetchLiveCategoryOffers(q: string, c: string) {
+        if (!q) return;
+        if (liveLoader) liveLoader.style.display = 'block';
+        if (grid) grid.style.display = 'none';
+        if (noResultsBox) noResultsBox.style.display = 'none';
+
+        try {
+          const res = await fetch(`/api/buscar?q=${encodeURIComponent(q)}&ciudad=${encodeURIComponent(c)}`);
+          if (!res.ok) throw new Error('Error al consultar precios en vivo');
+          const report = await res.json();
+          renderOffers(report);
+        } catch (err) {
+          console.warn('Error fetching live offers:', err);
+          if (liveLoader) liveLoader.style.display = 'none';
+          if (noResultsBox) noResultsBox.style.display = 'block';
+        }
       }
 
       function applyFiltersAndSort() {
@@ -804,14 +1105,14 @@ if (huinchaNav && huinchaNav.items.length > 0) {
         stores.forEach((s) => {
           const chip = document.createElement('span');
           chip.className = 'active-filter-chip';
-          chip.innerHTML = `<span>Tienda: ${s}</span><button type="button" data-type="store" data-val="${s}">✕</button>`;
+          chip.innerHTML = `<span>Tienda: ${escapeHtml(s)}</span><button type="button" data-type="store" data-val="${escapeHtml(s)}">✕</button>`;
           activeChipsEl.appendChild(chip);
         });
 
         brands.forEach((b) => {
           const chip = document.createElement('span');
           chip.className = 'active-filter-chip';
-          chip.innerHTML = `<span>Marca: ${b}</span><button type="button" data-type="brand" data-val="${b}">✕</button>`;
+          chip.innerHTML = `<span>Marca: ${escapeHtml(b)}</span><button type="button" data-type="brand" data-val="${escapeHtml(b)}">✕</button>`;
           activeChipsEl.appendChild(chip);
         });
 
@@ -859,7 +1160,24 @@ if (huinchaNav && huinchaNav.items.length > 0) {
       sidebar?.addEventListener('change', applyFiltersAndSort);
       sortSelect?.addEventListener('change', applyFiltersAndSort);
       clearBtn?.addEventListener('click', resetAllFilters);
-      resetCtaBtn?.addEventListener('click', resetAllFilters);
+      resetCtaBtn?.addEventListener('click', () => {
+        resetAllFilters();
+        if (initialCount === 0 && query) {
+          fetchLiveCategoryOffers(query, currentCity);
+        }
+      });
+
+      // Cambio de ciudad en selector de control
+      citySelect?.addEventListener('change', () => {
+        currentCity = citySelect.value;
+        localStorage.setItem('mercadolista_city', currentCity);
+        fetchLiveCategoryOffers(query, currentCity);
+      });
+
+      // Botón de refrescar precios
+      refreshBtn?.addEventListener('click', () => {
+        fetchLiveCategoryOffers(query, currentCity);
+      });
 
       // Eliminar chip individual
       activeChipsEl?.addEventListener('click', (e) => {
@@ -884,8 +1202,18 @@ if (huinchaNav && huinchaNav.items.length > 0) {
         applyFiltersAndSort();
       });
 
-      // Ejecutar orden inicial
-      applyFiltersAndSort();
+      // INICIO / HIDRATACIÓN AUTOMÁTICA
+      // Si SSR vino vacío (0 ofertas), dispara de inmediato la consulta en vivo
+      if (initialCount === 0 && query) {
+        const storedCity = localStorage.getItem('mercadolista_city');
+        if (storedCity && citySelect) {
+          citySelect.value = storedCity;
+          currentCity = storedCity;
+        }
+        fetchLiveCategoryOffers(query, currentCity);
+      } else {
+        applyFiltersAndSort();
+      }
     </script>
 
     <style>
@@ -1435,6 +1763,90 @@ if (huinchaNav && huinchaNav.items.length > 0) {
 
       .sort-select:focus {
         border-color: #0e6a45;
+      }
+
+      .btn-refresh-prices {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        border: 1.5px solid #cbd5e1;
+        background: #ffffff;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+        flex-shrink: 0;
+      }
+
+      .btn-refresh-prices:hover {
+        border-color: #0e6a45;
+        background: #f0faf5;
+        transform: rotate(45deg);
+      }
+
+      /* ── Loader en tiempo real ── */
+      .cat-live-loader {
+        padding: 0.5rem 0 2rem;
+      }
+
+      .cat-live-loader-card {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        background: #f0faf5;
+        border: 1.5px solid #a7f3d0;
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .cat-live-spinner {
+        width: 36px;
+        height: 36px;
+        border: 3.5px solid #d1fae5;
+        border-top-color: #0e6a45;
+        border-radius: 50%;
+        animation: cat-spin 0.85s linear infinite;
+        flex-shrink: 0;
+      }
+
+      @keyframes cat-spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .cat-live-loading-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #065f46;
+        margin: 0 0 0.25rem;
+      }
+
+      .cat-live-loading-subtitle {
+        font-size: 0.85rem;
+        color: #047857;
+        margin: 0;
+      }
+
+      .cat-skeleton-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        gap: 1.25rem;
+      }
+
+      .cat-skeleton-card {
+        height: 330px;
+        background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+        background-size: 200% 100%;
+        animation: cat-shimmer 1.5s infinite;
+        border-radius: 16px;
+        border: 1.5px solid #e2e8f0;
+      }
+
+      @keyframes cat-shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
       }
 
       /* ── Grilla de Tarjetas de Productos ── */
