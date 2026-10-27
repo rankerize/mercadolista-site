@@ -10,7 +10,7 @@ import { f as findCity } from '../../chunks/cities_DyPidRWt.mjs';
 import { b as cop } from '../../chunks/normalize_DA1X8QDr.mjs';
 import { $ as $$Nav } from '../../chunks/Nav_kzfrG_m0.mjs';
 import { $ as $$AddToListModal } from '../../chunks/AddToListModal_BrWp5P3E.mjs';
-import { $ as $$PlpView } from '../../chunks/PlpView_CER36IUx.mjs';
+import { $ as $$PlpView } from '../../chunks/PlpView_Wk6qOAxo.mjs';
 import { a as $$GoogleAdSense, $ as $$GoogleAnalytics } from '../../chunks/GoogleAdSense_Bc90ZQI7.mjs';
 /* empty css                                     */
 export { renderers } from '../../renderers.mjs';

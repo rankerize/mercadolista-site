@@ -1115,7 +1115,8 @@ const brandNames = Object.keys(brandCounts).sort((a, b) => brandCounts[b] - bran
       }
 </script>
 
-<style>
+<style is:global>
+      /* Global: las tarjetas que pinta el cliente (innerHTML) no reciben el scope de Astro */
       .cat-page-container {
         width: 100%;
         max-width: none;
