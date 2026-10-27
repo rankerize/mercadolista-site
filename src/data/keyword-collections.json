@@ -1,0 +1,42 @@
+[
+  {
+    "slug": "iphone-11",
+    "nombre": "iPhone 11",
+    "query": "iphone 11"
+  },
+  {
+    "slug": "iphone-12",
+    "nombre": "iPhone 12",
+    "query": "iphone 12"
+  },
+  {
+    "slug": "iphone-13",
+    "nombre": "iPhone 13",
+    "query": "iphone 13"
+  },
+  {
+    "slug": "iphone-14",
+    "nombre": "iPhone 14",
+    "query": "iphone 14"
+  },
+  {
+    "slug": "iphone-15",
+    "nombre": "iPhone 15",
+    "query": "iphone 15"
+  },
+  {
+    "slug": "iphone-16",
+    "nombre": "iPhone 16",
+    "query": "iphone 16"
+  },
+  {
+    "slug": "iphone-17",
+    "nombre": "iPhone 17",
+    "query": "iphone 17"
+  },
+  {
+    "slug": "iphone-18",
+    "nombre": "iPhone 18",
+    "query": "iphone 18"
+  }
+]

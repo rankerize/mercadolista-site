@@ -1,0 +1,83 @@
+---
+import '../../styles/styles.css';
+import { KEYWORD_COLLECTIONS } from '../../lib/keywordCollections';
+import Nav from '../../components/Nav.astro';
+import GoogleAnalytics from '../../components/GoogleAnalytics.astro';
+import GoogleAdSense from '../../components/GoogleAdSense.astro';
+
+const BASE = 'https://mercadolista.com';
+const canonicalUrl = `${BASE}/collection/`;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <GoogleAnalytics />
+    <GoogleAdSense />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Colecciones de precios en Colombia · Mercado Lista</title>
+    <meta name="description" content="Compara precios de productos puntuales en tiendas de Colombia: iPhone 11 al 18 y más." />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta name="robots" content="index,follow" />
+    <meta name="theme-color" content="#0e6a45" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <Nav />
+
+    <main class="cat-page-container">
+      <nav class="breadcrumb-nav" aria-label="Navegación de miga de pan">
+        <ol class="breadcrumb-list">
+          <li class="breadcrumb-item"><a href="/" class="breadcrumb-link">Inicio</a></li>
+          <li class="breadcrumb-item">
+            <span class="breadcrumb-sep" aria-hidden="true">›</span>
+            <span class="breadcrumb-current" aria-current="page">Colecciones</span>
+          </li>
+        </ol>
+      </nav>
+
+      <h1>Colecciones de precios en Colombia</h1>
+      <p>Productos puntuales con precios en tiempo real en las tiendas de Colombia.</p>
+
+      <ul class="collection-index-list">
+        {KEYWORD_COLLECTIONS.map((c) => (
+          <li>
+            <a href={`/collection/${c.slug}`}>Precios de {c.nombre} en Colombia</a>
+          </li>
+        ))}
+      </ul>
+    </main>
+
+    <footer class="site-footer">
+      <p>© {new Date().getFullYear()} Mercado Lista · Comparador de precios en tiempo real para Colombia</p>
+    </footer>
+    <style>
+      .collection-index-list {
+        display: grid;
+        gap: 0.6rem;
+        padding: 0;
+        list-style: none;
+        margin-top: 1.5rem;
+      }
+
+      .collection-index-list a {
+        color: #0e6a45;
+        font-weight: 600;
+      }
+
+      .site-footer {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        color: #94a3b8;
+        font-size: 0.82rem;
+        border-top: 1px solid #f1f5f9;
+        margin-top: 2rem;
+      }
+    </style>
+  </body>
+</html>

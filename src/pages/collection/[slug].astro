@@ -1,0 +1,115 @@
+---
+import '../../styles/styles.css';
+import { searchStores } from '../../lib/providers';
+import { buildReport } from '../../lib/ranking';
+import { findCity } from '../../lib/cities';
+import { getKeywordCollection } from '../../lib/keywordCollections';
+import Nav from '../../components/Nav.astro';
+import AddToListModal from '../../components/AddToListModal.astro';
+import GoogleAnalytics from '../../components/GoogleAnalytics.astro';
+import GoogleAdSense from '../../components/GoogleAdSense.astro';
+import PlpView from '../../components/PlpView.astro';
+
+const BASE = 'https://mercadolista.com';
+
+const { slug } = Astro.params;
+const collection = getKeywordCollection(slug ?? '');
+
+if (!collection) {
+  Astro.response.status = 404;
+}
+
+const nombre = collection?.nombre ?? 'Producto';
+const query = collection?.query ?? '';
+const canonicalUrl = `${BASE}/collection/${slug}`;
+
+const city = findCity(Astro.url.searchParams.get('ciudad') || 'bogota');
+
+// Precios en vivo para el render inicial; si tarda, PlpView consulta /api/buscar
+let report: Record<string, any> | null = null;
+if (collection) {
+  try {
+    const searchPromise = searchStores(query, city);
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('SSR timeout')), 4000)
+    );
+    const outcomes = (await Promise.race([searchPromise, timeoutPromise])) as any;
+    report = buildReport(query, outcomes);
+  } catch {
+    // Sin datos en SSR: el cliente completa la consulta
+  }
+}
+
+const verdict = report?.verdict ?? null;
+const offers = [...(report?.offers ?? [])].sort((a, b) => (a.price || 0) - (b.price || 0));
+
+const crumbs = [
+  { name: 'Inicio', item: BASE },
+  { name: 'Colecciones', item: `${BASE}/collection/` },
+  { name: nombre, item: canonicalUrl },
+];
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <GoogleAnalytics />
+    <GoogleAdSense />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`Comparador de precios de ${nombre} en Colombia hoy · Mercado Lista`}</title>
+    <meta name="description" content={`Compara el precio de ${nombre} en Éxito, Falabella, Alkosto, Ktronix, Jumbo y más tiendas de Colombia. Precios en tiempo real.`} />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta name="robots" content={collection ? 'index,follow' : 'noindex,follow'} />
+    <meta property="og:title" content={`Precios de ${nombre} en Colombia hoy`} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#0e6a45" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script type="application/ld+json" set:html={JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: crumbs.map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c.name, item: c.item })),
+    })} />
+  </head>
+  <body>
+    <Nav />
+
+    {collection ? (
+      <PlpView
+        h1={`Precios de ${nombre} en Colombia`}
+        nombre={nombre}
+        query={query}
+        city={city}
+        crumbs={crumbs}
+        offers={offers}
+        verdict={verdict}
+      />
+    ) : (
+      <main class="cat-page-container">
+        <h1>Colección no encontrada</h1>
+        <p><a href="/collection/">Ver todas las colecciones</a></p>
+      </main>
+    )}
+
+    <AddToListModal />
+
+    <footer class="site-footer">
+      <p>© {new Date().getFullYear()} Mercado Lista · Comparador de precios en tiempo real para Colombia</p>
+    </footer>
+    <style>
+      .site-footer {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        color: #94a3b8;
+        font-size: 0.82rem;
+        border-top: 1px solid #f1f5f9;
+        margin-top: 2rem;
+      }
+    </style>
+  </body>
+</html>
