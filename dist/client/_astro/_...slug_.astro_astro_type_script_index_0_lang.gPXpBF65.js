@@ -1,1 +1,0 @@
-import{o as a}from"./catAddToList.DzEICECR.js";import"./firebaseAuth.D_TpaKO7.js";document.addEventListener("click",e=>{const t=e.target.closest(".btn-add-list, .btn-add-list-sm");t&&(e.preventDefault(),a({name:t.dataset.name??"",store_name:t.dataset.store??"",price:t.dataset.price?Number(t.dataset.price):void 0,image:t.dataset.image||void 0}))});

@@ -314,7 +314,7 @@ function resolveWithLocalEngine(prompt: string, personas: number): AssistantResp
 }
 
 async function resolveWithGemini(prompt: string, personas: number): Promise<AssistantResponse | null> {
-  const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env?.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
 
   const systemInstruction = `Actúa como un experto chef y asesor de compras en supermercados colombianos (Éxito, Jumbo, Carulla, D1, Olímpica, etc.).

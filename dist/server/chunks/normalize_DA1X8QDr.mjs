@@ -102,7 +102,100 @@ function tokenMatches(token, productTokens, productText) {
   }
   return false;
 }
+const ACCESSORY_TERMS = /* @__PURE__ */ new Set([
+  "acomodador",
+  "acomodadores",
+  "organizador",
+  "organizadores",
+  "portahuevos",
+  "porta-huevos",
+  "huevera",
+  "hueveras",
+  "dispensador",
+  "dispensadores",
+  "soporte",
+  "soportes",
+  "separador",
+  "separadores",
+  "batidor",
+  "batidores",
+  "batidora",
+  "cocinador",
+  "cocinadores",
+  "hervidor",
+  "hervidores",
+  "escalfador",
+  "escalfadores",
+  "rallador",
+  "ralladores",
+  "exprimidor",
+  "exprimidores",
+  "espumador",
+  "espumadores",
+  "molde",
+  "moldes",
+  "jabonera",
+  "jaboneras",
+  "mantequillera",
+  "mantequilleras",
+  "quesera",
+  "queseras",
+  "panera",
+  "paneras",
+  "aceitera",
+  "aceiteras",
+  "arrocera",
+  "arroceras",
+  "cafetera",
+  "cafeteras",
+  "molinillo",
+  "extractor",
+  "extractores",
+  "biberon",
+  "biberones",
+  "pelador",
+  "peladores",
+  "descorazonador",
+  "peluche",
+  "juguete",
+  "disfraz"
+]);
+function isAccessoryMismatch(query, name) {
+  const normQ = normalize(query);
+  const qTokens = new Set(tokens(query));
+  for (const t of qTokens) {
+    if (ACCESSORY_TERMS.has(t) || t === "porta" || t.startsWith("porta") && !t.startsWith("portatil") && !t.startsWith("portada")) {
+      return false;
+    }
+  }
+  if (/\bporta\s+/i.test(normQ) || /\b(organizador|soporte|dispensador|huevera)\b/i.test(normQ)) {
+    return false;
+  }
+  const normName = normalize(name);
+  const nameTokens = tokens(name);
+  for (const t of nameTokens) {
+    if (ACCESSORY_TERMS.has(t)) {
+      return true;
+    }
+  }
+  if (/\bporta[\s-]*[a-z]{3,}\b/i.test(normName)) {
+    const portaMatch = normName.match(/\bporta[\s-]*([a-z]+)\b/i);
+    if (portaMatch) {
+      const rest = portaMatch[1];
+      if (!rest.startsWith("til") && !rest.startsWith("da") && !rest.startsWith("folio") && !rest.startsWith("ble")) {
+        return true;
+      }
+    }
+  }
+  if (/\b(recipiente|caja organizadora|bandeja organizadora|estante organizador)\s+(?:para|de)\s+(?:huevos?|nevera|refrigerador)\b/i.test(normName)) {
+    return true;
+  }
+  return false;
+}
 function relevance(query, name, brand) {
+  if (isAccessoryMismatch(query, name)) {
+    return 0;
+  }
   const queryTokens = tokens(query);
   if (queryTokens.length === 0) return 0;
   const blob = `${name} ${brand || ""}`;
@@ -120,8 +213,9 @@ function requiredMatchRatio(query) {
   const count = tokens(query).length;
   return count <= 2 ? 1 : 0.67;
 }
-function categoryMatches(query, categories) {
+function categoryMatches(query, categories, name) {
   if (!categories || categories.length === 0) return false;
+  if (name && isAccessoryMismatch(query, name)) return false;
   const blob = categories.join(" ");
   const productTokens = new Set(tokens(blob));
   const productText = normalize(blob);
@@ -260,4 +354,4 @@ function copExact(amount) {
   return `$ ${parts[0]},${parts[1]}`;
 }
 
-export { relevance as a, copExact as b, cop as c, categoryMatches as d, saleMeasure as e, cleanEan as f, parseCop as p, requiredMatchRatio as r, stripAccents as s, unitPrice as u };
+export { relevance as a, cop as b, cleanEan as c, copExact as d, categoryMatches as e, saleMeasure as f, tokenMatches as g, normalize as n, parseCop as p, requiredMatchRatio as r, stripAccents as s, tokens as t, unitPrice as u };

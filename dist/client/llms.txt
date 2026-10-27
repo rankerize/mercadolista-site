@@ -26,10 +26,10 @@ Mercado Lista (https://mercadolista.com) es una plataforma web inteligente dise�
 
 ## Modos de Comparación
 
-1. **Colombia (Búsqueda directa)**: Compara un producto entre todas las tiendas locales en la ciudad seleccionada. Identifica productos idénticos mediante código de barras (EAN) o relevancia semántica de tokens.
-2. **Unidad (Precio por Unidad de Medida)**: Normaliza y compara el costo por gramo ($/g), mililitro ($/ml) o unidad ($/u) para saber qué presentación o empaque sale más económico.
-3. **Lista (Canasta de Mercado)**: Permite armar una lista de hasta 15 productos y calcula en qué comercio conviene comprar la lista completa o producto por producto.
-4. **Internacional**: Compara precios de importación entre Amazon, AliExpress y eBay contra tiendas locales.
+1. **Que Quieres comprar**: Compara un producto entre las tiendas de Colombia en la ciudad seleccionada. Identifica productos idénticos mediante código de barras (EAN) o relevancia de tokens.
+2. **Compra x Unidad**: Compara el costo por gramo ($/g), mililitro ($/ml) o unidad ($/u).
+3. **Lista de Compras**: Arma una lista de hasta 15 productos y calcula en qué comercio conviene comprarla, completa o producto por producto.
+4. **Compras Internacionales**: Compara Amazon, AliExpress y eBay, con el flete publicado y el precio en pesos.
 
 ## Ciudades Disponibles
 Bogotá, Medellín, Cali, Barranquilla, Cartagena, Bucaramanga, Pereira, Manizales, Cúcuta, Ibagué, Santa Marta, Villavicencio.

@@ -1,4 +1,4 @@
-import { r as requiredMatchRatio, a as relevance, s as stripAccents, c as cop } from '../../chunks/normalize_BklFQcMY.mjs';
+import { r as requiredMatchRatio, a as relevance, s as stripAccents, b as cop } from '../../chunks/normalize_DA1X8QDr.mjs';
 import { c as checkRateLimit, r as rateLimitResponse } from '../../chunks/rateLimit_BX5-YUpX.mjs';
 export { renderers } from '../../renderers.mjs';
 

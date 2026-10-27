@@ -1,4 +1,5 @@
-import { a as relevance, d as categoryMatches, r as requiredMatchRatio, c as cop, u as unitPrice } from './normalize_BklFQcMY.mjs';
+import { a as relevance, e as categoryMatches, r as requiredMatchRatio, b as cop, u as unitPrice } from './normalize_DA1X8QDr.mjs';
+import { f as findBestCategoryHelp } from './collectionTaxonomy_PwVXjHAC.mjs';
 
 function offerPayload(offer, score, categoryHit) {
   const measured = unitPrice(offer.name, offer.price);
@@ -140,15 +141,15 @@ function buildReport(query, outcomes) {
   const scored = collected.map((offer) => [
     offer,
     relevance(query, offer.name, offer.brand),
-    categoryMatches(query, offer.categories)
+    categoryMatches(query, offer.categories, offer.name)
   ]);
   const threshold = requiredMatchRatio(query);
-  let strict = scored.filter((item) => item[1] + 1e-9 >= threshold);
+  let strict = scored.filter((item) => item[1] > 0 && item[1] + 1e-9 >= threshold);
   let relaxed = false;
   if (strict.length === 0 && scored.length > 0) {
     relaxed = true;
     strict = scored.filter((item) => item[1] >= 0.5);
-    if (strict.length === 0) strict = scored;
+    if (strict.length === 0) strict = scored.filter((item) => item[1] > 0);
   }
   const same = strict.length > 0 ? sameProduct(strict) : null;
   const winnerItem = same ? same[0] : strict.length > 0 ? pickSingle(strict) : null;
@@ -188,11 +189,13 @@ function buildReport(query, outcomes) {
       }))
     };
   }
+  const categoryHelp = findBestCategoryHelp(query);
   return {
     query,
     relaxed,
     verdict,
     same_product: samePayload,
+    category_suggestion: categoryHelp,
     offers: offersSorted.map(([offer, score, categoryHit]) => offerPayload(offer, score, categoryHit)),
     stores: outcomes.map((outcome) => ({
       id: outcome.store_id,

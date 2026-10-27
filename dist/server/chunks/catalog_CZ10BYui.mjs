@@ -1,7 +1,4 @@
-import { e as createAstro, f as createComponent, m as maybeRenderHead, h as addAttribute, r as renderTemplate, n as renderScript } from './astro/server_zl8i4EZZ.mjs';
-import 'piccolore';
-import 'clsx';
-/* empty css                             */
+import { t as tokens, n as normalize, g as tokenMatches } from './normalize_DA1X8QDr.mjs';
 
 const CATEGORIES = [
   { id: "lacteos", nombre: "Lácteos y Huevos", icono: "🥛" },
@@ -90,20 +87,72 @@ const CATALOG_ITEMS = [
   { nombre: "Televisor 43 pulgadas Smart", categoria: "tecnologia", icono: "📺", formato: "unidades", cantidad: 1, keywords: ["televisor", "tv", "43", "smart", "fhd"] },
   { nombre: "Freidora de aire air fryer", categoria: "tecnologia", icono: "🍟", formato: "unidades", cantidad: 1, keywords: ["freidora", "aire", "airfryer", "oster", "black decker"] },
   { nombre: "Portátil laptop 15 pulgadas", categoria: "tecnologia", icono: "💻", formato: "unidades", cantidad: 1, keywords: ["portatil", "laptop", "computador", "hp", "lenovo", "asus"] },
-  { nombre: "Audífonos inalámbricos bluetooth", categoria: "tecnologia", icono: "🎧", formato: "unidades", cantidad: 1, keywords: ["audifonos", "inalambricos", "bluetooth", "tws"] },
+  { nombre: "Audífonos inalámbricos bluetooth", categoria: "tecnologia", icono: "🎧", formato: "unidades", cantidad: 1, keywords: ["audifonos", "inalambricos", "bluetooth", "tws", "airpods"] },
   { nombre: "Celular smartphone 128GB", categoria: "tecnologia", icono: "📱", formato: "unidades", cantidad: 1, keywords: ["celular", "smartphone", "samsung", "xiaomi", "motorola"] },
+  { nombre: "iPhone 15 128GB", categoria: "tecnologia", icono: "📱", formato: "unidades", cantidad: 1, keywords: ["iphone", "apple", "15", "celular", "smartphone"] },
+  { nombre: "Samsung Galaxy A55 5G", categoria: "tecnologia", icono: "📱", formato: "unidades", cantidad: 1, keywords: ["samsung", "galaxy", "a55", "5g", "celular"] },
+  { nombre: "Xiaomi Redmi Note 13", categoria: "tecnologia", icono: "📱", formato: "unidades", cantidad: 1, keywords: ["xiaomi", "redmi", "note", "13", "celular"] },
+  { nombre: "Motorola Moto G84 5G", categoria: "tecnologia", icono: "📱", formato: "unidades", cantidad: 1, keywords: ["motorola", "moto", "g84", "5g", "celular"] },
+  { nombre: "Smartwatch reloj inteligente", categoria: "tecnologia", icono: "⌚", formato: "unidades", cantidad: 1, keywords: ["smartwatch", "reloj", "inteligente", "band"] },
+  { nombre: "Cargador rápido tipo C 25W", categoria: "tecnologia", icono: "🔌", formato: "unidades", cantidad: 1, keywords: ["cargador", "tipo c", "carga rapida", "usb c"] },
   { nombre: "Licuadora con vaso de vidrio", categoria: "tecnologia", icono: "🥤", formato: "unidades", cantidad: 1, keywords: ["licuadora", "oster", "vaso", "vidrio"] }
 ];
 function getItemsByCategory(categoriaId) {
   return CATALOG_ITEMS.filter((item) => item.categoria === categoriaId);
 }
+const GENERIC_TERMS = /* @__PURE__ */ new Set([
+  "blanco",
+  "blanca",
+  "rojo",
+  "roja",
+  "extra",
+  "comun",
+  "fresco",
+  "fresca",
+  "facial",
+  "liquido",
+  "polvo",
+  "agua",
+  "negro",
+  "negra",
+  "verde",
+  "maduro",
+  "entero",
+  "entera",
+  "light",
+  "tajado",
+  "tajada",
+  "molido",
+  "molida",
+  "smart",
+  "pulgadas"
+]);
+const categoryTermCache = /* @__PURE__ */ new Map();
+function termsForCategory(categoryId) {
+  const cached = categoryTermCache.get(categoryId);
+  if (cached) return cached;
+  const words = /* @__PURE__ */ new Set();
+  for (const item of CATALOG_ITEMS) {
+    if (item.categoria !== categoryId) continue;
+    const nameTokens = tokens(item.nombre);
+    if (nameTokens[0] && !GENERIC_TERMS.has(nameTokens[0])) words.add(nameTokens[0]);
+    for (const keyword of item.keywords) {
+      for (const term of tokens(keyword)) {
+        if (term.length >= 4 && !GENERIC_TERMS.has(term)) words.add(term);
+      }
+    }
+  }
+  const terms = [...words];
+  categoryTermCache.set(categoryId, terms);
+  return terms;
+}
+function offerMatchesCategory(name, brand, categories, categoryId) {
+  const terms = termsForCategory(categoryId);
+  if (terms.length === 0) return false;
+  const blob = `${name} ${brand || ""} ${categories.join(" ")}`;
+  const productTokens = new Set(tokens(blob));
+  const productText = normalize(blob);
+  return terms.some((term) => tokenMatches(term, productTokens, productText));
+}
 
-const $$Astro = createAstro("https://mercadolista.com");
-const $$Nav = createComponent(($$result, $$props, $$slots) => {
-  const Astro2 = $$result.createAstro($$Astro, $$props, $$slots);
-  Astro2.self = $$Nav;
-  const pathname = Astro2.url.pathname;
-  return renderTemplate`${maybeRenderHead()}<nav class="ml-nav" aria-label="Navegación principal" data-astro-cid-dmqpwcec> <div class="ml-nav__inner" data-astro-cid-dmqpwcec> <!-- Logo --> <a href="/" class="ml-nav__brand" data-astro-cid-dmqpwcec> <img src="/logo.png" alt="Mercado Lista" width="26" height="26" data-astro-cid-dmqpwcec> <span data-astro-cid-dmqpwcec>Mercado<strong data-astro-cid-dmqpwcec>Lista</strong></span> </a> <!-- ≡ Menú --> <button class="ml-nav__menu-btn" id="ml-menu-btn" aria-expanded="false" aria-controls="ml-drawer" aria-label="Abrir menú de categorías" data-astro-cid-dmqpwcec> <svg width="16" height="12" viewBox="0 0 18 14" fill="none" aria-hidden="true" data-astro-cid-dmqpwcec> <rect width="18" height="2" rx="1" fill="currentColor" data-astro-cid-dmqpwcec></rect> <rect y="6" width="18" height="2" rx="1" fill="currentColor" data-astro-cid-dmqpwcec></rect> <rect y="12" width="18" height="2" rx="1" fill="currentColor" data-astro-cid-dmqpwcec></rect> </svg> <span class="ml-menu-label" data-astro-cid-dmqpwcec>Menú</span> </button> <!-- Buscador --> <form class="ml-nav__search" id="ml-nav-search" role="search" action="/" method="get" data-astro-cid-dmqpwcec> <input type="search" name="q" id="ml-nav-q" class="ml-search-input" placeholder="Buscar productos..." autocomplete="off" aria-label="Buscar productos" data-astro-cid-dmqpwcec> <button type="submit" class="ml-search-btn" aria-label="Buscar" data-astro-cid-dmqpwcec> <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-dmqpwcec> <circle cx="11" cy="11" r="8" data-astro-cid-dmqpwcec></circle> <line x1="21" y1="21" x2="16.65" y2="16.65" data-astro-cid-dmqpwcec></line> </svg> </button> </form> <!-- Acciones de la derecha --> <div class="ml-nav__actions" data-astro-cid-dmqpwcec> <!-- Asistente IA (solo texto en desktop) --> <a href="/asistente" class="ml-nav__action-btn ml-nav__ia" title="Asistente de compras con IA" data-astro-cid-dmqpwcec> <span aria-hidden="true" data-astro-cid-dmqpwcec>🧑‍🍳</span> <span class="ml-action-label" data-astro-cid-dmqpwcec>Asistente</span> </a> <!-- Lista / Carrito --> <button type="button" id="header-cart-btn" class="ml-nav__action-btn" title="Mi lista de compras" data-astro-cid-dmqpwcec> <span aria-hidden="true" data-astro-cid-dmqpwcec>🛒</span> <span class="ml-action-label" data-astro-cid-dmqpwcec>Lista</span> <span id="header-cart-count" class="ml-cart-count" data-astro-cid-dmqpwcec>0</span> </button> <!-- Auth --> <div id="header-auth" class="ml-nav__auth" data-astro-cid-dmqpwcec> <!-- No autenticado --> <button type="button" id="header-login-btn" class="ml-nav__login-btn" data-astro-cid-dmqpwcec> <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true" data-astro-cid-dmqpwcec> <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" data-astro-cid-dmqpwcec></path> <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" data-astro-cid-dmqpwcec></path> <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" data-astro-cid-dmqpwcec></path> <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" data-astro-cid-dmqpwcec></path> </svg> <span class="ml-action-label" data-astro-cid-dmqpwcec>Ingresar</span> </button> <!-- Autenticado --> <div id="header-user-info" class="ml-nav__user" hidden data-astro-cid-dmqpwcec> <a href="/perfil" id="header-user-name" class="ml-nav__username" title="Ver mi perfil" data-astro-cid-dmqpwcec></a> <a href="/perfil" class="ml-nav__perfil-link" data-astro-cid-dmqpwcec>Perfil</a> <button type="button" id="header-logout-btn" class="ml-nav__logout" data-astro-cid-dmqpwcec>Salir</button> </div> </div> </div> </div> </nav> <!-- Overlay --> <div class="ml-overlay" id="ml-overlay" aria-hidden="true" data-astro-cid-dmqpwcec></div> <!-- Drawer lateral --> <aside class="ml-drawer" id="ml-drawer" aria-label="Menú de categorías" aria-hidden="true" data-astro-cid-dmqpwcec> <div class="ml-drawer__head" data-astro-cid-dmqpwcec> <span class="ml-drawer__greeting" data-astro-cid-dmqpwcec>Categorías</span> <button class="ml-drawer__close" id="ml-drawer-close" aria-label="Cerrar menú" data-astro-cid-dmqpwcec> <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" data-astro-cid-dmqpwcec> <line x1="18" y1="6" x2="6" y2="18" data-astro-cid-dmqpwcec></line><line x1="6" y1="6" x2="18" y2="18" data-astro-cid-dmqpwcec></line> </svg> </button> </div> <ul class="ml-drawer__list" role="list" data-astro-cid-dmqpwcec> ${CATEGORIES.map((c) => renderTemplate`<li data-astro-cid-dmqpwcec> <a${addAttribute(`/categoria/${c.id}`, "href")}${addAttribute(["ml-drawer__link", { "ml-drawer__link--on": pathname.startsWith(`/categoria/${c.id}`) }], "class:list")} data-astro-cid-dmqpwcec> <span class="ml-drawer__ico" aria-hidden="true" data-astro-cid-dmqpwcec>${c.icono}</span> <span class="ml-drawer__name" data-astro-cid-dmqpwcec>${c.nombre}</span> <svg class="ml-drawer__arrow" width="7" height="12" viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-dmqpwcec> <polyline points="1 1 7 7 1 13" data-astro-cid-dmqpwcec></polyline> </svg> </a> </li>`)} </ul> <div class="ml-drawer__footer" data-astro-cid-dmqpwcec> <a href="/categoria" class="ml-drawer__all" data-astro-cid-dmqpwcec>Ver todas las categorías →</a> </div> </aside> ${renderScript($$result, "/Users/cesarandresjimenezarci/Documents/Clientes/Comparador de precios/src/components/Nav.astro?astro&type=script&index=0&lang.ts")} `;
-}, "/Users/cesarandresjimenezarci/Documents/Clientes/Comparador de precios/src/components/Nav.astro", void 0);
-
-export { $$Nav as $, CATEGORIES as C, CATALOG_ITEMS as a, getItemsByCategory as g };
+export { CATEGORIES as C, CATALOG_ITEMS as a, getItemsByCategory as g, offerMatchesCategory as o };

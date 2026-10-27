@@ -1,7 +1,7 @@
 import { f as createComponent, k as renderComponent, l as renderHead, h as addAttribute, r as renderTemplate, n as renderScript } from '../chunks/astro/server_zl8i4EZZ.mjs';
 import 'piccolore';
 /* empty css                                     */
-import { $ as $$Nav } from '../chunks/Nav_BM2WoU8Y.mjs';
+import { $ as $$Nav } from '../chunks/Nav_DtWye2VG.mjs';
 import { $ as $$GoogleAnalytics } from '../chunks/GoogleAnalytics_CyJJegFW.mjs';
 import { C as CITIES } from '../chunks/cities_DyPidRWt.mjs';
 export { renderers } from '../renderers.mjs';
@@ -11,9 +11,9 @@ const $$Asistente = createComponent(async ($$result, $$props, $$slots) => {
 👤 Mis Listas / Perfil
 </a> <a href="/" style="text-decoration: none; font-size: 0.85rem; color: var(--pine); font-weight: 500;">
 ← Volver al comparador
-</a> </div> </div> </header> <main class="assistant-container"> <section class="assistant-hero"> <div class="assistant-hero-badge">✨ Asesor Inteligente de Compras & Recetas</div> <h1>¿Qué quieres cocinar hoy?</h1> <p>
+</a> </div> </div> </header> <main class="assistant-container"> <section class="assistant-hero"> <div class="assistant-hero-badge">✨ Asesor Inteligente de Compras & Recetas</div> <div class="assistant-hero-row"> <div class="assistant-hero-logo"> <img src="/logo-cocinar.png" alt="" width="587" height="612"> </div> <div class="assistant-hero-copy"> <h1>¿Qué quieres cocinar hoy?</h1> <p>
 Dile al asistente qué plato deseas preparar o qué necesitas comprar y para cuántas personas. Te armará los ingredientes con porciones exactas y cotizará al instante en qué supermercado de Colombia te sale más barato.
-</p> </section> <section class="assistant-box"> <form id="assistant-form" class="assistant-prompt-row"> <label for="assistant-input" style="font-weight: 600; font-size: 0.95rem; color: var(--ink);">
+</p> </div> </div> </section> <section class="assistant-box"> <form id="assistant-form" class="assistant-prompt-row"> <label for="assistant-input" style="font-weight: 600; font-size: 0.95rem; color: var(--ink);">
 Describe tu comida, receta o necesidad:
 </label> <textarea id="assistant-input" class="assistant-textarea" placeholder="Ej. Quiero hacer una pasta boloñesa para 2 personas con una ensalada fresca…" required rows="3"></textarea> <div class="assistant-controls-row"> <div class="assistant-controls-left"> <label class="assistant-select-label" for="assistant-city"> <span>🏙️ Ciudad:</span> <select id="assistant-city" class="assistant-select"> ${CITIES.map((c) => renderTemplate`<option${addAttribute(c.id, "value")}${addAttribute(c.id === "bogota", "selected")}> ${c.name} </option>`)} </select> </label> <label class="assistant-select-label" for="assistant-people"> <span>👥 Comensales:</span> <select id="assistant-people" class="assistant-select"> <option value="1">1 persona</option> <option value="2" selected>2 personas</option> <option value="3">3 personas</option> <option value="4">4 personas</option> <option value="5">5 personas</option> <option value="6">6 personas</option> <option value="8">8 personas</option> <option value="10">10 personas</option> </select> </label> </div> <button type="submit" id="btn-submit-assistant" class="btn-assistant-ask"> <span>✨ Armar lista y cotizar</span> </button> </div> <div class="assistant-chips-wrap"> <span class="assistant-chips-label">O prueba una de estas ideas rápidas:</span> <div class="assistant-chips-list"> <button type="button" class="assistant-chip-btn" data-prompt="Quiero hacer una pasta boloñesa para 2 personas" data-people="2">
 🍝 Pasta boloñesa (2 pers.)

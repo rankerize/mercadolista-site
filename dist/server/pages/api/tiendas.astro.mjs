@@ -1,4 +1,4 @@
-import { a as storeCatalog } from '../../chunks/index_qWqYRXjv.mjs';
+import { a as storeCatalog } from '../../chunks/index_BmvhlEI_.mjs';
 export { renderers } from '../../renderers.mjs';
 
 const GET = async () => {

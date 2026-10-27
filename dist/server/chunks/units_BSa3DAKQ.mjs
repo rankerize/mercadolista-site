@@ -1,9 +1,16 @@
-import { r as requiredMatchRatio, a as relevance, d as categoryMatches, b as copExact, e as saleMeasure, c as cop } from './normalize_BklFQcMY.mjs';
-import { d as dedupe, p as paymentNote } from './ranking_5o1QqFy4.mjs';
+import { o as offerMatchesCategory, C as CATEGORIES } from './catalog_CZ10BYui.mjs';
+import { f as findBestCategoryHelp } from './collectionTaxonomy_PwVXjHAC.mjs';
+import { r as requiredMatchRatio, a as relevance, e as categoryMatches, d as copExact, f as saleMeasure, b as cop } from './normalize_DA1X8QDr.mjs';
+import { d as dedupe, p as paymentNote } from './ranking_Db_3a0qS.mjs';
 
 const BASIS_RANK = { unidad: 0, gramo: 1, mililitro: 2 };
 const BASIS_NOUN = { unidad: "unidad", gramo: "gramo", mililitro: "mililitro" };
 const BASIS_PLURAL = { unidad: "unidades", gramo: "gramos", mililitro: "mililitros" };
+const FORMAT_TO_BASIS = {
+  gramos: "gramo",
+  mililitros: "mililitro",
+  unidades: "unidad"
+};
 function quantityText(quantity, basis) {
   let shown;
   if (Math.abs(quantity - Math.round(quantity)) < 0.05) {
@@ -95,21 +102,29 @@ function detail(winner, measure, others) {
   }
   return text;
 }
-function buildUnitReport(query, outcomes) {
+function categoryName(categoryId) {
+  if (!categoryId) return null;
+  return CATEGORIES.find((category) => category.id === categoryId)?.nombre || null;
+}
+function buildUnitReport(query, outcomes, filters = {}) {
   const allOffers = outcomes.flatMap((outcome) => outcome.offers);
   const collected = dedupe(allOffers);
   const threshold = requiredMatchRatio(query);
+  const categoryId = filters.categoryId && filters.categoryId !== "todas" ? filters.categoryId : null;
+  const requestedBasis = filters.basis && filters.basis !== "todas" ? FORMAT_TO_BASIS[filters.basis] : null;
+  const minQuantity = requestedBasis && filters.minQuantity && filters.minQuantity > 0 ? filters.minQuantity : null;
+  const selectedCategory = categoryName(categoryId);
   const scored = collected.map((offer) => [
     offer,
     relevance(query, offer.name, offer.brand),
     categoryMatches(query, offer.categories)
   ]);
-  let strict = scored.filter((item) => item[1] + 1e-9 >= threshold);
+  let strict = scored.filter((item) => item[1] > 0 && item[1] + 1e-9 >= threshold);
   let relaxed = false;
   if (strict.length === 0 && scored.length > 0) {
     relaxed = true;
     strict = scored.filter((item) => item[1] >= 0.5);
-    if (strict.length === 0) strict = scored;
+    if (strict.length === 0) strict = scored.filter((item) => item[1] > 0);
   }
   const measured = [];
   let unmeasured = 0;
@@ -121,11 +136,30 @@ function buildUnitReport(query, outcomes) {
     }
     measured.push([offer, score, categoryHit, m]);
   }
+  let pool = measured;
+  if (categoryId) {
+    pool = pool.filter(
+      ([offer]) => offerMatchesCategory(offer.name, offer.brand, offer.categories, categoryId)
+    );
+  }
   let verdict = null;
   let shown = [];
-  if (measured.length > 0) {
-    const basis = chooseBasis(measured);
-    const comparable = measured.filter((item) => item[3].basis === basis);
+  let emptyDetail = null;
+  const basis = pool.length > 0 ? requestedBasis || chooseBasis(pool) : requestedBasis;
+  const sameBasis = basis ? pool.filter((item) => item[3].basis === basis) : [];
+  let comparable = sameBasis;
+  if (minQuantity != null && requestedBasis) {
+    comparable = sameBasis.filter((item) => item[3].quantity + 0.05 >= minQuantity);
+  }
+  if (pool.length === 0 && categoryId && measured.length > 0) {
+    emptyDetail = `Ningún producto de esta búsqueda encaja en ${selectedCategory}.`;
+  } else if (comparable.length === 0 && minQuantity != null && requestedBasis && sameBasis.length > 0) {
+    const minimum = quantityText(minQuantity, requestedBasis);
+    emptyDetail = selectedCategory ? `Ningún producto de ${selectedCategory} trae ${minimum} o más.` : `Ningún producto de esta búsqueda trae ${minimum} o más.`;
+  } else if (comparable.length === 0 && requestedBasis && pool.length > 0) {
+    const plural = BASIS_PLURAL[requestedBasis] || requestedBasis;
+    emptyDetail = selectedCategory ? `Ningún producto de ${selectedCategory} se compara en ${plural}.` : `Ningún producto de esta búsqueda se compara en ${plural}.`;
+  } else if (comparable.length > 0 && basis) {
     comparable.sort((a, b) => {
       if (a[3].amount !== b[3].amount) {
         return a[3].amount - b[3].amount;
@@ -167,11 +201,19 @@ function buildUnitReport(query, outcomes) {
     };
     shown = comparable.map((item) => [item[0], item[1], item[3]]);
   }
+  const filterParts = [
+    minQuantity != null && requestedBasis ? `desde ${quantityText(minQuantity, requestedBasis)}` : requestedBasis ? BASIS_PLURAL[requestedBasis] : null,
+    selectedCategory
+  ].filter(Boolean);
+  const categoryHelp = findBestCategoryHelp(query);
   return {
     query,
     relaxed,
     basis: verdict ? verdict.unit_label : null,
     unmeasured,
+    empty_detail: emptyDetail,
+    filter_label: filterParts.length > 0 ? filterParts.join(" · ") : null,
+    category_suggestion: categoryHelp,
     verdict,
     offers: shown.map(([offer, score, m]) => offerPayload(offer, score, m)),
     stores: outcomes.map((outcome) => ({

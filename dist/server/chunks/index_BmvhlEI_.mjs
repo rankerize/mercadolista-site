@@ -1,4 +1,4 @@
-import { p as parseCop, s as stripAccents, f as cleanEan } from './normalize_BklFQcMY.mjs';
+import { p as parseCop, s as stripAccents, c as cleanEan } from './normalize_DA1X8QDr.mjs';
 
 const STORE_CARD_NAMES = {
   jumbo: "Tarjeta Cencosud",
@@ -191,7 +191,7 @@ async function getRegionId(store, city) {
   if (cached && now - cached.timestamp < REGION_TTL) {
     return cached.regionId;
   }
-  const url = `${store.site}/api/checkout/pub/regions?country=COL&postalCode=${city.postal_code}`;
+  const url = `${store.region_root || store.site}/api/checkout/pub/regions?country=COL&postalCode=${city.postal_code}`;
   const res = await fetch(url, {
     headers: {
       "Accept": "application/json",
@@ -229,10 +229,22 @@ function sellerPrice(seller) {
   return [price, listPrice];
 }
 function absoluteUrl$1(site, link, linkText) {
-  if (link && link.startsWith("http")) return link;
-  if (link && link.startsWith("/")) return `${site.replace(/\/$/, "")}${link}`;
-  if (linkText) return `${site.replace(/\/$/, "")}/${linkText}/p`;
-  return site;
+  const publicSite = site.replace(/\/$/, "");
+  if (link && link.startsWith("http")) {
+    try {
+      const parsed = new URL(link);
+      if (parsed.hostname.endsWith(".vtexcommercestable.com.br")) {
+        const expected = new URL(publicSite);
+        return `${expected.origin}${parsed.pathname}${parsed.search}`;
+      }
+    } catch {
+      return link;
+    }
+    return link;
+  }
+  if (link && link.startsWith("/")) return `${publicSite}${link}`;
+  if (linkText) return `${publicSite}/${linkText}/p`;
+  return publicSite;
 }
 function parseVtex(payload, store, limit = 8) {
   if (!Array.isArray(payload)) return [];
@@ -516,7 +528,7 @@ async function searchFalabella(store, query, limit = 8) {
 }
 
 const STORES = [
-  { type: "vtex", id: "exito", name: "Éxito", kind: "supermercado", site: "https://www.exito.com", api_root: "https://www.exito.com/io" },
+  { type: "vtex", id: "exito", name: "Éxito", kind: "supermercado", site: "https://www.exito.com", api_root: "https://exitocol.vtexcommercestable.com.br", region_root: "https://exitocol.vtexcommercestable.com.br" },
   { type: "vtex", id: "carulla", name: "Carulla", kind: "supermercado", site: "https://www.carulla.com", api_root: "https://www.carulla.com/io" },
   { type: "vtex", id: "jumbo", name: "Jumbo", kind: "supermercado", site: "https://www.jumbocolombia.com", api_root: "https://www.jumbocolombia.com" },
   { type: "vtex", id: "olimpica", name: "Olímpica", kind: "supermercado", site: "https://www.olimpica.com", api_root: "https://www.olimpica.com" },
@@ -536,16 +548,16 @@ function shortError(storeName, error) {
   }
   return `${storeName}: ${msg.slice(0, 140)}`;
 }
-async function searchStores(query, city) {
+async function searchStores(query, city, limit = 16) {
   const tasks = STORES.map(async (store) => {
     try {
       let offers = [];
       if (store.type === "vtex") {
-        offers = await searchVtex(store, query, city);
+        offers = await searchVtex(store, query, city, limit);
       } else if (store.type === "algolia") {
-        offers = await searchAlgolia(store, query);
+        offers = await searchAlgolia(store, query, limit);
       } else if (store.type === "falabella") {
-        offers = await searchFalabella(store, query);
+        offers = await searchFalabella(store, query, limit);
       }
       return {
         store_id: store.id,

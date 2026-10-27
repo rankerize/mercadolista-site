@@ -199,14 +199,28 @@ const {
       function updateButtons() {
         if (!track || !prevBtn || !nextBtn) return;
         const maxScroll = track.scrollWidth - track.clientWidth - 2;
-        prevBtn.style.opacity = track.scrollLeft <= 4 ? '0.35' : '1';
-        prevBtn.style.pointerEvents = track.scrollLeft <= 4 ? 'none' : 'auto';
-        nextBtn.style.opacity = track.scrollLeft >= maxScroll ? '0.35' : '1';
-        nextBtn.style.pointerEvents = track.scrollLeft >= maxScroll ? 'none' : 'auto';
+        const canScroll = track.scrollWidth > track.clientWidth + 4;
+
+        if (!canScroll) {
+          prevBtn.style.display = 'none';
+          nextBtn.style.display = 'none';
+          track.style.justifyContent = 'center';
+        } else {
+          prevBtn.style.display = 'flex';
+          nextBtn.style.display = 'flex';
+          prevBtn.style.opacity = track.scrollLeft <= 4 ? '0.35' : '1';
+          prevBtn.style.pointerEvents = track.scrollLeft <= 4 ? 'none' : 'auto';
+          nextBtn.style.opacity = track.scrollLeft >= maxScroll ? '0.35' : '1';
+          nextBtn.style.pointerEvents = track.scrollLeft >= maxScroll ? 'none' : 'auto';
+          track.style.justifyContent = 'flex-start';
+        }
       }
 
       track.addEventListener('scroll', updateButtons, { passive: true });
+      window.addEventListener('resize', updateButtons, { passive: true });
       updateButtons();
+      requestAnimationFrame(updateButtons);
+      setTimeout(updateButtons, 80);
 
       // Arrastre con mouse en escritorio sin bloquear los clics en los enlaces
       let isDown = false;
@@ -319,7 +333,10 @@ const {
     position: relative;
     display: flex;
     align-items: center;
+    justify-content: center;
+    width: 100%;
     max-width: 100%;
+    margin: 0 auto;
   }
 
   .huincha-arrow {
@@ -356,16 +373,19 @@ const {
 
   .huincha-track {
     display: flex;
-    gap: 1rem;
+    gap: 1.15rem;
     overflow-x: auto;
     scroll-behavior: smooth;
-    padding: 0.5rem 0.25rem 0.75rem;
+    padding: 0.5rem 0.5rem 0.75rem;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    flex: 1;
     cursor: grab;
     user-select: none;
     -webkit-overflow-scrolling: touch;
+    justify-content: center;
+    justify-content: safe center;
+    width: 100%;
+    max-width: 100%;
   }
 
   .huincha-track.is-dragging {

@@ -1,9 +1,10 @@
 import { f as findCity } from '../../chunks/cities_DyPidRWt.mjs';
-import { s as searchStores } from '../../chunks/index_qWqYRXjv.mjs';
-import { b as buildReport } from '../../chunks/ranking_5o1QqFy4.mjs';
+import { s as searchStores } from '../../chunks/index_BmvhlEI_.mjs';
+import { b as buildReport } from '../../chunks/ranking_Db_3a0qS.mjs';
 import { c as checkRateLimit, r as rateLimitResponse } from '../../chunks/rateLimit_BX5-YUpX.mjs';
 export { renderers } from '../../renderers.mjs';
 
+const RESULTADOS_POR_TIENDA = 50;
 const GET = async ({ request, url }) => {
   const limit = checkRateLimit(request, {
     prefix: "api-buscar",
@@ -27,7 +28,7 @@ const GET = async ({ request, url }) => {
   }
   try {
     const city = findCity(ciudadParam);
-    const outcomes = await searchStores(query, city);
+    const outcomes = await searchStores(query, city, RESULTADOS_POR_TIENDA);
     const report = buildReport(query, outcomes);
     report.city = { id: city.id, name: city.name };
     return new Response(JSON.stringify(report), {

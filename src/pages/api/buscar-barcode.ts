@@ -116,7 +116,7 @@ export const GET: APIRoute = async ({ request, url }) => {
   }
 
   // 2. Si hay Gemini API Key y no se encontró en OpenFoodFacts, consultar a Gemini
-  const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env?.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (apiKey) {
     try {
       const gController = new AbortController();

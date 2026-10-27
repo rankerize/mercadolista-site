@@ -62,7 +62,7 @@ export const POST: APIRoute = async ({ request }) => {
     base64Data = dataUriMatch[2].trim();
   }
 
-  const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env?.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
     // Si no hay API key configurada en local, devolver una respuesta de fallback informativa
