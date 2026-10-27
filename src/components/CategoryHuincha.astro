@@ -198,6 +198,12 @@ const {
 
       function updateButtons() {
         if (!track || !prevBtn || !nextBtn) return;
+        if (window.innerWidth <= 640) {
+          prevBtn.style.display = 'none';
+          nextBtn.style.display = 'none';
+          track.style.justifyContent = 'flex-start';
+          return;
+        }
         const maxScroll = track.scrollWidth - track.clientWidth - 2;
         const canScroll = track.scrollWidth > track.clientWidth + 4;
 
@@ -484,15 +490,101 @@ const {
   }
 
   @media (max-width: 640px) {
-    .huincha-card {
-      width: 88px;
+    .huincha-section {
+      margin-bottom: 0.6rem;
+      padding: 0;
     }
-    .huincha-card-visual {
-      width: 66px;
-      height: 66px;
-      border-radius: 14px;
+
+    .huincha-header {
+      display: none;
     }
+
     .huincha-arrow {
+      display: none !important;
+    }
+
+    .huincha-carousel-wrap {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    .huincha-track {
+      gap: 0.5rem;
+      padding: 0.25rem 0.5rem 0.5rem;
+      justify-content: flex-start !important;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .huincha-card {
+      width: auto;
+      min-width: fit-content;
+      flex-direction: row;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.45rem 0.85rem;
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 999px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      scroll-snap-align: start;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+
+    .huincha-card:active {
+      transform: scale(0.96);
+    }
+
+    .huincha-card--active {
+      background: #0e6a45;
+      border-color: #0e6a45;
+      box-shadow: 0 2px 8px rgba(14, 106, 69, 0.25);
+    }
+
+    .huincha-card--active .huincha-card-name {
+      color: #ffffff !important;
+      font-weight: 700;
+    }
+
+    .huincha-card-visual {
+      width: auto;
+      height: auto;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      margin-bottom: 0;
+      color: inherit;
+    }
+
+    .huincha-card-visual svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .huincha-card-emoji {
+      font-size: 1.15rem;
+      line-height: 1;
+    }
+
+    .huincha-card-meta {
+      text-align: left;
+      align-items: flex-start;
+      width: auto;
+    }
+
+    .huincha-card-name {
+      font-size: 0.82rem;
+      white-space: nowrap;
+      display: inline-block;
+      -webkit-line-clamp: unset;
+      overflow: visible;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .huincha-card-count {
       display: none;
     }
   }

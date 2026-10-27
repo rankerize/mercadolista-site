@@ -17,6 +17,7 @@ import Nav from '../../components/Nav.astro';
 import AddToListModal from '../../components/AddToListModal.astro';
 import PlpView from '../../components/PlpView.astro';
 import GoogleAnalytics from '../../components/GoogleAnalytics.astro';
+import GoogleAdSense from '../../components/GoogleAdSense.astro';
 
 const { slug } = Astro.params;
 let segments = (slug ?? '').split('/').filter(Boolean);
@@ -268,6 +269,7 @@ const huinchaSubtitle = huinchaNav?.subtitle || (isCelularesCat ? 'Navegue entre
 <html lang="es">
   <head>
     <GoogleAnalytics />
+    <GoogleAdSense />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{node.titleSeo}</title>

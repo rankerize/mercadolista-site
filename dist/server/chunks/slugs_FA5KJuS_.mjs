@@ -217,4 +217,4 @@ function getItemBySlug(categoriaSlug, productoSlug) {
   );
 }
 
-export { getItemBySlug as a, getTaxChildren as b, getBreadcrumb as c, getCategoryBySlug as d, getTaxNode as g, toSlug as t };
+export { getItemBySlug as a, getTaxChildren as b, getBreadcrumb as c, getCategoryBySlug as d, getTaxNode as g };

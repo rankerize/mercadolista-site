@@ -4,6 +4,7 @@ import { CATEGORIES, getItemsByCategory } from '../../lib/catalog';
 import { getRootDepartments } from '../../lib/collectionTaxonomy';
 import Nav from '../../components/Nav.astro';
 import GoogleAnalytics from '../../components/GoogleAnalytics.astro';
+import GoogleAdSense from '../../components/GoogleAdSense.astro';
 
 const BASE = 'https://mercadolista.com';
 const rootDepartments = getRootDepartments();
@@ -13,6 +14,7 @@ const rootDepartments = getRootDepartments();
 <html lang="es">
   <head>
     <GoogleAnalytics />
+    <GoogleAdSense />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Directorio de Categorías y Departamentos · Mercado Lista</title>

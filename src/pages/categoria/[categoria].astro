@@ -15,8 +15,11 @@ import { findCity } from '../../lib/cities';
 import { cop } from '../../lib/normalize';
 import Nav from '../../components/Nav.astro';
 import GoogleAnalytics from '../../components/GoogleAnalytics.astro';
+import GoogleAdSense from '../../components/GoogleAdSense.astro';
 import CategoryHuincha, { type HuinchaItem } from '../../components/CategoryHuincha.astro';
 import CategorySeoFaq from '../../components/CategorySeoFaq.astro';
+import PlpView from '../../components/PlpView.astro';
+import AddToListModal from '../../components/AddToListModal.astro';
 
 const { categoria } = Astro.params;
 
@@ -89,15 +92,23 @@ const huinchaItems: HuinchaItem[] = huinchaNav ? huinchaNav.items : getTaxChildr
 const city = findCity('bogota');
 const query = collNode?.query || cat.nombre.toLowerCase();
 let liveOffers: any[] = [];
+let verdict: any = null;
 
 try {
   const outcomes = await searchStores(query, city, 20);
   const report = buildReport(query, outcomes);
   const rawOffers = report?.offers ?? [];
   liveOffers = [...rawOffers].sort((a, b) => (a.price || 0) - (b.price || 0)).slice(0, 48);
+  verdict = report?.verdict ?? null;
 } catch {
   // Graceful fallback
 }
+
+const crumbData = [
+  { name: 'Inicio', item: BASE },
+  { name: 'Categorías', item: `${BASE}/categoria` },
+  { name: cat.nombre, item: canonicalUrl },
+];
 
 const rootDepartments = getRootDepartments();
 ---
@@ -106,6 +117,7 @@ const rootDepartments = getRootDepartments();
 <html lang="es">
   <head>
     <GoogleAnalytics />
+    <GoogleAdSense />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Precios {cat.nombre} en Colombia hoy · Mercado Lista</title>
@@ -134,476 +146,28 @@ const rootDepartments = getRootDepartments();
   <body>
     <Nav />
 
-    <main class="cat-page-container">
-      {/* ── Miga de Pan (Breadcrumb) ─────────────────────────────────── */}
-      <nav class="breadcrumb-nav" aria-label="Navegación de miga de pan">
-        <ol class="breadcrumb-list">
-          <li class="breadcrumb-item">
-            <a href="/" class="breadcrumb-link">Inicio</a>
-          </li>
-          <li class="breadcrumb-item">
-            <span class="breadcrumb-sep" aria-hidden="true">›</span>
-            <a href="/categoria" class="breadcrumb-link">Categorías</a>
-          </li>
-          <li class="breadcrumb-item">
-            <span class="breadcrumb-sep" aria-hidden="true">›</span>
-            <span class="breadcrumb-current" aria-current="page">{cat.nombre}</span>
-          </li>
-        </ol>
-      </nav>
+    <PlpView
+      h1={`Precios de ${cat.nombre} en Colombia`}
+      nombre={cat.nombre}
+      query={query}
+      city={city}
+      crumbs={crumbData}
+      offers={liveOffers}
+      verdict={verdict}
+      huinchaItems={huinchaItems}
+      huinchaKicker={huinchaNav?.kicker || `CATEGORÍAS DE ${cat.nombre.toUpperCase()} (NIVEL 2)`}
+      huinchaSubtitle={huinchaNav?.subtitle || `Navegue entre nuestras categorías oficiales con precios comparados en tiempo real`}
+      showFaq
+      isTechCategory={isTechCategory}
+    />
 
-      {/* ── Huincha Arriba (Carrusel de Subcategorías / Familias Nivel 2) ── */}
-      {huinchaItems.length > 0 && (
-        <CategoryHuincha
-          kicker={huinchaNav?.kicker || `CATEGORÍAS DE ${cat.nombre.toUpperCase()} (NIVEL 2)`}
-          subtitle={huinchaNav?.subtitle || `Navegue entre nuestras categorías oficiales con precios comparados en tiempo real`}
-          items={huinchaItems}
-        />
-      )}
-
-      {/* ── Encabezado ──────────────────────────────────────────────── */}
-      <header class="cat-header">
-        <div class="cat-header-kicker">
-          <span class="cat-badge-dot"></span>
-          <span>DEPARTAMENTO OFICIAL · {cat.nombre.toUpperCase()}</span>
-        </div>
-        <h1 class="cat-main-title">{cat.icono} Precios de {cat.nombre} en Colombia</h1>
-        <p class="cat-results-count">
-          <strong>{liveOffers.length > 0 ? `${liveOffers.length} ofertas en tiempo real` : `${items.length} productos destacados`}</strong>
-          <span> · Ordenados por menor precio en Falabella, Éxito, Alkosto, D1, Jumbo y más</span>
-        </p>
-      </header>
-
-      {/* ── Grilla de Ofertas en Vivo (Ordenadas por menor precio) ─── */}
-      {liveOffers.length > 0 ? (
-        <div class="offers-grid-section">
-          <ul class="cat-offers-grid" role="list" data-paginate>
-            {liveOffers.map((offer) => (
-              <li class="cat-offer-card">
-                <a
-                  href={offer.product_url || '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="cat-offer-link"
-                >
-                  <div class="cat-offer-img-box">
-                    {offer.image_url ? (
-                      <img
-                        src={offer.image_url}
-                        alt={offer.name}
-                        loading="lazy"
-                        class="cat-offer-img"
-                        onerror="this.style.opacity='0.2'"
-                      />
-                    ) : (
-                      <span class="cat-offer-no-img">{cat.icono}</span>
-                    )}
-                    <span class="cat-offer-store-pill">{offer.store_name}</span>
-                  </div>
-
-                  <div class="cat-offer-info">
-                    <strong class="cat-offer-name" title={offer.name}>{offer.name}</strong>
-                    <div class="cat-offer-price-row">
-                      <span class="cat-offer-price">{cop(offer.price)}</span>
-                      {offer.normal_price && offer.normal_price > offer.price && (
-                        <span class="cat-offer-old-price">{cop(offer.normal_price)}</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <span class="cat-offer-cta">
-                    Ver en {offer.store_name} →
-                  </span>
-                </a>
-              </li>
-            ))}
-          </ul>
-          <nav class="offers-pager" aria-label="Páginas de ofertas" hidden></nav>
-        </div>
-      ) : items.length > 0 ? (
-        <ul class="product-grid" role="list" data-paginate>
-          {items.map((item) => {
-            const slug = toSlug(item.nombre);
-            const href = `/categoria/${cat.id}/${slug}`;
-            return (
-              <li>
-                <a href={href} class="product-card">
-                  <span class="product-icon">{item.icono}</span>
-                  <div class="product-info">
-                    <strong class="product-name">{item.nombre}</strong>
-                    <span class="product-meta">
-                      {item.cantidad} {item.formato}
-                    </span>
-                  </div>
-                  <span class="product-cta">Ver precios →</span>
-                </a>
-              </li>
-            );
-          })}
-        </ul>
-        <nav class="offers-pager" aria-label="Páginas de productos" hidden></nav>
-      ) : null}
-
-      {/* ── Otras categorías / Departamentos ──────────────────────────── */}
-      <div class="other-cats">
-        <h2>Explorar otros departamentos</h2>
-        <ul class="other-cats-list" role="list">
-          {rootDepartments.filter((r) => r.slugPath !== (collNode?.slugPath || cat.id)).slice(0, 16).map((r) => (
-            <li>
-              <a href={`/categoria/${r.slugPath}`}>{r.icono} {r.name}</a>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* ── Huincha Inferior (SEO y FAQ con Schema FAQPage) ───────────── */}
-      <CategorySeoFaq
-        categoryName={cat.nombre}
-        isTechCategory={isTechCategory}
-      />
-    </main>
+    <AddToListModal />
 
     <footer class="site-footer">
-      <p>© {new Date().getFullYear()} Mercado Lista · Precios consultados en tiempo real en Colombia</p>
+      <p>© {new Date().getFullYear()} Mercado Lista · Comparador de precios en tiempo real para Colombia</p>
     </footer>
 
     <style>
-      .cat-page-container {
-        width: 100%;
-        max-width: none;
-        margin: 0 auto;
-        padding: 1.25rem 1rem 4.5rem;
-      }
-
-      /* Breadcrumb */
-      .breadcrumb-nav {
-        margin-bottom: 1.25rem;
-      }
-
-      .breadcrumb-list {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        font-size: 0.84rem;
-        color: #64748b;
-      }
-
-      .breadcrumb-item {
-        display: inline-flex;
-        align-items: center;
-      }
-
-      .breadcrumb-sep {
-        margin: 0 0.45rem;
-        color: #94a3b8;
-      }
-
-      .breadcrumb-link {
-        color: #0e6a45;
-        text-decoration: none;
-        font-weight: 500;
-        transition: color 0.15s;
-      }
-
-      .breadcrumb-link:hover {
-        color: #084c31;
-        text-decoration: underline;
-      }
-
-      .breadcrumb-current {
-        color: #1e293b;
-        font-weight: 600;
-      }
-
-      /* Encabezado */
-      .cat-header {
-        margin: 1.5rem 0 1.75rem;
-      }
-
-      .cat-header-kicker {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.45rem;
-        font-size: 0.74rem;
-        font-weight: 700;
-        color: #0e6a45;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        margin-bottom: 0.4rem;
-      }
-
-      .cat-badge-dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: #10b981;
-        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
-      }
-
-      .cat-main-title {
-        font-family: 'Fraunces', Georgia, serif;
-        font-size: 2.2rem;
-        font-weight: 600;
-        color: #0f172a;
-        margin: 0 0 0.5rem;
-        line-height: 1.2;
-      }
-
-      .cat-results-count {
-        margin: 0;
-        font-size: 0.92rem;
-        color: #64748b;
-      }
-
-      .cat-results-count strong {
-        color: #0e6a45;
-      }
-
-      /* Grilla de productos: 4 columnas × 5 filas por página */
-      .product-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 1.15rem;
-        list-style: none;
-        margin: 0 0 3rem;
-        padding: 0;
-      }
-
-      .product-card {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        padding: 1.15rem 1.25rem;
-        background: #ffffff;
-        border: 1.5px solid #e2e8f0;
-        border-radius: 14px;
-        text-decoration: none;
-        color: inherit;
-        transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
-      }
-
-      .product-card:hover {
-        border-color: #0e6a45;
-        box-shadow: 0 4px 16px rgba(14, 106, 69, 0.12);
-        transform: translateY(-2px);
-      }
-
-      .product-icon {
-        font-size: 1.9rem;
-        flex-shrink: 0;
-      }
-
-      .product-info {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 0.2rem;
-        min-width: 0;
-      }
-
-      .product-name {
-        font-size: 0.96rem;
-        font-weight: 600;
-        line-height: 1.3;
-        color: #1e293b;
-      }
-
-      .product-meta {
-        font-size: 0.78rem;
-        color: #64748b;
-      }
-
-      .product-cta {
-        font-size: 0.82rem;
-        color: #0e6a45;
-        white-space: nowrap;
-        font-weight: 600;
-      }
-
-      /* Grilla de Ofertas en Vivo tipo Retail */
-      .offers-grid-section {
-        margin-bottom: 2.5rem;
-      }
-
-      .cat-offers-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 1.15rem;
-        list-style: none;
-        padding: 0;
-        margin: 0;
-      }
-
-      .cat-offer-card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 14px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s, border-color 0.18s;
-      }
-
-      .cat-offer-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-        border-color: #0e6a45;
-      }
-
-      .cat-offer-link {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        padding: 1rem;
-        text-decoration: none;
-        color: inherit;
-      }
-
-      .cat-offer-img-box {
-        position: relative;
-        width: 100%;
-        height: 160px;
-        background: #f8fafc;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        margin-bottom: 0.85rem;
-      }
-
-      .cat-offer-img {
-        max-width: 90%;
-        max-height: 90%;
-        object-fit: contain;
-        transition: transform 0.25s;
-      }
-
-      .cat-offer-card:hover .cat-offer-img {
-        transform: scale(1.04);
-      }
-
-      .cat-offer-no-img {
-        font-size: 2.75rem;
-      }
-
-      .cat-offer-store-pill {
-        position: absolute;
-        top: 8px;
-        left: 8px;
-        background: rgba(15, 23, 42, 0.82);
-        color: #ffffff;
-        font-size: 0.68rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        padding: 0.2rem 0.55rem;
-        border-radius: 6px;
-        letter-spacing: 0.03em;
-        backdrop-filter: blur(4px);
-      }
-
-      .cat-offer-info {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .cat-offer-name {
-        font-size: 0.88rem;
-        font-weight: 600;
-        color: #0f172a;
-        line-height: 1.35;
-        margin-bottom: 0.65rem;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-      }
-
-      .cat-offer-price-row {
-        display: flex;
-        align-items: baseline;
-        gap: 0.45rem;
-        margin-top: auto;
-        padding-top: 0.35rem;
-      }
-
-      .cat-offer-price {
-        font-size: 1.18rem;
-        font-weight: 800;
-        color: #0e6a45;
-        font-family: 'Fraunces', serif;
-      }
-
-      .cat-offer-old-price {
-        font-size: 0.78rem;
-        color: #94a3b8;
-        text-decoration: line-through;
-      }
-
-      .cat-offer-cta {
-        margin-top: 0.75rem;
-        padding-top: 0.65rem;
-        border-top: 1px solid #f1f5f9;
-        font-size: 0.78rem;
-        font-weight: 700;
-        color: #0e6a45;
-        text-align: center;
-        transition: color 0.15s;
-      }
-
-      .cat-offer-card:hover .cat-offer-cta {
-        color: #084c31;
-        text-decoration: underline;
-      }
-
-      /* Otras categorías */
-      .other-cats {
-        margin-top: 1rem;
-        padding-top: 2rem;
-        border-top: 1px solid #f1f5f9;
-      }
-
-      .other-cats h2 {
-        font-size: 1.15rem;
-        font-weight: 700;
-        color: #1e293b;
-        margin-bottom: 1rem;
-      }
-
-      .other-cats-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.65rem;
-        list-style: none;
-        padding: 0;
-        margin: 0;
-      }
-
-      .other-cats-list a {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.45rem;
-        padding: 0.45rem 1rem;
-        background: #ffffff;
-        border: 1.5px solid #e2e8f0;
-        border-radius: 999px;
-        font-size: 0.86rem;
-        font-weight: 500;
-        text-decoration: none;
-        color: #334155;
-        transition: all 0.15s;
-      }
-
-      .other-cats-list a:hover {
-        background: #f0faf5;
-        border-color: #0e6a45;
-        color: #0e6a45;
-      }
-
       .site-footer {
         text-align: center;
         padding: 2.5rem 1rem;
@@ -612,66 +176,6 @@ const rootDepartments = getRootDepartments();
         border-top: 1px solid #f1f5f9;
         margin-top: 2rem;
       }
-
-      @media (max-width: 640px) {
-        .cat-main-title {
-          font-size: 1.7rem;
-        }
-        .product-grid,
-        .cat-offers-grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-      }
-
-      @media (max-width: 1100px) {
-        .product-grid,
-        .cat-offers-grid {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
-      }
     </style>
-
-    <script>
-      // Paginación de grillas: 4 columnas × 5 filas = 20 productos por página
-      const PER_PAGE = 20;
-
-      document.querySelectorAll<HTMLUListElement>('ul[data-paginate]').forEach((list) => {
-        const items = Array.from(list.children) as HTMLElement[];
-        const pager = list.nextElementSibling as HTMLElement | null;
-        if (!pager?.classList.contains('offers-pager')) return;
-        const pages = Math.max(1, Math.ceil(items.length / PER_PAGE));
-        let page = 1;
-
-        const pageButton = (label: string, target: number, disabled: boolean) => {
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.className = 'btn-page';
-          button.textContent = label;
-          button.disabled = disabled;
-          button.addEventListener('click', () => {
-            page = target;
-            draw();
-            list.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          });
-          return button;
-        };
-
-        const draw = () => {
-          items.forEach((item, index) => {
-            const visible = index >= (page - 1) * PER_PAGE && index < page * PER_PAGE;
-            item.style.display = visible ? '' : 'none';
-          });
-          pager.replaceChildren();
-          pager.hidden = pages <= 1;
-          if (pages <= 1) return;
-          const info = document.createElement('span');
-          info.className = 'pager-info';
-          info.textContent = `Página ${page} de ${pages} · ${items.length} productos`;
-          pager.append(pageButton('← Anterior', page - 1, page === 1), info, pageButton('Siguiente →', page + 1, page === pages));
-        };
-
-        draw();
-      });
-    </script>
   </body>
 </html>

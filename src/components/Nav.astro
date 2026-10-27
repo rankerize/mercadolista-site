@@ -32,7 +32,7 @@ const drawerDepartments = getDrawerDepartments();
     </button>
 
     <!-- Buscador -->
-    <form class="ml-nav__search" id="ml-nav-search" role="search" action="/" method="get">
+    <form class={`ml-nav__search ${isHome ? 'ml-nav__search--home' : ''}`} id="ml-nav-search" role="search" action="/" method="get">
       <input
         type="search"
         name="q"
@@ -552,6 +552,7 @@ const drawerDepartments = getDrawerDepartments();
 
   /* Ocultar labels en pantallas pequeñas */
   @media (max-width: 600px) {
+    .ml-nav__search--home { display: none; }
     .ml-action-label { display: none; }
     .ml-menu-label   { display: none; }
     .ml-nav__ia      { display: none; }

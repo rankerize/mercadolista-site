@@ -6,6 +6,7 @@ import { findCity } from '../../lib/cities';
 import Nav from '../../components/Nav.astro';
 import AddToListModal from '../../components/AddToListModal.astro';
 import GoogleAnalytics from '../../components/GoogleAnalytics.astro';
+import GoogleAdSense from '../../components/GoogleAdSense.astro';
 import PlpView from '../../components/PlpView.astro';
 
 const BASE = 'https://mercadolista.com';
@@ -47,6 +48,7 @@ const crumbs = [
 <html lang="es">
   <head>
     <GoogleAnalytics />
+    <GoogleAdSense />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{`Precios de "${query}" en Colombia hoy · Mercado Lista`}</title>
