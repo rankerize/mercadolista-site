@@ -27,6 +27,7 @@ function addUrl(urlPath, priority = '0.8', changefreq = 'daily') {
 
 // 1. Páginas estáticas principales
 addUrl('/', '1.0', 'daily');
+addUrl('/page/black-friday', '1.0', 'daily');
 addUrl('/asistente', '0.9', 'daily');
 addUrl('/categoria', '0.9', 'daily');
 addUrl('/perfil', '0.8', 'weekly');

@@ -1,0 +1,1093 @@
+---
+// src/pages/page/black-friday.astro
+import '../../styles/styles.css';
+import Nav from '../../components/Nav.astro';
+import CategoryBanner from '../../components/CategoryBanner.astro';
+import GoogleAnalytics from '../../components/GoogleAnalytics.astro';
+import GoogleAdSense from '../../components/GoogleAdSense.astro';
+import CookieBanner from '../../components/CookieBanner.astro';
+import AssistantChatWidget from '../../components/AssistantChatWidget.astro';
+
+const BASE = 'https://mercadolista.com';
+const CANONICAL = `${BASE}/page/black-friday`;
+
+const RETAILER_STORES = [
+  {
+    id: 'exito',
+    name: 'Éxito',
+    badge: 'Hipermercado y Tecnología',
+    color: '#f2c200',
+    textColor: '#1f2937',
+    siteUrl: 'https://www.exito.com',
+    searchQuery: 'exito',
+    description: 'Smart TVs, celulares Samsung y Xiaomi, freidoras de aire, electrodomésticos y mercado con descuentos Puntos Colombia.',
+    tags: ['Televisores', 'Celulares', 'Electro', 'Mercado'],
+  },
+  {
+    id: 'falabella',
+    name: 'Falabella',
+    badge: 'Tienda por Departamentos',
+    color: '#6fbf4a',
+    textColor: '#ffffff',
+    siteUrl: 'https://www.falabella.com.co',
+    searchQuery: 'falabella',
+    description: 'Moda mujer y hombre, calzado deportivo Nike/Adidas, iPhones, computadores portátiles y línea blanca con CMR.',
+    tags: ['Moda', 'Zapatos', 'iPhone', 'Laptops'],
+  },
+  {
+    id: 'alkosto',
+    name: 'Alkosto',
+    badge: 'Hiperahorro y Tecnología',
+    color: '#e23b2f',
+    textColor: '#ffffff',
+    siteUrl: 'https://www.alkosto.com',
+    searchQuery: 'alkosto',
+    description: 'Celulares libres, portátiles Lenovo y ASUS, Smart TVs 4K, neveras No Frost y llantas con envío gratis nacional.',
+    tags: ['Celulares Libres', 'Portátiles', 'Neveras', 'Llantas'],
+  },
+  {
+    id: 'ktronix',
+    name: 'Ktronix',
+    badge: 'Especialista en Tecnología',
+    color: '#111111',
+    textColor: '#ffffff',
+    siteUrl: 'https://www.ktronix.com',
+    searchQuery: 'ktronix',
+    description: 'Consolas PS5, Xbox Series X, Nintendo Switch, audífonos JBL y Sony, smartwatches y computación gamer.',
+    tags: ['PS5', 'Gaming', 'Audífonos', 'Smartwatch'],
+  },
+  {
+    id: 'jumbo',
+    name: 'Jumbo',
+    badge: 'Supermercado y Electro',
+    color: '#00a34a',
+    textColor: '#ffffff',
+    siteUrl: 'https://www.jumbocolombia.com',
+    searchQuery: 'jumbo',
+    description: 'Licores importados, carnes premium, despensa gourmet y electrodomésticos Samsung y LG con Tarjeta Cencosud.',
+    tags: ['Licores', 'Línea Blanca', 'Cafeteras', 'Gourmet'],
+  },
+  {
+    id: 'carulla',
+    name: 'Carulla',
+    badge: 'Supermercado Gourmet',
+    color: '#1f8f4e',
+    textColor: '#ffffff',
+    siteUrl: 'https://www.carulla.com',
+    searchQuery: 'carulla',
+    description: 'Vinos del mundo, quesos finos, carnes maduradas y café especial con ofertas exclusivas Black Days.',
+    tags: ['Vinos', 'Quesos', 'Café', 'Delicatessen'],
+  },
+  {
+    id: 'd1',
+    name: 'Tiendas D1',
+    badge: 'Precios Bajos Siempre',
+    color: '#e10600',
+    textColor: '#ffffff',
+    siteUrl: 'https://www.d1.com.co',
+    searchQuery: 'd1',
+    description: 'Abarrotes, productos de aseo, despensa diaria y artículos de temporada al menor costo garantizado.',
+    tags: ['Abarrotes', 'Aseo', 'Despensa', 'Ahorro'],
+  },
+  {
+    id: 'olimpica',
+    name: 'Olímpica',
+    badge: 'Supertiendas y Droguerías',
+    color: '#d21f3c',
+    textColor: '#ffffff',
+    siteUrl: 'https://www.olimpica.com',
+    searchQuery: 'olimpica',
+    description: 'Mercado familiar, droguería, electrodomésticos Challenger y descuentos especiales con Tarjeta Plata.',
+    tags: ['Farmacia', 'Mercado', 'Challenger', 'Tarjeta Plata'],
+  },
+  {
+    id: 'easy',
+    name: 'Easy Colombia',
+    badge: 'Hogar y Construcción',
+    color: '#f18a00',
+    textColor: '#ffffff',
+    siteUrl: 'https://www.easy.com.co',
+    searchQuery: 'easy',
+    description: 'Muebles de sala y oficina, herramientas Dewalt/Bosch, pinturas Corona, baños y remodelación para el hogar.',
+    tags: ['Muebles', 'Herramientas', 'Pinturas', 'Baños'],
+  },
+  {
+    id: 'amazon',
+    name: 'Amazon Colombia',
+    badge: 'E-commerce Internacional',
+    color: '#ff9900',
+    textColor: '#111111',
+    siteUrl: 'https://www.amazon.com',
+    searchQuery: 'amazon',
+    description: 'Envíos gratis a Colombia en compras seleccionadas de más de USD $35. Dispositivos Echo, Kindle y gadgets.',
+    tags: ['Envío Gratis > $35', 'Echo Alexa', 'Kindle', 'Importados'],
+  },
+  {
+    id: 'mercadolibre',
+    name: 'Mercado Libre',
+    badge: 'Marketplace Líder',
+    color: '#ffe600',
+    textColor: '#1f2937',
+    siteUrl: 'https://www.mercadolibre.com.co',
+    searchQuery: 'mercado libre',
+    description: 'Millones de ofertas con envíos Full en 24 horas y tiendas oficiales directas de fabricantes.',
+    tags: ['Envíos Full', 'Tiendas Oficiales', 'Garantía', 'Tecnología'],
+  },
+];
+
+const FAQS = [
+  {
+    q: '¿Cuándo se realiza el Black Friday 2026 en Colombia?',
+    a: 'El Black Friday 2026 en Colombia se llevará a cabo oficialmente desde el viernes 27 de noviembre hasta el viernes 4 de diciembre de 2026. Esta semana de ofertas online (Black Week) reúne a las principales tiendas de comercio electrónico de Colombia con promociones continuas durante 8 días.',
+  },
+  {
+    q: '¿Qué comercios online participan en el Black Friday Colombia 2026?',
+    a: 'Participan las principales cadenas de retail y supermercados del país: Éxito, Falabella, Alkosto, Ktronix, Jumbo, Carulla, Tiendas D1, Olímpica, Easy, Mercado Libre y Amazon con cobertura de despachos a nivel nacional.',
+  },
+  {
+    q: '¿Cómo saber en qué tienda está más barato un producto durante el Black Friday?',
+    a: 'En Mercado Lista puedes escribir el nombre de cualquier producto (ej. "iPhone 15", "Televisor 55", "Freidora de aire", "Tenis Nike") y nuestro comparador consulta en tiempo real todas las tiendas simultáneamente para decirte exactamente en cuál está el precio más bajo.',
+  },
+  {
+    q: '¿Cuáles son las categorías más buscadas con descuento en Black Friday?',
+    a: 'Las categorías con mayor volumen de rebajas son tecnología (celulares libres, televisores Smart TV 4K, computadores portátiles y consolas de videojuegos), electrohogar (freidoras de aire, neveras No Frost, lavadoras), calzado deportivo, moda y productos de despensa familiar.',
+  },
+  {
+    q: '¿Los descuentos de Black Friday aplican en Bogotá, Medellín, Cali y otras ciudades?',
+    a: 'Sí. Las ofertas del comercio online aplican para Bogotá, Medellín, Cali, Barranquilla, Bucaramanga, Cartagena, Pereira, Manizales y la gran mayoría de ciudades de Colombia con despacho directo a domicilio o la opción de retiro gratis en tienda física.',
+  },
+  {
+    q: '¿Cómo evitar ofertas engañosas o precios inflados antes del Black Friday?',
+    a: 'Compara siempre antes de comprar. En Mercado Lista puedes contrastar el precio en vivo entre múltiples tiendas competidoras para verificar si una rebaja es real o si otro comercio tiene el mismo producto a un valor más económico sin necesidad de promociones infladas.',
+  },
+];
+
+// Schema JSON-LD de Evento (SaleEvent)
+const eventSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'SaleEvent',
+  name: 'Black Friday Colombia 2026',
+  alternateName: 'Black Week Colombia 2026',
+  description: 'Semana oficial de ofertas y descuentos de Black Friday 2026 en Colombia del 27 de noviembre al 4 de diciembre. Compara precios en tiempo real entre Éxito, Falabella, Alkosto, Ktronix, Jumbo, Carulla, D1, Amazon y más comercios online.',
+  startDate: '2026-11-27T00:00:00-05:00',
+  endDate: '2026-12-04T23:59:59-05:00',
+  eventStatus: 'https://schema.org/EventScheduled',
+  eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
+  location: {
+    '@type': 'VirtualLocation',
+    url: CANONICAL,
+  },
+  organizer: {
+    '@type': 'Organization',
+    name: 'Mercado Lista',
+    url: BASE,
+    logo: `${BASE}/logo.png`,
+  },
+  offers: {
+    '@type': 'AggregateOffer',
+    url: CANONICAL,
+    priceCurrency: 'COP',
+    lowPrice: '1000',
+    highPrice: '20000000',
+    offerCount: '250000',
+  },
+};
+
+// Schema JSON-LD de FAQPage
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQS.map((item) => ({
+    '@type': 'Question',
+    name: item.q,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: item.a,
+    },
+  })),
+};
+
+// Schema Breadcrumbs
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Inicio', item: BASE },
+    { '@type': 'ListItem', position: 2, name: 'Especiales', item: `${BASE}/page/black-friday` },
+    { '@type': 'ListItem', position: 3, name: 'Black Friday 2026 Colombia', item: CANONICAL },
+  ],
+};
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <GoogleAnalytics />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Black Friday Colombia 2026 · Ofertas, Fechas y Comparador de Precios en Vivo</title>
+    <meta
+      name="description"
+      content="Black Friday Colombia 2026 del 27 de noviembre al 4 de diciembre en comercios online. Compara precios en tiempo real entre Éxito, Falabella, Alkosto, Ktronix, Jumbo y más tiendas."
+    />
+    <link rel="canonical" href={CANONICAL} />
+    <meta name="theme-color" content="#0e6a45" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Open Graph / Redes Sociales -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Black Friday Colombia 2026 · Comparador de Ofertas en Vivo" />
+    <meta
+      property="og:description"
+      content="Compara precios de Black Friday 2026 entre tiendas de Colombia. Encuentra el menor precio en celulares, tecnología, electrohogar y supermercado del 27 nov al 4 dic."
+    />
+    <meta property="og:url" content={CANONICAL} />
+    <meta property="og:site_name" content="Mercado Lista" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640;9..144,700&family=Outfit:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Structured Data Schemas -->
+    <script type="application/ld+json" set:html={JSON.stringify(eventSchema)} />
+    <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+    <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+
+    <GoogleAdSense />
+  </head>
+  <body class="bf-page-body">
+    <Nav />
+
+    <!-- ── Hero Section Black Friday ── -->
+    <header class="bf-hero" aria-label="Black Friday Colombia 2026">
+      <div class="bf-container">
+        <nav class="bf-breadcrumbs" aria-label="Ruta de navegación">
+          <a href="/">Inicio</a>
+          <span aria-hidden="true">›</span>
+          <span>Especiales</span>
+          <span aria-hidden="true">›</span>
+          <span aria-current="page">Black Friday 2026</span>
+        </nav>
+
+        <div class="bf-hero__badge-wrap">
+          <span class="bf-hero__badge">
+            <span class="bf-pulse-dot" aria-hidden="true"></span>
+            <span>27 NOVIEMBRE AL 4 DICIEMBRE · BLACK WEEK COLOMBIA 2026</span>
+          </span>
+        </div>
+
+        <h1 class="bf-hero__title">
+          Black Friday Colombia 2026
+          <span class="bf-hero__subtitle-accent">Comparador de Precios y Ofertas en Tiempo Real</span>
+        </h1>
+
+        <p class="bf-hero__lead">
+          No compres a ciegas con descuentos inflados. Compara precios en vivo entre los principales comercios
+          online de Colombia (<strong>Éxito, Falabella, Alkosto, Ktronix, Jumbo, Carulla, D1, Amazon</strong>)
+          y descubre cuál tienda tiene realmente la mejor oferta.
+        </p>
+
+        <!-- Buscador integrado en Hero para buscar ofertas al instante -->
+        <div class="bf-search-box">
+          <form class="bf-search-form" action="/search/" method="get" role="search">
+            <div class="bf-search-input-wrap">
+              <span class="bf-search-icon" aria-hidden="true">🔍</span>
+              <input
+                type="search"
+                name="query"
+                id="bf-search-q"
+                class="bf-search-input"
+                placeholder="¿Qué oferta buscas hoy? Ej. iPhone 15, Smart TV 55, Freidora de aire, Tenis..."
+                required
+                minlength="2"
+                autocomplete="off"
+                aria-label="Buscar producto en oferta de Black Friday"
+              />
+            </div>
+            <button type="submit" class="bf-search-btn">
+              <span>Comparar Precios</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </button>
+          </form>
+
+          <!-- Búsquedas calientes directas -->
+          <div class="bf-quick-tags" aria-label="Búsquedas destacadas de Black Friday">
+            <span class="bf-quick-tag-label">Tendencias:</span>
+            <a href="/search/?query=celular+smartphone" class="bf-tag">📱 Celulares 5G</a>
+            <a href="/search/?query=televisor+smart+tv" class="bf-tag">📺 Smart TV 4K</a>
+            <a href="/search/?query=computador+portatil" class="bf-tag">💻 Portátiles</a>
+            <a href="/search/?query=freidora+de+aire" class="bf-tag">🍳 Freidoras de Aire</a>
+            <a href="/search/?query=audifonos+bluetooth" class="bf-tag">🎧 Audífonos</a>
+            <a href="/search/?query=playstation+5" class="bf-tag">🎮 PS5 / Gaming</a>
+            <a href="/search/?query=tenis+deportivos" class="bf-tag">👟 Tenis</a>
+          </div>
+        </div>
+
+        <!-- Banner de fechas y garantía -->
+        <div class="bf-dates-bar">
+          <div class="bf-date-item">
+            <span class="bf-date-num">27</span>
+            <span class="bf-date-label">Noviembre (Inicio)</span>
+          </div>
+          <div class="bf-date-arrow" aria-hidden="true">➔</div>
+          <div class="bf-date-item">
+            <span class="bf-date-num">04</span>
+            <span class="bf-date-label">Diciembre (Cierre)</span>
+          </div>
+          <div class="bf-date-info">
+            <strong>8 Días de Ofertas Continuas</strong>
+            <span>Válido en todo el comercio online de Colombia</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="bf-main-content">
+      <!-- ── Carrusel de Categorías Retail ── -->
+      <section class="bf-section bf-categories-section">
+        <div class="bf-container">
+          <CategoryBanner />
+        </div>
+      </section>
+
+      <!-- ── Directorio de Comercios Participantes ── -->
+      <section class="bf-section bf-stores-section" id="tiendas-participantes" aria-label="Comercios participantes en Black Friday">
+        <div class="bf-container">
+          <div class="bf-section-header">
+            <span class="bf-pill-tag">COMERCIOS OFICIALES EN COLOMBIA</span>
+            <h2 class="bf-section-title">Principales Tiendas Online con Ofertas de Black Friday</h2>
+            <p class="bf-section-desc">
+              Compara precios en tiempo real entre las cadenas líderes de retail y supermercados del país.
+              Haz clic en cada tienda para comparar sus productos o ir directamente a su web oficial.
+            </p>
+          </div>
+
+          <div class="bf-stores-grid">
+            {RETAILER_STORES.map((store) => (
+              <article class="bf-store-card" style={`--store-brand: ${store.color}`}>
+                <div class="bf-store-card__header">
+                  <div class="bf-store-card__badge-logo" style={`background-color: ${store.color}; color: ${store.textColor}`}>
+                    <strong>{store.name}</strong>
+                  </div>
+                  <span class="bf-store-card__kind">{store.badge}</span>
+                </div>
+
+                <p class="bf-store-card__desc">{store.description}</p>
+
+                <div class="bf-store-card__tags">
+                  {store.tags.map((tag) => (
+                    <span class="bf-store-tag">{tag}</span>
+                  ))}
+                </div>
+
+                <div class="bf-store-card__actions">
+                  <a
+                    href={`/search/?query=${encodeURIComponent(store.searchQuery)}`}
+                    class="bf-btn-compare"
+                    title={`Comparar ofertas de ${store.name}`}
+                  >
+                    <span>Comparar en vivo</span>
+                    <span aria-hidden="true">→</span>
+                  </a>
+                  <a
+                    href={store.siteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="bf-btn-store"
+                    title={`Ir al sitio web oficial de ${store.name}`}
+                  >
+                    <span>Visitar tienda</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                      <polyline points="15 3 21 3 21 9"></polyline>
+                      <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                  </a>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Consejos para Ahorrar en Black Friday ── -->
+      <section class="bf-section bf-tips-section" aria-label="Consejos de compra inteligente">
+        <div class="bf-container">
+          <div class="bf-section-header">
+            <span class="bf-pill-tag">COMPRA INTELIGENTE</span>
+            <h2 class="bf-section-title">4 Claves para Ahorrar de Verdad en el Black Friday 2026</h2>
+            <p class="bf-section-desc">Estrategias prácticas para aprovechar los descuentos sin caer en ofertas ficticias.</p>
+          </div>
+
+          <div class="bf-tips-grid">
+            <div class="bf-tip-card">
+              <span class="bf-tip-icon" aria-hidden="true">⚖️</span>
+              <h3>1. Compara entre tiendas antes de pagar</h3>
+              <p>
+                Muchos comercios lanzan el mismo televisor o celular con nombres ligeramente distintos.
+                Mercado Lista unifica los catálogos de Falabella, Éxito, Alkosto y Jumbo para mostrarte cuál tiene el menor valor final.
+              </p>
+            </div>
+
+            <div class="bf-tip-card">
+              <span class="bf-tip-icon" aria-hidden="true">💳</span>
+              <h3>2. Revisa descuentos con tarjetas aliadas</h3>
+              <p>
+                Tiendas como Falabella (CMR), Éxito (Tuya), Jumbo (Cencosud) y Olímpica (Tarjeta Plata) suelen aplicar rebajas
+                adicionales del 10% al 25% sobre el precio de lista. Verifica siempre las condiciones de financiación.
+              </p>
+            </div>
+
+            <div class="bf-tip-card">
+              <span class="bf-tip-icon" aria-hidden="true">📦</span>
+              <h3>3. Ten en cuenta los costos de envío</h3>
+              <p>
+                Una oferta barata puede perder su ventaja si el flete a tu ciudad es elevado. Comercios como Alkosto incluyen
+                envío gratis nacional en tecnología, y Amazon ofrece despacho sin costo a Colombia a partir de compras de USD $35.
+              </p>
+            </div>
+
+            <div class="bf-tip-card">
+              <span class="bf-tip-icon" aria-hidden="true">🔍</span>
+              <h3>4. Revisa el valor por unidad o gramo</h3>
+              <p>
+                En productos de supermercado, aseo y despensa familiar, compara siempre el costo por mililitro o por gramo
+                para cerciorarte de que la presentación grande en promoción sea verdaderamente más económica que el empaque regular.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Preguntas Frecuentes (FAQ) ── -->
+      <section class="bf-section bf-faq-section" id="preguntas-frecuentes" aria-label="Preguntas frecuentes sobre Black Friday">
+        <div class="bf-container bf-container--narrow">
+          <div class="bf-section-header">
+            <span class="bf-pill-tag">RESUELVE TUS DUDAS</span>
+            <h2 class="bf-section-title">Preguntas Frecuentes sobre el Black Friday Colombia 2026</h2>
+            <p class="bf-section-desc">Todo lo que necesitas saber sobre las fechas, tiendas participantes y cómo comparar precios.</p>
+          </div>
+
+          <div class="bf-faq-accordion" role="region" aria-label="Acordeón de preguntas frecuentes">
+            {FAQS.map((faq, index) => (
+              <details class="bf-faq-item" open={index === 0}>
+                <summary class="bf-faq-question">
+                  <span>{faq.q}</span>
+                  <svg class="bf-faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </summary>
+                <div class="bf-faq-answer">
+                  <p>{faq.a}</p>
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <!-- ── CTA Final de Búsqueda ── -->
+      <section class="bf-section bf-cta-section">
+        <div class="bf-container">
+          <div class="bf-cta-card">
+            <h2>¿Listo para encontrar la mejor oferta de Black Friday?</h2>
+            <p>Escribe el producto que buscas y cotiza al instante en todos los almacenes de Colombia.</p>
+            <a href="/" class="bf-btn-cta">Ir al Comparador Principal</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+      <div class="bf-container">
+        <p>© {new Date().getFullYear()} Mercado Lista · Comparador de precios independiente en tiempo real para Colombia.</p>
+        <p class="footer-meta">
+          Black Friday Colombia 2026: Del 27 de noviembre al 4 de diciembre de 2026. Precios consultados de fuentes públicas oficiales.
+        </p>
+      </div>
+    </footer>
+
+    <CookieBanner />
+    <AssistantChatWidget />
+
+    <style>
+      /* ── Reset & Variables ── */
+      .bf-page-body {
+        background-color: #f7faf8;
+        color: #1e293b;
+        font-family: 'Outfit', sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+
+      .bf-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1.25rem;
+      }
+
+      .bf-container--narrow {
+        max-width: 860px;
+      }
+
+      /* ── Breadcrumbs ── */
+      .bf-breadcrumbs {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        color: #94a3b8;
+        margin-bottom: 1.5rem;
+      }
+      .bf-breadcrumbs a {
+        color: #cbd5e1;
+        text-decoration: none;
+      }
+      .bf-breadcrumbs a:hover {
+        color: #fff;
+        text-decoration: underline;
+      }
+
+      /* ── Hero ── */
+      .bf-hero {
+        background: linear-gradient(135deg, #071912 0%, #0e2a1e 50%, #05130e 100%);
+        color: #ffffff;
+        padding: 2.5rem 0 3.5rem;
+        border-bottom: 3px solid #0e6a45;
+        position: relative;
+        overflow: hidden;
+      }
+      .bf-hero::before {
+        content: '';
+        position: absolute;
+        top: -100px;
+        right: -100px;
+        width: 450px;
+        height: 450px;
+        background: radial-gradient(circle, rgba(14, 106, 69, 0.35) 0%, rgba(0,0,0,0) 70%);
+        pointer-events: none;
+      }
+
+      .bf-hero__badge-wrap {
+        margin-bottom: 1rem;
+      }
+      .bf-hero__badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(14, 106, 69, 0.45);
+        border: 1px solid rgba(52, 211, 153, 0.4);
+        color: #34d399;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        padding: 0.4rem 0.9rem;
+        border-radius: 999px;
+      }
+
+      .bf-pulse-dot {
+        width: 8px;
+        height: 8px;
+        background-color: #ef4444;
+        border-radius: 50%;
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+        animation: bfPulse 1.8s infinite;
+      }
+      @keyframes bfPulse {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+      }
+
+      .bf-hero__title {
+        font-family: 'Fraunces', serif;
+        font-size: clamp(2rem, 5vw, 3.4rem);
+        font-weight: 700;
+        line-height: 1.15;
+        margin: 0 0 1rem;
+        color: #ffffff;
+      }
+      .bf-hero__subtitle-accent {
+        display: block;
+        font-size: clamp(1.1rem, 2.8vw, 1.6rem);
+        font-family: 'Outfit', sans-serif;
+        font-weight: 500;
+        color: #a7f3d0;
+        margin-top: 0.4rem;
+      }
+
+      .bf-hero__lead {
+        font-size: 1.1rem;
+        line-height: 1.6;
+        color: #cbd5e1;
+        max-width: 820px;
+        margin: 0 0 2rem;
+      }
+      .bf-hero__lead strong {
+        color: #ffffff;
+      }
+
+      /* ── Buscador en Hero ── */
+      .bf-search-box {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 1.25rem;
+        padding: 1.25rem;
+        backdrop-filter: blur(8px);
+        max-width: 880px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      }
+
+      .bf-search-form {
+        display: flex;
+        gap: 0.6rem;
+      }
+      .bf-search-input-wrap {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        background: #ffffff;
+        border-radius: 0.9rem;
+        padding: 0 1rem;
+        gap: 0.6rem;
+      }
+      .bf-search-icon {
+        font-size: 1.1rem;
+      }
+      .bf-search-input {
+        width: 100%;
+        border: none;
+        outline: none;
+        font-size: 1rem;
+        color: #1e293b;
+        padding: 0.95rem 0;
+        background: transparent;
+      }
+      .bf-search-input::placeholder {
+        color: #94a3b8;
+      }
+
+      .bf-search-btn {
+        background: #0e6a45;
+        color: #ffffff;
+        border: none;
+        border-radius: 0.9rem;
+        padding: 0 1.6rem;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: background 0.15s, transform 0.15s;
+        white-space: nowrap;
+      }
+      .bf-search-btn:hover {
+        background: #085235;
+        transform: translateY(-1px);
+      }
+
+      .bf-quick-tags {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        font-size: 0.85rem;
+      }
+      .bf-quick-tag-label {
+        color: #94a3b8;
+        font-weight: 600;
+      }
+      .bf-tag {
+        background: rgba(255, 255, 255, 0.12);
+        color: #e2e8f0;
+        text-decoration: none;
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        transition: background 0.12s, color 0.12s;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+      }
+      .bf-tag:hover {
+        background: #0e6a45;
+        color: #fff;
+        border-color: #34d399;
+      }
+
+      /* ── Fechas Bar ── */
+      .bf-dates-bar {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+      }
+      .bf-date-item {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+      }
+      .bf-date-num {
+        font-family: 'Fraunces', serif;
+        font-size: 2rem;
+        font-weight: 700;
+        color: #34d399;
+        line-height: 1;
+      }
+      .bf-date-label {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #cbd5e1;
+        font-weight: 600;
+        line-height: 1.2;
+      }
+      .bf-date-arrow {
+        color: #64748b;
+        font-size: 1.2rem;
+      }
+      .bf-date-info {
+        margin-left: auto;
+        display: flex;
+        flex-direction: column;
+        text-align: right;
+      }
+      .bf-date-info strong {
+        color: #f1f5f9;
+        font-size: 0.95rem;
+      }
+      .bf-date-info span {
+        color: #94a3b8;
+        font-size: 0.8rem;
+      }
+
+      /* ── Secciones Generales ── */
+      .bf-section {
+        padding: 3.5rem 0;
+      }
+      .bf-section-header {
+        text-align: center;
+        max-width: 780px;
+        margin: 0 auto 2.5rem;
+      }
+      .bf-pill-tag {
+        display: inline-block;
+        background: #e8f5e9;
+        color: #0e6a45;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        padding: 0.35rem 0.85rem;
+        border-radius: 999px;
+        margin-bottom: 0.75rem;
+      }
+      .bf-section-title {
+        font-family: 'Fraunces', serif;
+        font-size: clamp(1.6rem, 3.2vw, 2.4rem);
+        color: #0f172a;
+        margin: 0 0 0.8rem;
+        line-height: 1.2;
+      }
+      .bf-section-desc {
+        font-size: 1.02rem;
+        color: #64748b;
+        line-height: 1.6;
+        margin: 0;
+      }
+
+      /* ── Carrusel de Categorías ── */
+      .bf-categories-section {
+        background: #ffffff;
+        border-bottom: 1px solid #e2e8f0;
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+      }
+
+      /* ── Tiendas Grid ── */
+      .bf-stores-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+      }
+      .bf-store-card {
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 1.15rem;
+        padding: 1.4rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+      }
+      .bf-store-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--store-brand);
+        box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+      }
+
+      .bf-store-card__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.85rem;
+      }
+      .bf-store-card__badge-logo {
+        padding: 0.35rem 0.85rem;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      }
+      .bf-store-card__kind {
+        font-size: 0.78rem;
+        color: #64748b;
+        font-weight: 600;
+      }
+      .bf-store-card__desc {
+        font-size: 0.92rem;
+        color: #334155;
+        line-height: 1.5;
+        margin: 0 0 1rem;
+        flex: 1;
+      }
+
+      .bf-store-card__tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        margin-bottom: 1.25rem;
+      }
+      .bf-store-tag {
+        background: #f1f5f9;
+        color: #475569;
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 0.2rem 0.55rem;
+        border-radius: 6px;
+      }
+
+      .bf-store-card__actions {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+      }
+      .bf-btn-compare {
+        flex: 1;
+        background: #0e6a45;
+        color: #ffffff;
+        text-decoration: none;
+        font-size: 0.88rem;
+        font-weight: 600;
+        padding: 0.65rem 0.85rem;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        transition: background 0.15s;
+      }
+      .bf-btn-compare:hover {
+        background: #085235;
+      }
+      .bf-btn-store {
+        background: #f8fafc;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 500;
+        padding: 0.65rem 0.85rem;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        transition: background 0.15s, border-color 0.15s;
+      }
+      .bf-btn-store:hover {
+        background: #f1f5f9;
+        border-color: #94a3b8;
+      }
+
+      /* ── Consejos Grid ── */
+      .bf-tips-section {
+        background: #ffffff;
+        border-top: 1px solid #e2e8f0;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .bf-tips-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+      }
+      .bf-tip-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        padding: 1.5rem;
+      }
+      .bf-tip-icon {
+        font-size: 2.2rem;
+        margin-bottom: 0.8rem;
+        display: block;
+      }
+      .bf-tip-card h3 {
+        font-size: 1.05rem;
+        color: #0f172a;
+        margin: 0 0 0.5rem;
+        font-weight: 700;
+      }
+      .bf-tip-card p {
+        font-size: 0.9rem;
+        color: #475569;
+        line-height: 1.55;
+        margin: 0;
+      }
+
+      /* ── FAQ ── */
+      .bf-faq-section {
+        background: #f8faf9;
+      }
+      .bf-faq-accordion {
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+      }
+      .bf-faq-item {
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 0.9rem;
+        overflow: hidden;
+        transition: border-color 0.15s, box-shadow 0.15s;
+      }
+      .bf-faq-item[open] {
+        border-color: #0e6a45;
+        box-shadow: 0 4px 14px rgba(14, 106, 69, 0.08);
+      }
+      .bf-faq-question {
+        padding: 1.15rem 1.4rem;
+        font-weight: 600;
+        font-size: 1.02rem;
+        color: #1e293b;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        user-select: none;
+      }
+      .bf-faq-question::-webkit-details-marker {
+        display: none;
+      }
+      .bf-faq-chevron {
+        color: #64748b;
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        flex-shrink: 0;
+        margin-left: 0.75rem;
+      }
+      .bf-faq-item[open] .bf-faq-chevron {
+        transform: rotate(180deg);
+        color: #0e6a45;
+      }
+      .bf-faq-answer {
+        padding: 0 1.4rem 1.25rem;
+        color: #475569;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        border-top: 1px dashed #e2e8f0;
+        padding-top: 0.9rem;
+      }
+      .bf-faq-answer p {
+        margin: 0;
+      }
+
+      /* ── CTA Final ── */
+      .bf-cta-section {
+        padding-bottom: 4rem;
+      }
+      .bf-cta-card {
+        background: linear-gradient(135deg, #0e6a45 0%, #064027 100%);
+        color: #ffffff;
+        border-radius: 1.4rem;
+        padding: 3rem 2rem;
+        text-align: center;
+        box-shadow: 0 12px 36px rgba(14, 106, 69, 0.25);
+      }
+      .bf-cta-card h2 {
+        font-family: 'Fraunces', serif;
+        font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+        margin: 0 0 0.8rem;
+      }
+      .bf-cta-card p {
+        font-size: 1.1rem;
+        color: #d1fae5;
+        margin: 0 0 2rem;
+      }
+      .bf-btn-cta {
+        display: inline-block;
+        background: #ffffff;
+        color: #0e6a45;
+        font-weight: 700;
+        font-size: 1.05rem;
+        text-decoration: none;
+        padding: 0.9rem 2rem;
+        border-radius: 999px;
+        transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      }
+      .bf-btn-cta:hover {
+        background: #f0faf5;
+        transform: scale(1.03);
+      }
+
+      /* ── Footer ── */
+      .site-footer {
+        background: #0f172a;
+        color: #94a3b8;
+        padding: 2.5rem 0;
+        text-align: center;
+        font-size: 0.88rem;
+      }
+      .site-footer p {
+        margin: 0 0 0.4rem;
+      }
+      .footer-meta {
+        font-size: 0.78rem;
+        color: #64748b;
+      }
+
+      /* ── Responsive ── */
+      @media (max-width: 768px) {
+        .bf-search-form {
+          flex-direction: column;
+        }
+        .bf-search-btn {
+          width: 100%;
+          justify-content: center;
+          padding: 0.85rem;
+        }
+        .bf-dates-bar {
+          flex-wrap: wrap;
+          gap: 0.85rem;
+        }
+        .bf-date-info {
+          margin-left: 0;
+          text-align: left;
+          width: 100%;
+        }
+        .bf-stores-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </body>
+</html>

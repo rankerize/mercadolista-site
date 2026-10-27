@@ -3,7 +3,7 @@ import 'piccolore';
 /* empty css                                     */
 import { C as CATEGORIES, g as getItemsByCategory } from '../chunks/catalog_CZ10BYui.mjs';
 import { d as getRootDepartments } from '../chunks/collectionTaxonomy_PwVXjHAC.mjs';
-import { $ as $$Nav } from '../chunks/Nav_DtWye2VG.mjs';
+import { $ as $$Nav } from '../chunks/Nav_kzfrG_m0.mjs';
 import { a as $$GoogleAdSense, $ as $$GoogleAnalytics } from '../chunks/GoogleAdSense_Bc90ZQI7.mjs';
 /* empty css                                 */
 export { renderers } from '../renderers.mjs';

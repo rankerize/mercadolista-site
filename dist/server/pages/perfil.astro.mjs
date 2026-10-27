@@ -1,9 +1,10 @@
 import { f as createComponent, k as renderComponent, l as renderHead, n as renderScript, r as renderTemplate } from '../chunks/astro/server_zl8i4EZZ.mjs';
 import 'piccolore';
 /* empty css                                     */
-import { $ as $$Nav } from '../chunks/Nav_DtWye2VG.mjs';
-import { $ as $$ShareModal, a as $$AssistantChatWidget } from '../chunks/AssistantChatWidget_CIaZemX3.mjs';
+import { $ as $$Nav } from '../chunks/Nav_kzfrG_m0.mjs';
+import { $ as $$ShareModal } from '../chunks/ShareModal_DgyrcbG9.mjs';
 import { $ as $$GoogleAnalytics, a as $$GoogleAdSense } from '../chunks/GoogleAdSense_Bc90ZQI7.mjs';
+import { $ as $$AssistantChatWidget } from '../chunks/AssistantChatWidget_DppeQAfd.mjs';
 export { renderers } from '../renderers.mjs';
 
 const $$Perfil = createComponent(async ($$result, $$props, $$slots) => {

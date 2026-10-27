@@ -32,13 +32,13 @@ const drawerDepartments = getDrawerDepartments();
     </button>
 
     <!-- Buscador -->
-    <form class={`ml-nav__search ${isHome ? 'ml-nav__search--home' : ''}`} id="ml-nav-search" role="search" action="/" method="get">
+    <form class="ml-nav__search" id="ml-nav-search" role="search" action="/search" method="get">
       <input
         type="search"
         name="q"
         id="ml-nav-q"
         class="ml-search-input"
-        placeholder="Buscar productos..."
+        placeholder="Buscar productos o tiendas en Colombia..."
         autocomplete="off"
         aria-label="Buscar productos"
       />
@@ -332,19 +332,29 @@ const drawerDepartments = getDrawerDepartments();
     });
   }
 
-  // Buscador: en la home dispara el formulario principal; en otras páginas navega a /?q=
+  // Buscador: en la home dispara el formulario principal; en otras páginas navega a /search?q=
   const navForm = document.getElementById('ml-nav-search') as HTMLFormElement;
   navForm?.addEventListener('submit', (e) => {
+    const qInput = document.getElementById('ml-nav-q') as HTMLInputElement | null;
+    const q = qInput ? qInput.value.trim() : '';
+    if (q.length < 2) {
+      e.preventDefault();
+      return;
+    }
+
     if (window.location.pathname === '/') {
       e.preventDefault();
-      const q = (document.getElementById('ml-nav-q') as HTMLInputElement).value.trim();
-      if (q.length < 2) return;
       const mainInput = document.getElementById('query') as HTMLInputElement | null;
       const mainForm  = document.getElementById('search-form') as HTMLFormElement | null;
       if (mainInput && mainForm) {
         mainInput.value = q;
         mainForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      } else {
+        window.location.href = `/search?q=${encodeURIComponent(q)}`;
       }
+    } else {
+      e.preventDefault();
+      window.location.href = `/search?q=${encodeURIComponent(q)}`;
     }
   });
 </script>
@@ -550,9 +560,57 @@ const drawerDepartments = getDrawerDepartments();
   }
   .ml-nav__logout:hover { background: #fef2f2; color: #dc2626; }
 
-  /* Ocultar labels en pantallas pequeñas */
-  @media (max-width: 600px) {
-    .ml-nav__search--home { display: none; }
+  /* ── Layout Móvil de 2 Filas (Estilo Falabella / Amazon) ── */
+  @media (max-width: 680px) {
+    .ml-nav__inner {
+      height: auto;
+      padding: 0.5rem 0.75rem 0.6rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem 0.6rem;
+    }
+
+    /* Fila 1: Menú y Marca a la izquierda */
+    .ml-nav__menu-btn {
+      order: 1;
+      padding: 0.32rem 0.55rem;
+    }
+
+    .ml-nav__brand {
+      order: 2;
+      font-size: 0.95rem;
+    }
+
+    /* Fila 1: Acciones (Carrito, Login) a la derecha */
+    .ml-nav__actions {
+      order: 3;
+      margin-left: auto;
+      gap: 0.35rem;
+    }
+
+    /* Fila 2: Buscador a pantalla completa (100% width) */
+    .ml-nav__search {
+      order: 4;
+      display: flex !important;
+      width: 100%;
+      flex-basis: 100%;
+      height: 42px;
+      margin-top: 0.15rem;
+      border: 1.5px solid #cbd5e1;
+      background: #f8fafc;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .ml-search-input {
+      font-size: 0.88rem;
+      padding: 0.45rem 0.85rem;
+    }
+
+    .ml-search-btn {
+      padding: 0.42rem 0.9rem;
+    }
+
     .ml-action-label { display: none; }
     .ml-menu-label   { display: none; }
     .ml-nav__ia      { display: none; }

@@ -1,6 +1,6 @@
 import { renderers } from './renderers.mjs';
 import { c as createExports, s as serverEntrypointModule } from './chunks/_@astrojs-ssr-adapter_BRm88JVp.mjs';
-import { manifest } from './manifest_DZdK3rbg.mjs';
+import { manifest } from './manifest_BDcYxo2x.mjs';
 
 const serverIslandMap = new Map();;
 
@@ -15,14 +15,16 @@ const _page7 = () => import('./pages/api/lista.astro.mjs');
 const _page8 = () => import('./pages/api/tiendas.astro.mjs');
 const _page9 = () => import('./pages/api/unidad.astro.mjs');
 const _page10 = () => import('./pages/asistente.astro.mjs');
-const _page11 = () => import('./pages/categoria/_categoria_.astro.mjs');
-const _page12 = () => import('./pages/categoria.astro.mjs');
-const _page13 = () => import('./pages/categoria/_---slug_.astro.mjs');
-const _page14 = () => import('./pages/perfil.astro.mjs');
-const _page15 = () => import('./pages/privacidad.astro.mjs');
-const _page16 = () => import('./pages/search.astro.mjs');
-const _page17 = () => import('./pages/terminos.astro.mjs');
-const _page18 = () => import('./pages/index.astro.mjs');
+const _page11 = () => import('./pages/black-friday.astro.mjs');
+const _page12 = () => import('./pages/categoria/_categoria_.astro.mjs');
+const _page13 = () => import('./pages/categoria.astro.mjs');
+const _page14 = () => import('./pages/categoria/_---slug_.astro.mjs');
+const _page15 = () => import('./pages/page/black-friday.astro.mjs');
+const _page16 = () => import('./pages/perfil.astro.mjs');
+const _page17 = () => import('./pages/privacidad.astro.mjs');
+const _page18 = () => import('./pages/search.astro.mjs');
+const _page19 = () => import('./pages/terminos.astro.mjs');
+const _page20 = () => import('./pages/index.astro.mjs');
 const pageMap = new Map([
     ["node_modules/astro/dist/assets/endpoint/node.js", _page0],
     ["src/pages/api/asistente.ts", _page1],
@@ -35,14 +37,16 @@ const pageMap = new Map([
     ["src/pages/api/tiendas.ts", _page8],
     ["src/pages/api/unidad.ts", _page9],
     ["src/pages/asistente.astro", _page10],
-    ["src/pages/categoria/[categoria].astro", _page11],
-    ["src/pages/categoria/index.astro", _page12],
-    ["src/pages/categoria/[...slug].astro", _page13],
-    ["src/pages/perfil.astro", _page14],
-    ["src/pages/privacidad.astro", _page15],
-    ["src/pages/search/index.astro", _page16],
-    ["src/pages/terminos.astro", _page17],
-    ["src/pages/index.astro", _page18]
+    ["src/pages/black-friday.astro", _page11],
+    ["src/pages/categoria/[categoria].astro", _page12],
+    ["src/pages/categoria/index.astro", _page13],
+    ["src/pages/categoria/[...slug].astro", _page14],
+    ["src/pages/page/black-friday.astro", _page15],
+    ["src/pages/perfil.astro", _page16],
+    ["src/pages/privacidad.astro", _page17],
+    ["src/pages/search/index.astro", _page18],
+    ["src/pages/terminos.astro", _page19],
+    ["src/pages/index.astro", _page20]
 ]);
 
 const _manifest = Object.assign(manifest, {
