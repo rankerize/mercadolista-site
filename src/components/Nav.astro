@@ -200,6 +200,9 @@ const drawerDepartments = getDrawerDepartments();
 
 <script>
   import { initCameraSearch } from '../scripts/cameraSearch';
+  import { initNavSuggest } from '../scripts/navSuggest';
+
+  initNavSuggest();
 
   const camModal = initCameraSearch({
     onSearchSelected: (query) => {

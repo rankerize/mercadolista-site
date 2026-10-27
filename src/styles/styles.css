@@ -2290,6 +2290,22 @@ html { scroll-behavior: smooth; }
   text-transform: capitalize;
 }
 
+.autocomplete-item-sub {
+  font-style: normal;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.autocomplete-type-buscar { background: #eef2ff; color: #3730a3; }
+.autocomplete-type-coleccion { background: #fff7e6; color: #92400e; }
+.autocomplete-type-categoria { background: #e7f6ee; color: #0e6a45; }
+.autocomplete-type-pagina { background: #f5f1e9; color: #5b5346; }
+
+.ml-nav-suggest {
+  max-height: 360px;
+  min-width: 280px;
+}
+
 .autocomplete-item.autocomplete-category-highlight {
   background: #f4faf6;
   border-left: 3px solid #0e6a45;
